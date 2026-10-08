@@ -4,3 +4,6 @@ contracts/lib/
 contracts/out/
 .venv/
 __pycache__/
+*.typed.json
+signature.json
+mandate.json
