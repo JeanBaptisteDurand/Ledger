@@ -172,3 +172,11 @@ Sortie réelle du dernier passage :
 Et sur l'écran de l'appareil (`captures/mandat-02.png`) : **`Budget · 1 WETH`**,
 **`Max round-trip loss (bps) · 300`**, **`Expires · 2026-09-28`**.
 
+## La frontière agent / humain
+
+> **L'agent** choisit quelle position prendre, quand, à quel montant — seul, autant de fois qu'il
+> veut, dans le mandat.
+> **L'humain** signe une fois, sur le Flex : le budget, la perte aller-retour tolérée, l'échéance.
+> **Le contrat** applique à chaque achat. L'agent ne peut ni relever le seuil, ni changer la règle, ni
+> toucher à la clé : pour ça, il faut revenir à l'appareil.
+
