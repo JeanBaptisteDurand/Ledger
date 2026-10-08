@@ -108,6 +108,47 @@ Six tours, sortie réelle :
 Chaque tour écrit une ligne dans `agent/journal.jsonl` : l'univers, la liste courte avec toutes les
 caractéristiques, le score et son détail, le choix, le pourquoi, la sonde, la décision du coffre, le motif.
 
+## La seconde instance — dix coffres ERC-4626 réels, même mandat, même refus
+
+Un coffre à rendement, c'est le standard ERC-4626 : tu déposes, tu reçois des parts, tu les rends plus
+tard. **Et le standard écrit le piège lui-même** : `previewRedeem` *doit* ignorer les limites de retrait,
+pendant que `maxWithdraw` peut valoir moins que la position — marché de prêt utilisé à 100 %, file
+d'attente, cooldown, pause. Le rendement s'affiche, la porte est fermée.
+
+La sonde ([`ExitVault.sol`](contracts/src/ExitVault.sol), `vaultExitLossBps`) fait deux choses, toutes
+deux annulées par `revert` :
+
+1. **l'aller-retour réel à notre taille** — `deposit` → `redeem` → mesure : ce que ça rend *vraiment*,
+   pas ce que `previewRedeem` promet ;
+2. **la porte** — la part de la position du **plus gros déposant** qui ne peut pas sortir aujourd'hui,
+   `maxWithdraw(ref)` contre `convertToAssets(balanceOf(ref))`. Notre propre dépôt est toujours retirable
+   à l'instant où on le fait (il apporte de la liquidité) ; la question honnête est : celui qui a le plus à
+   sortir, peut-il sortir ?
+
+Le pire des deux, en bps, passe par le **même champ du même mandat** (`maxRoundTripLossBps`) et le même
+refus (`CannotExit`). Mesuré au bloc 50 614 000 sur les dix plus gros coffres WETH de Base (Morpho, adresses
+et déposants via leur API, vérifiés sur le fork — [`Vault4626.t.sol`](contracts/test/Vault4626.t.sol)) :
+
+| coffre | affiché | aller-retour 0,01 WETH | porte fermée | mandat à 300 bps |
+|---|---|---|---|---|
+| **Moonwell Flagship ETH** — 1 957 WETH, le plus gros | 1,36 % | 0 bps | **2 693 bps** (522,6 WETH de position, 381,8 retirables) | **refusé** |
+| Safe × Steakhouse ETH | 1,37 % | 0 bps | 264 bps | accepté (refusé à 200) |
+| Gauntlet WETH Core · Clearstar · Yearn OG | 1,5–1,9 % | 0 bps | 0 bps | accepté |
+| Seamless · Extrafi · Re7 · Steakhouse · Pyth | — | **dépôt refusé** par le coffre : `AllCapsReached`, il est plein | — | — |
+
+Et `previewRedeem` sur la position du plus gros déposant de Moonwell : **522,57 WETH** — pendant que
+`maxWithdraw` dit **381,82**. Le mensonge est dans le standard, pas dans le coffre.
+
+L'agent de rendement ([`agent/vaults.py`](agent/vaults.py)) choisit sur ce que l'API affiche — rendement,
+taille, listing — et **prend Moonwell en premier**. Le coffre refuse ; la dérogation (`enterVaultUnderException`)
+porte le nombre lu sur l'appareil, `EXIT COST (bps) · 2693`, à usage unique ; la sortie (`exitVault`) rend
+9 999 999 999 999 999 wei sur 10¹⁶. La surveillance ([`agent/watch.py`](agent/watch.py)) resonde les deux
+portes — la nôtre et celle du plus gros déposant — parce qu'un coffre ouvert à l'entrée se ferme quand les
+emprunteurs prennent la liquidité : *après*, jamais *avant*. Observé dans le banc : **2 693 bps à l'entrée,
+2 691 après notre dépôt** — nos 0,05 WETH ont entrouvert la porte de deux points.
+
+![le banc, univers coffres](captures/front-vaults.png)
+
 ## L'escalade — « hors bornes ne veut pas dire non »
 
 C'est la seconde moitié du modèle de Ledger : *« si un agent tente une action hors de ces bornes,
