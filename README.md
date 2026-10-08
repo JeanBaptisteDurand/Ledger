@@ -215,6 +215,37 @@ pas une démo.
 
 Chaque appel exige la clé. Sans elle : `clé refusée`.
 
+## L'analyste — le vrai agent
+
+Les agents de swaps et de rendement sont la **démonstration de l'outil** : des stratégies ordinaires qui se
+font piéger, pour montrer que le coffre les rattrape. **Le vrai agent, c'est l'analyste**
+([`agent/analyst.py`](agent/analyst.py)) : un modèle (Claude, par le CLI `claude` — le Claude Agent SDK)
+qui, pour répondre, **interroge nos outils** au lieu de parler de mémoire. Il n'a accès qu'au MCP en
+lecture seule (`--strict-mcp-config`, rien d'autre n'est chargé) et cite l'outil derrière chaque nombre.
+
+```
+$ python3 agent/analyst.py "pourquoi le tour 2 a-t-il ete refuse, et que prenait son hook ?"
+
+Le tour 2 a été refusé par le coffre (`decision`, « REFUSED_BY_VAULT ») : la sonde a simulé un achat
+puis une revente intégrale, et la revente a échoué (0x90bfb865), d'où 10 000 bps et le motif « ExitBlocked ».
+La stratégie avait choisi ce pool (hook RwagmiHookV2, score 97,0) parce qu'il mesurait bien sur 8 tailles,
+entrait à 0,0 bps et figurait au registre ; aucun terme du score ne regarde la sortie. Côté hook, le
+contrefactuel TARE (`hook_analysis`) donne 0,00 bps à l'entrée ; à la sortie la mesure est NOT_MEASURABLE :
+la cotation avec le hook a reverté. […] La vérité terrain note toutefois `is_one_way_trap: false`.
+
+— outils consultés : decision(tick=2), hook_analysis(tick=2)          (30 s)
+```
+
+Trois garanties, par construction : il ne peut **rien faire** (le MCP ne signe pas, n'envoie pas, ne lance
+rien) ; il n'a **que nos outils** ; la clé qui ouvre le MCP peut être **scellée dans le Ledger Key Ring**.
+C'est la brique « Agent Stack » du brief faite pour de vrai : leur `wallet-cli` lu (`ledger_earn_yields`),
+leur format de skills adopté ([`SKILL.md`](SKILL.md)), et un agent qui raisonne sur des données mesurées.
+Dans le banc : carte « 4 · demande à l'analyste » — **une conversation** (l'historique lui est redonné à chaque
+tour, « et celui d'avant ? » marche), et sous chaque réponse **la trace des appels MCP**, outil et arguments,
+comme dans un client MCP. Il ne peut rien faire d'autre que lire : c'est la garantie, et elle est visible.
+
+![le parcours complet, coffres et analyste](captures/front-parcours.png)
+
 ## Ce que la démo en ligne de commande montre, dans l'ordre
 
 | | |
