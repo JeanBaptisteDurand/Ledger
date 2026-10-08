@@ -45,3 +45,25 @@ PR. Until then we monkey-patch it (`ledger/sign_mandate.py`, `patch_chainid_bug`
 
 ---
 
+## 3. `ledger-app-builder:latest` is not in sync with `app-ethereum` master
+
+**What happened.** `make BOLOS_SDK=$FLEX_SDK` on app-ethereum 1.22.4 failed:
+
+```
+src/nbgl/ui_nbgl.h:4:10: fatal error: 'nbgl_icons.h' file not found
+```
+
+This is not a `make -j` race — it failed identically at `-j1`. The include arrived in app-ethereum on
+**13 August 2026** (`b9ea1ed8`, "Fix multsig glyph"); our `latest` image, pulled a few days earlier,
+carried a Flex SDK from **3 June**. After `docker pull`, the SDK is from 18 September and it builds.
+
+**Why it hurts.** The error points at the app, not at the toolchain. We spent an hour looking for a
+missing generated header in a repository that was fine.
+
+**One concrete suggestion.** Two lines in the app-builder README: *"pull the image before every build;
+`latest` tracks the SDK, not your checkout."* Better still, have the Makefile print the SDK's API level
+and commit date at the start of a build — a one-line `git -C $BOLOS_SDK log -1` in the banner would have
+saved the hour.
+
+---
+
