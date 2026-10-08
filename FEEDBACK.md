@@ -116,3 +116,17 @@ saved the hour.
 
 ---
 
+## 6. `"format": "number"` in the ERC-7730 spec's own example is not a valid format
+
+The example at `ERCS/erc-7730.md` lines 855-857 uses `"format": "number"` twice and `"format":
+"bytes32"` once. Neither is defined by the spec, and the reference linter rejects them:
+
+```
+Value "number" is not valid: Input should be 'raw', 'addressName', … or 'chainId'
+```
+
+**One concrete suggestion.** Fix the example — anyone who copies it gets an invalid descriptor. Happy to
+open that PR too.
+
+---
+
