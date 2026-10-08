@@ -1,0 +1,26 @@
+{
+  "name": "porte-de-sortie-dmk",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Le chemin Signer du brief : Signer Kit Ethereum + DMK (Speculos ou USB), et le wallet-cli de l'Agent Stack",
+  "type": "commonjs",
+  "scripts": {
+    "sign": "node sign_typed_data.cjs",
+    "wallet-cli": "wallet-cli",
+    "build:web": "esbuild src/ledger-web.js --bundle --format=iife --platform=browser --target=es2020 --outfile=../../web/dist/ledger-web.js --log-level=warning"
+  },
+  "dependencies": {
+    "@ledgerhq/context-module": "2.6.0",
+    "@ledgerhq/device-management-kit": "1.9.1",
+    "@ledgerhq/device-signer-kit-ethereum": "1.18.1",
+    "@ledgerhq/device-transport-kit-node-hid": "1.0.1",
+    "@ledgerhq/device-transport-kit-speculos": "1.2.1",
+    "@ledgerhq/device-transport-kit-web-hid": "^1.2.4",
+    "@ledgerhq/wallet-cli": "2.1.0",
+    "@noble/hashes": "^1.8.0",
+    "esbuild": "^0.24.2"
+  },
+  "devDependencies": {
+    "playwright": "^1.63.0"
+  }
+}

@@ -8,3 +8,5 @@ __pycache__/
 signature.json
 mandate.json
 agent/journal.jsonl
+ledger/dmk/node_modules/
+ledger/dmk/descriptors/
