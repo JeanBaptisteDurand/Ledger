@@ -39,3 +39,16 @@ pour 0 bps et prennent 9 990 à 9 999 bps à la sortie**.
 memecoins : un délai de retrait, une file d'attente, un plafond de sortie journalier ou un verrou
 posent la même question, sur des marchés bien plus grands.
 
+## Le mécanisme
+
+1. **Le porteur signe un mandat, une fois, sur son Ledger** — lisible champ par champ :
+   `Budget : 1 WETH · Max round-trip loss (bps) : 300 · Expires : …`
+2. **`ExitVault` garde la règle.** L'agent n'a jamais les fonds : il appelle le coffre.
+3. **À chaque achat, le coffre simule la revente intégrale dans la même transaction.** Si la sortie
+   coûte plus que le mandat n'autorise — ou si le hook refuse la vente — la transaction est annulée
+   avant d'exister.
+
+La simulation est gratuite et n'écrit rien : c'est le motif du `V4Quoter` d'Uniswap
+(`try poolManager.unlock(...) {} catch`, le callback revert avec son résultat). Elle revend **la
+totalité** de ce qui vient d'être acheté : un piège à seuil de taille ne passe pas au travers.
+
