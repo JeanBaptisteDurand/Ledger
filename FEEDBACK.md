@@ -138,6 +138,38 @@ that's missing.
 
 ---
 
+## 5. Uniswap v4 is not clear-signed, and the work is sitting there
+
+**What happened.** We wanted to clear-sign a v4 swap through the Universal Router. On a stock device,
+it is not decoded at all: `app-plugin-uniswap` declares `V4_SWAP = 0x10` in its enum
+(`src/handle_provide_parameter.c:56`) and lets it fall through to
+`default: PRINTF("Error: command %d not handled"); return -1;` (l. 112-113). The ERC-7730 registry has
+no Universal Router descriptor either — `registry/uniswap/` holds V3Router02, permit2, and four
+UniswapX EIP-712 files.
+
+**The work exists.** [app-plugin-uniswap#40](https://github.com/LedgerHQ/app-plugin-uniswap/pull/40)
+(14 July 2026, +1 637/−145) adds the V4 action-program parser, built from a census of 10 976 real v4
+commands. It has **zero reviews** two months later, while you merged its companion
+`ledger-asset-dapps#296`. `device-sdk-ts#1643` has only a Copilot review.
+
+**One thing we noticed in that diff**, and it is a design choice worth stating out loud:
+
+```c
+case INPUT_V4_SWAP_PATHKEY_HOOKS:  // hooks address: not displayed; skip
+```
+
+In v4, the hook is the contract that decides what the swap costs and who may sell. Even once #40 lands,
+it will never reach the screen. We measured six Base pools where the hook takes **0 bps to enter and
+9 990 bps to exit** — the same hook, a hundred times more expensive to leave than to join.
+
+**One concrete suggestion.** Review #40. And when you do, consider one more screen for the hook: an
+address alone is not much, but it is the difference between "this swap is decoded" and "this swap is
+decoded except for the part that decides its price". We would gladly contribute that screen and the
+test fixtures — the five v4 tests in #40 all use `hooks = 0x0000…0000`, so none of them exercises a
+hook at all.
+
+---
+
 ## 6. `"format": "number"` in the ERC-7730 spec's own example is not a valid format
 
 The example at `ERCS/erc-7730.md` lines 855-857 uses `"format": "number"` twice and `"format":
