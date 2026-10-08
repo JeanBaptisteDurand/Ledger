@@ -77,3 +77,11 @@ test_6  une dérogation signée par quelqu'un d'autre ne vaut rien
 Et une sortie **bloquée** (jeton non transférable, 10 000 bps) n'est jamais négociable : aucune
 dérogation ne rend un jeton transférable, donc la question n'est même pas posée.
 
+## Plusieurs agents
+
+Le coffre l'est déjà, sans une ligne de plus : un mandat = un agent = un budget = un seuil. Cinq
+tests le montrent — budgets séparés, pas d'emprunt de mandat, seuil de sortie par agent, révocation
+à la pièce depuis l'appareil. **La limite, dite franchement :** les budgets sont séparés, *la
+trésorerie ne l'est pas*. Si un agent vide le coffre, l'autre est dans son mandat mais sans fonds.
+Pour isoler les fonds, il faut un coffre par agent.
+
