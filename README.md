@@ -52,3 +52,28 @@ La simulation est gratuite et n'écrit rien : c'est le motif du `V4Quoter` d'Uni
 (`try poolManager.unlock(...) {} catch`, le callback revert avec son résultat). Elle revend **la
 totalité** de ce qui vient d'être acheté : un piège à seuil de taille ne passe pas au travers.
 
+## L'escalade — « hors bornes ne veut pas dire non »
+
+C'est la seconde moitié du modèle de Ledger : *« si un agent tente une action hors de ces bornes,
+elle est automatiquement renvoyée à l'humain pour approbation »*. Le coffre ne se contente donc pas
+de refuser : il prépare une question.
+
+Le porteur lit sur son Flex, en clair :
+
+![la dérogation](captures/escalade/03.png)
+
+et signe — ou non — une **dérogation à usage unique**, liée à ce pool, ce montant, et **au nombre
+qu'il vient de lire**. Six tests couvrent ce qu'elle ne permet pas :
+
+```
+test_1  refusé par le mandat, puis autorisé par la dérogation
+test_2  une dérogation ne sert qu'une fois
+test_3  la sortie a empiré depuis l'écran -> la dérogation ne vaut plus
+test_4  une dérogation pour un pool ne vaut pas pour un autre
+test_5  une dérogation n'est pas un blanc-seing : le budget s'applique toujours
+test_6  une dérogation signée par quelqu'un d'autre ne vaut rien
+```
+
+Et une sortie **bloquée** (jeton non transférable, 10 000 bps) n'est jamais négociable : aucune
+dérogation ne rend un jeton transférable, donc la question n'est même pas posée.
+
