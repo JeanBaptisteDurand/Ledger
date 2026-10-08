@@ -116,6 +116,28 @@ saved the hour.
 
 ---
 
+## 4. Transaction Check parses the provider message and never displays it
+
+**Where.** `src/features/provide_tx_simulation/cmd_get_tx_simulation.c`. `TX_CHECKS_PROVIDER_MSG` (tag
+`0x82`, 30 chars) is parsed at l. 182-186, registered at l. 242 — and its only use in the whole file is
+a debug `PRINTF` at l. 373. What the user sees is a fixed sentence compiled into the app, chosen from a
+(risk, category) pair.
+
+So the channel carries: one risk byte, one category byte, a provider name from the PKI certificate, a
+short URL — **and no number, anywhere**. Category 4 is literally named *Losing Operation*.
+
+**Why it hurts.** We understand this is a deliberate reduction — Blockaid's VTX proposal from October
+2024 carried the full signed simulation, and you shipped a smaller thing on purpose. Your CTO writes it
+plainly: *"if you're about to sign a swap of 100 ETH against 1 USD on Uniswap, Transaction Check won't
+flag any risk."* But parsing a field and discarding it is confusing to read, and it makes the format
+look richer than the screen.
+
+**One concrete suggestion.** Either display `PROVIDER_MSG` under the fixed sentence, or drop the tag
+from the TLV. And if you ever want a number in there, the category already exists — it's the payload
+that's missing.
+
+---
+
 ## 6. `"format": "number"` in the ERC-7730 spec's own example is not a valid format
 
 The example at `ERCS/erc-7730.md` lines 855-857 uses `"format": "number"` twice and `"format":
