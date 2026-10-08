@@ -254,6 +254,28 @@ Et sur l'écran de l'appareil (`captures/mandat-02.png`) : **`Budget · 1 WETH`*
 > **Le contrat** applique à chaque achat. L'agent ne peut ni relever le seuil, ni changer la règle, ni
 > toucher à la clé : pour ça, il faut revenir à l'appareil.
 
+## Les briques Ledger du brief, ligne à ligne
+
+Le brief dit : *« built with Ledger's Agent Stack and/or Ring CLI, and/or by wiring in a Signer for
+human-in-the-loop approval »*. Les trois sont là, et chacune fait quelque chose de réel — pas une
+mention dans un README.
+
+| le brief dit | ce qui tourne ici | ce que ça prouve |
+|---|---|---|
+| **a Signer** | `@ledgerhq/device-signer-kit-ethereum` **1.18.1** sur le DMK **1.9.1**, transport Speculos 1.2.1 ou USB (node-hid 1.0.1) — [`ledger/dmk/sign_typed_data.cjs`](ledger/dmk/sign_typed_data.cjs). Le kit reçoit nos filtres d'un **context module à nous**, qui sert des descripteurs compilés et signés localement ([`ledger/compile_descriptor.py`](ledger/compile_descriptor.py), clé de test `cal.pem`). Aucun serveur de Ledger. | L'écran : `Contract · Exit mandate`, `Network · Base`, `Budget · 0.2 WETH`, `Max round-trip loss (bps) · 150`, `Expires · …`, `Hold to sign`. Le rapport du kit : `isBlindSign=false · eip7730 · 0 erreur`. La signature vérifiée par `ecrecover` dans le coffre (`LedgerScene.t.sol`, vert). |
+| **Agent Stack** | `@ledgerhq/wallet-cli` **2.1.0** en lecture ([`ledger/walletcli.py`](ledger/walletcli.py)) ; l'outil MCP `ledger_earn_yields` ; [`SKILL.md`](SKILL.md) et [`AGENTS.md`](AGENTS.md) au format de leurs skills. Le modèle qui propose est le Claude Agent SDK (`claude -p`). | `wallet-cli earn yields` rend fournisseur, jeton, rendement, lien de dépôt — et **aucun champ sur la sortie** (délai, `maxWithdraw`, coût). Le trou qu'on comble est écrit dans leur propre CLI. |
+| **Ring CLI** | `wallet-cli ring` (Ledger Key Ring Protocol) scelle la clé du MCP : [`scripts/ring-seal.sh`](scripts/ring-seal.sh) ; le MCP la déchiffre au démarrage et dit d'où elle vient (`--key-status`). | La clé de lecture de l'agent adossée à la graine du porteur, révocable depuis l'appareil. **Honnêtement** : `ring init` exige un Flex en USB, une fois — pas Speculos ; on l'a câblé et testé jusqu'au message « not initialized », pas au-delà. |
+
+Deux chemins vers l'appareil, une même signature : le Signer Kit (défaut) ou le client officiel
+d'app-ethereum en APDU direct ([`ledger/signers.py`](ledger/signers.py), bouton dans le banc). Le second
+est celui qui a trouvé le bug chainId ; le premier est celui que le brief nomme.
+
+Et le même mandat **sans** nos descripteurs (`--blind`), comme le ferait une intégration ordinaire sans
+`originToken` : l'appareil affiche *« This transaction cannot be clear-signed. Enable blind signing in
+the settings »* et refuse (`0x6a80`) ; le kit rapporte `isBlindSign=true · device_rejected_context` —
+à Ledger, pas au développeur, qui ne reçoit que l'erreur. L'appareil est strict. La pile est muette.
+C'est le point 1 de [`FEEDBACK.md`](FEEDBACK.md), mesuré.
+
 ## Ce que ça n'attrape pas — dit avant qu'on nous le demande
 
 - **L'interrupteur basculé après l'achat — ça ne se corrige pas, ça se surveille.** Un hook peut
