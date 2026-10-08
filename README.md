@@ -20,3 +20,22 @@ déposant bloquée**, pendant que cinq coffres sur dix refusent même le dépôt
 
 ---
 
+## Le problème
+
+Tu confies un budget à un agent. Tu l'as bordé : plafond, contrats autorisés, glissement maximal. Il
+respecte tout — et il peut quand même prendre une position **dont il ne sortira jamais**.
+
+Sur Uniswap v4, le *hook* d'un pool décide qui a le droit de vendre. Les 16 et 17 septembre 2026, le
+registre officiel des hooks Uniswap a fusionné trois hooks dont son propre robot écrit
+*« HONEYPOT WARNING … enabling a rug/honeypot after users have already bought »* — et les a classés
+`vanillaSwap: true`. Dans les 125 072 mesures de [TARE](../ETH_Online_2026), **six pools laissent entrer
+pour 0 bps et prennent 9 990 à 9 999 bps à la sortie**.
+
+- `amountOutMinimum` ne le voit pas : il borne **cet** achat, pas la revente, qui n'existe pas encore.
+- Un plafond de dépense ne le voit pas : les fonds sont dépensés dans les règles.
+- Transaction Check regarde le **jeton**, pas le **hook**.
+
+**Tout le monde surveille l'entrée. Personne ne vérifie la sortie.** Et ce n'est pas propre aux
+memecoins : un délai de retrait, une file d'attente, un plafond de sortie journalier ou un verrou
+posent la même question, sur des marchés bien plus grands.
+
