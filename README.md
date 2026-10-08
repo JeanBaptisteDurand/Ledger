@@ -52,6 +52,58 @@ La simulation est gratuite et n'écrit rien : c'est le motif du `V4Quoter` d'Uni
 (`try poolManager.unlock(...) {} catch`, le callback revert avec son résultat). Elle revend **la
 totalité** de ce qui vient d'être acheté : un piège à seuil de taille ne passe pas au travers.
 
+## L'agent, et pourquoi il se fait piéger
+
+```bash
+python3 agent/agent.py --ticks 6            # la stratégie choisit seule
+python3 agent/agent.py --inject 0xbbe6      # une consigne injectée impose un jeton
+```
+
+La stratégie est ordinaire et défendable — c'est tout l'intérêt. Elle fait du DCA sur la longue traîne
+de Base et classe les pools sur **la profondeur de mesure**, **le faible coût d'entrée** et **la présence
+au registre de hooks d'Uniswap**. Aucun terme ne regarde la sortie : elle n'est pas observable avant
+d'acheter.
+
+### Ce que le hook prend vraiment — le contrefactuel de TARE, en direct
+
+À chaque tour, on **remesure** : `anvil_setCode` remplace le hook par **89 octets inertes**, la
+`PoolKey` est intacte donc le pool est identique, on cote deux fois, et l'écart est ce que le hook a
+pris. Avec les mêmes gardes que TARE — relecture après écriture, sinon un `setCode` raté ferait
+recoter le vrai hook et sortirait « 0 bps », la panne déguisée en mesure.
+
+```
+hook 0x963e91a451   entrant  19,96 bps   sortant     20 bps   -> sain, symetrique
+hook 0x9ce0e33e68   entrant   0,00 bps   sortant  9 990 bps   -> le meme hook, cent fois plus cher a la sortie
+```
+
+On lit aussi les **permissions du hook dans les bits de sa propre adresse** — gratuit, disponible
+même pour un hook absent du registre. Verdict mesuré : **ça ne discrimine pas.**
+`afterSwapReturnsDelta`, le pouvoir de prélever sur la sortie, est porté par **780 pools sains sur
+932** — c'est comme ça que tout hook de launchpad prend ses frais.
+
+Ce que le corpus dit, et qui fait la démonstration :
+
+- les pools dont on ne ressort jamais coûtent **0,00 bps à l'achat** — exactement comme 77 pools
+  parfaitement sains ;
+- leurs six hooks sont **absents du registre Uniswap** : ni nom, ni drapeau, ni audit ;
+- donc **aucun signal disponible avant l'achat ne les distingue**.
+
+Six tours, sortie réelle :
+
+| tour | pool | entrée | sortie | décision |
+|---|---|---|---|---|
+| 1 | `0x1043dc3ea2` | 11,93 bps | 238 bps | **acheté** |
+| 2 | `0x0160bf7c02` | 0,00 bps | 10 000 bps | refusé — le jeton n'est même pas transférable |
+| 3 | `0x08d98bfaba` | 0,00 bps | 10 000 bps | refusé — idem |
+| 4 | `0x093635e4ed` | 0,00 bps | 10 000 bps | refusé — idem |
+| 5 | `0x2e8f977628` | 0,00 bps | 1 899 bps | refusé — `CannotExit` |
+| 6 | `0x4435362cad` | 0,00 bps | 1 899 bps | refusé — `CannotExit` |
+
+**Trie sur la colonne « entrée » : rien ne sépare acheté et refusé. Trie sur « sortie » : tout se sépare.**
+
+Chaque tour écrit une ligne dans `agent/journal.jsonl` : l'univers, la liste courte avec toutes les
+caractéristiques, le score et son détail, le choix, le pourquoi, la sonde, la décision du coffre, le motif.
+
 ## L'escalade — « hors bornes ne veut pas dire non »
 
 C'est la seconde moitié du modèle de Ledger : *« si un agent tente une action hors de ces bornes,
