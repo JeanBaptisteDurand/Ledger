@@ -9,6 +9,55 @@ file, a line, or a command.
 
 ---
 
+## 1. Clear signing is closed to anyone without a partner token, and it fails silently
+
+**What happened.** We wired `SignerEthBuilder` without an `originToken`, as the sample does. The signer
+works. The device shows raw hex. No error, no warning, no log line.
+
+**Your own skill documents this** (`agent-skills`, `skills/dmk/dmk-business-logic/SKILL.md:29`):
+
+> `originToken` is an optional partner token passed to `SignerEthBuilder`. Without it, the signer works
+> but the device shows raw hex — **the experience silently degrades to blind signing with no runtime
+> error.**
+
+Measured on 2026-09-19:
+
+```
+GET crypto-assets-service.api.ledger.com/v1/dapps?output=descriptors_calldata…   → 403
+POST global.api.prd.ledger.com/transaction-checks/v3/ethereum/scan/tx            → 403
+GET crypto-assets-service.api.ledger.com/v1/tokens?…                             → 200
+```
+
+**Why it hurts.** Every team at this hackathon will hit it, most of them without realising: their demo
+will *look* like it works. "Optional" is the wrong word for a parameter whose absence silently turns
+clear signing into blind signing.
+
+**And the kit already knows.** We wired the Signer Kit for real (`device-signer-kit-ethereum` 1.18.1 on
+DMK 1.9.1, `ledger/dmk/sign_typed_data.cjs`). Reading the shipped code:
+
+- `BuildEIP712ContextTask` asks the context module for filters; on `type: "error"` it silently falls
+  back to `ClearSigningType.BASIC` — no throw, no warning, one counter (`contextErrorCount`);
+- `BlindSigningDetectionTask` then computes `isBlindSign` (`!hasContext || usedFallback`), builds a report
+  with `blindSignReason` (`no_clear_signing_context` / `device_rejected_context`), **posts it to the
+  context module's reporter** (`contextModule.report(...)`, i.e. to Ledger's telemetry) and logs it at
+  **debug** level;
+- the device action's output type is `Signature` — `{r, s, v}` and nothing else.
+
+So the kit detects blind signing, tells Ledger, and hands the integrator a signature indistinguishable
+from a clear-signed one. We measured it: with our descriptors the report says `isBlindSign=false,
+clearSigningType=eip7730, partialContextErrors=0`; without them (`--blind`), `isBlindSign=true,
+blindSignReason=device_rejected_context` — and, blind signing being off by default on the Flex, the
+device refused with `0x6a80` and displayed *"This transaction cannot be clear-signed. Enable blind
+signing in the settings."* The device is strict. The stack is silent.
+
+**One concrete suggestion.** Put `isBlindSign` and `blindSignReason` in the device action's output next
+to `{r, s, v}` — the data already exists in the internal state — and log one warning, once per session,
+when `originToken` is absent and a descriptor lookup returns 403: *"no originToken: clear signing
+disabled, the device will display raw data."* Failing silently into the exact failure mode the product
+exists to prevent is the one thing this stack should never do.
+
+---
+
 ## 2. A one-line bug in `ledger-app-clients.ethereum` breaks EIP-712 filtering on every chain ≥ 256
 
 **Where.** `client/src/ledger_app_clients/ethereum/eip712/InputData.py`, `init_signature_context`,
