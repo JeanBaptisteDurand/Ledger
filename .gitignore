@@ -11,3 +11,5 @@ agent/journal.jsonl
 ledger/dmk/node_modules/
 ledger/dmk/descriptors/
 agent/watch.jsonl
+mcp/.mcp-key
+mcp/.mcp-key.ring

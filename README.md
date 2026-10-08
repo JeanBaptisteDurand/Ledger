@@ -182,6 +182,39 @@ tests le montrent — budgets séparés, pas d'emprunt de mandat, seuil de sorti
 trésorerie ne l'est pas*. Si un agent vide le coffre, l'autre est dans son mandat mais sans fonds.
 Pour isoler les fonds, il faut un coffre par agent.
 
+## Le MCP — lecture seule, pour analyser après coup
+
+Il ne lance rien, ne signe rien, n'envoie aucune transaction. Il sert **les données qui ont mené aux
+décisions**, pour les analyser avec Claude.
+
+```bash
+python3 mcp/pds_mcp.py --print-key      # la clé, créée au premier appel
+python3 mcp/pds_mcp.py --selftest       # les six outils, à vide
+```
+
+```json
+{ "mcpServers": { "porte-de-sortie": {
+    "command": "python3",
+    "args": ["/chemin/porte-de-sortie/mcp/pds_mcp.py"],
+    "env": { "PDS_MCP_KEY": "<la clé>" } } } }
+```
+
+| outil | ce qu'il rend |
+|---|---|
+| `operations` | les opérations tentées, l'issue et son motif |
+| `decision(tick)` | **tout** ce qui a mené à une décision : univers, liste courte, scores et leur détail, sonde, mandat, issue |
+| `positions` | ce que le coffre détient, le budget consommé, ce qui reste |
+| `mandate` | le mandat signé sur le Ledger et ce qu'il autorise |
+| `universe_facts` | pourquoi un piège est indiscernable avant l'achat, chiffres à l'appui |
+| `compare_entry_exit` | entrée contre sortie, opération par opération |
+| `hook_analysis` | ce que chaque hook prend, **remesuré en direct** par le contrefactuel de TARE, dans les deux sens |
+
+Le banc écoute sur le port **8099** (`PORT=… python3 web/server.py` pour en changer) : 8080 est trop
+souvent pris par un conteneur qui traîne, et une démo qui tombe sur la page de quelqu'un d'autre n'est
+pas une démo.
+
+Chaque appel exige la clé. Sans elle : `clé refusée`.
+
 ## Ce que la démo en ligne de commande montre, dans l'ordre
 
 | | |
