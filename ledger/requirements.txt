@@ -1,0 +1,5 @@
+# Le client officiel d'app-ethereum (il signe nos filtres avec la clé de test) + ragger.
+# Installe-le depuis le clone fait par build-app.sh :
+#   uv venv .venv && . .venv/bin/activate
+#   uv pip install -e ../ETH_Online_2026/.cache/ledger-app-ethereum/client
+requests
