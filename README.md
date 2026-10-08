@@ -18,6 +18,10 @@ même refus. Le standard y écrit le piège lui-même — `previewRedeem` doit i
 et au bloc des mesures le plus gros coffre WETH de Base a **27 % de la position de son plus gros
 déposant bloquée**, pendant que cinq coffres sur dix refusent même le dépôt. Détail plus bas.
 
+```bash
+./scripts/demo.sh
+```
+
 ---
 
 ## Le problème
@@ -136,4 +140,35 @@ tests le montrent — budgets séparés, pas d'emprunt de mandat, seuil de sorti
 à la pièce depuis l'appareil. **La limite, dite franchement :** les budgets sont séparés, *la
 trésorerie ne l'est pas*. Si un agent vide le coffre, l'autre est dans son mandat mais sans fonds.
 Pour isoler les fonds, il faut un coffre par agent.
+
+## Ce que la démo en ligne de commande montre, dans l'ordre
+
+| | |
+|---|---|
+| **0** | le coffre naîtra à une adresse connue d'avance — c'est le `verifyingContract` que l'appareil verra |
+| **1** | un Ledger **Flex** émulé (Speculos) sert l'app Ethereum 1.22.4 compilée avec les clés de test |
+| **2** | le porteur lit et **signe le mandat sur l'appareil**, avec **nos** filtres EIP-712 — sans `originToken`, sans partenariat, **aucun serveur Ledger contacté** |
+| **3** | sur le fork : l'agent achète seul un pool sain (sortie 198 bps, accepté) ; il lit une page piégée et vise un pool one-way (sortie 9 990 bps) → **refus**, budget inchangé |
+
+Sortie réelle du dernier passage :
+
+```
+=== 1. Le mandat vient du Ledger ===
+   porteur (signature verifiee sur la chaine) : 0xDad77910DbDFdE764fC21FCD4E74D71bBACA6D8D
+   agent autorise                             : 0x70997970C51812dc3A010C7d01b50e0d17dc79C8
+   perte aller-retour maximale                : 300 bps
+
+=== 2. L'agent achete seul, dans le mandat ===
+   pool sain  : ACHAT ACCEPTE, 895071256029443945504 jetons recus, sortie 198 bps
+
+=== 3. Injection : une page piegee dit a l'agent d'acheter ce jeton ===
+   la sonde regarde la sortie : 9990 bps (revente refusee : false)
+   pool piege : ACHAT REFUSE - on n'entre pas la d'ou on ne sort pas
+
+=== 4. Rien n'a bouge ===
+   budget consomme : 100000000000000 wei (inchange). Le Flex n'a pas clignote.
+```
+
+Et sur l'écran de l'appareil (`captures/mandat-02.png`) : **`Budget · 1 WETH`**,
+**`Max round-trip loss (bps) · 300`**, **`Expires · 2026-09-28`**.
 
