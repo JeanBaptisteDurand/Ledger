@@ -221,3 +221,33 @@ Et sur l'écran de l'appareil (`captures/mandat-02.png`) : **`Budget · 1 WETH`*
 > **Le contrat** applique à chaque achat. L'agent ne peut ni relever le seuil, ni changer la règle, ni
 > toucher à la clé : pour ça, il faut revenir à l'appareil.
 
+## Ce que ça n'attrape pas — dit avant qu'on nous le demande
+
+- **L'interrupteur basculé après l'achat — ça ne se corrige pas, ça se surveille.** Un hook peut
+  laisser vendre aujourd'hui et bloquer demain (`erase(address)`, `tokenSet(token)` sans contrôle
+  d'accès). La sonde regarde le bloc d'exécution, pas l'avenir : **elle ne peut pas l'empêcher.** La
+  seule parade réelle est de **resonder les positions et sortir tant qu'on peut encore** — la sonde
+  est gratuite, on la relance aussi souvent qu'on veut :
+
+  ```bash
+  python3 agent/watch.py                 # un passage, rapport
+  python3 agent/watch.py --sell-if 500   # vend ce qui a empiré au-delà de 500 bps
+  ```
+  ```
+  0x1043dc3ea2  sortie a l'achat 387 bps  ->  maintenant 960 bps  (+573 bps)   [VENDU]
+  ```
+
+  **Ce n'est pas une garantie : entre deux passages, la porte peut se fermer.** C'est une réduction de
+  fenêtre, et on ne la vend pas pour autre chose.
+- **Le prix.** Le mandat borne le **coût de sortie**, pas la valeur du jeton. Un agent peut acheter
+  quelque chose de liquide et de mauvais.
+- **La sonde de détention borne son gaz à 400 000, soit ×11 la mesure.** Un `take()` sur un jeton sain
+  coûte **35 377 gaz** (mesuré sur quatre témoins, `test/GasProbe.t.sol`). La borne existe parce qu'un
+  jeton piégé peut brûler **tout** le gaz qu'on lui donne en revertant : sans elle, un test passait de
+  3,3 M à 1 073 M de gaz. Un jeton dont le transfert coûterait plus de 400 000 serait classé « non
+  détenable » à tort — c'est un faux négatif, à ×11 de la mesure, et on préfère refuser à tort
+  qu'accepter à tort.
+- **La démo tourne sur un fork**, avec un Ledger émulé. Sur un Flex physique, l'app de série affiche
+  déjà le mandat champ par champ (valeurs brutes) ; l'app compilée avec les clés de test, chargée par
+  `ledgerctl`, l'affiche formaté comme ici.
+

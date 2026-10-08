@@ -10,3 +10,4 @@ mandate.json
 agent/journal.jsonl
 ledger/dmk/node_modules/
 ledger/dmk/descriptors/
+agent/watch.jsonl
