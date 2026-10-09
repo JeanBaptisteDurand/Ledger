@@ -377,6 +377,12 @@
     margin-top: 10px;
     color: var(--color-state-info);
   }
+  .thread__prose { white-space: normal; }
+  .thread__prose p { margin: 0; }
+  .thread__prose p + p, .thread__prose p + ul, .thread__prose ul + p { margin-top: 10px; }
+  .thread__prose ul { margin: 0; padding-left: 1.2em; list-style: disc; }
+  .thread__prose li + li { margin-top: 6px; }
+  .thread__prose b { color: var(--color-text-050, inherit); font-weight: 600; }
 
   /* ─── the log: the device's voice, mono, calm ─── */
   .log {

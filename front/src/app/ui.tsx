@@ -2,7 +2,7 @@
  * The product components of DESIGN.md, as React. Nothing here decides a colour or a size: classes come from
  * tokens.css (Florent's tiers and .btn-ghost) and app.css (the component frontmatter).
  */
-import { useId, type ButtonHTMLAttributes, type ReactNode } from 'react'
+import { Fragment, useId, type ButtonHTMLAttributes, type ReactNode } from 'react'
 import { useBench } from './useBench'
 
 /** A band of the page: eyebrow, uppercase display title, lead, then its content. One idea per band. */
@@ -174,3 +174,40 @@ export function Toasts() {
 export const time = (ts?: number | null) => (ts ? new Date(ts * 1000).toLocaleTimeString('fr-FR') : '—')
 export const dateTime = (ts?: number | null) => (ts ? new Date(ts * 1000).toLocaleString('fr-FR') : '—')
 export const duration = (s: number) => (s < 60 ? `${s} s` : `${Math.round(s / 60)} min`)
+
+/**
+ * The analyst writes light Markdown — paragraphs, « - » lists, **bold**, `code`. Rendered as React text nodes,
+ * never as HTML: nothing the model writes can become markup.
+ */
+export function Prose({ text }: { text: string }) {
+  const blocks = text.trim().split(/\n{2,}/)
+  return (
+    <div className="thread__prose">
+      {blocks.map((block, i) => {
+        const lines = block.split('\n')
+        if (lines.every((l) => /^\s*[-*] /.test(l))) {
+          return <ul key={i}>{lines.map((l, j) => <li key={j}>{inline(l.replace(/^\s*[-*] /, ''))}</li>)}</ul>
+        }
+        return <p key={i}>{lines.map((l, j) => <Fragment key={j}>{j ? <br /> : null}{inline(l)}</Fragment>)}</p>
+      })}
+    </div>
+  )
+}
+
+function inline(s: string): ReactNode[] {
+  const out: ReactNode[] = []
+  const re = /(\*\*[^*]+\*\*|`[^`]+`)/g
+  let last = 0
+  let m: RegExpExecArray | null
+  while ((m = re.exec(s))) {
+    if (m.index > last) out.push(s.slice(last, m.index))
+    const t = m[0]
+    out.push(t.startsWith('**') ? <b key={m.index}>{t.slice(2, -2)}</b> : <code key={m.index} className="t-mono-data">{t.slice(1, -1)}</code>)
+    last = m.index + t.length
+  }
+  if (last < s.length) out.push(s.slice(last))
+  return out
+}
+
+/** The same text, without its Markdown marks: for a one-line preview. */
+export const plain = (text: string) => text.replace(/\*\*|`/g, '').replace(/^\s*[-*] /gm, '· ')

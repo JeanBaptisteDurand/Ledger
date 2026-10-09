@@ -9,7 +9,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { fmtWei, short, type Bot, type BenchState, type JournalRow } from './api'
 import { linkProps } from './router'
 import { askToNotify, useBench } from './useBench'
-import { AnchoredNote, Badge, Band, Empty, Field, Ghost, Mirror, Panel, Row, Segments, Select, SignOnDevice, Skeleton, duration, time } from './ui'
+import { AnchoredNote, Badge, Band, Empty, Field, Ghost, Mirror, Panel, Prose, Row, Segments, Select, SignOnDevice, Skeleton, duration, plain, time } from './ui'
 
 const STRATEGY_IDEAS = [
   '0,5 WETH prudemment sur la longue traîne de Base, je ne veux pas rester coincé',
@@ -113,7 +113,7 @@ function GlanceBand({ s }: { s: BenchState }) {
         <Panel kicker="Mon agent d’analyse">
           <p className="t-body-sm m-0 text-on-primary-mute">
             {last
-              ? (last.pending ? 'Il interroge les outils…' : clip(last.answer || `Pas de réponse : ${last.error ?? ''}`))
+              ? (last.pending ? 'Il interroge les outils…' : clip(plain(last.answer || `Pas de réponse : ${last.error ?? ''}`)))
               : 'Il répond par les données de votre compte, et nomme l’outil derrière chaque nombre.'}
           </p>
           <div className="mt-6"><a className="btn-ghost btn-ghost--small t-button-cap" {...linkProps('/app/analyste')}>{last ? 'Reprendre la conversation' : 'Lui poser une question'}</a></div>
@@ -593,7 +593,7 @@ function AnalystBand({ s }: { s: BenchState }) {
             <div key={i} className="thread">
               <div className="thread__you t-body-sm">{a.question}</div>
               <div className="thread__them t-body-sm">
-                {a.pending ? <span className="is-faint">Il interroge les outils…</span> : (a.answer || <span className="is-error">Pas de réponse : {a.error}</span>)}
+                {a.pending ? <span className="is-faint">Il interroge les outils…</span> : (a.answer ? <Prose text={a.answer} /> : <span className="is-error">Pas de réponse : {a.error}</span>)}
                 {!a.pending ? (
                   <span className="thread__trace t-mono-data">
                     {a.tools_used.length
