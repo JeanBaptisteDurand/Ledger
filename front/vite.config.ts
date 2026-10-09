@@ -10,11 +10,13 @@ export default defineConfig({
   // The app pages talk to the bench (web/server.py, repository root). Same origin through the proxy: the session
   // cookie, the emulator (/speculos) and the Ledger bundle (/dist) all come from it, with no CORS to set up.
   server: {
+    host: '127.0.0.1',   // the address the docs and the test scripts use; « localhost » may resolve to ::1 only
     proxy: Object.fromEntries(
       ['/api', '/speculos', '/dist'].map((p) => [p, { target: BENCH, changeOrigin: false }]),
     ),
   },
   preview: {
+    host: '127.0.0.1',
     proxy: Object.fromEntries(
       ['/api', '/speculos', '/dist'].map((p) => [p, { target: BENCH, changeOrigin: false }]),
     ),

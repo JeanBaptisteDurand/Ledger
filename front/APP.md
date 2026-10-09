@@ -3,13 +3,19 @@
 The hero is Florent's and is not touched. Everything the product does lives in `src/app/` and `src/styles/app.css`,
 built on the tokens of `src/styles/tokens.css` and the rules of `DESIGN.md`.
 
-| path | what |
-|---|---|
-| `/` | the hero and the pitch |
-| `/app` | the dashboard: session, strategy and mandate, bots (add, live, stopped), out-of-bounds requests, positions, the account's analyst |
-| `/compte` | the account: the address proven by the Ledger, the bots summary, the MCP key and Claude configuration, what was done |
-| `/appareil` | the device: emulated Flex or a real Ledger (WebHID), where the signature is made, the live screen with a finger |
-| `/schema` | the whole system on one sheet, then nine bands: the principle, the other axis (Agent Policies, rule over gesture, contract over device), the agents, the bricks (with the test-key caveat and the real Flex), the numbers and TARE, the limits and mainnet, the five findings, the SaaS promise |
+Like any SaaS: the pitch and the idea before the account, then what is yours once your Ledger has proven your address.
+An account page opened without a session sends you to `/connexion`, then back where you were going.
+
+| path | who | what |
+|---|---|---|
+| `/` | anyone | the hero and the pitch, how it works, the door to the account |
+| `/schema` | anyone | the whole system on one sheet, then thirteen bands: the principle, the other axis, the agents, the site, the account, one signature step by step, the analyst's ten tools, the bricks, the numbers, the limits, what it needs to run, the findings, the SaaS promise |
+| `/connexion` | anyone | choose the Ledger (USB or the emulated Flex) and the signing path, sign the login message |
+| `/app` | account | overview: session and vault, strategy and mandate, the agents at a glance, out-of-bounds requests, positions |
+| `/app/agents` | account | my trading agents (bots): add, live, stopped, restart, the journal; the requests they raise |
+| `/app/analyste` | account | my analysis agent: the conversation, the MCP calls under each answer |
+| `/compte` | account | the address proven by the Ledger, the MCP key and Claude configuration (one-click copy), what was done |
+| `/appareil` | account | my Ledger: which device, where the signature is made, the live screen with a finger |
 
 ## The hero's 3D models
 
