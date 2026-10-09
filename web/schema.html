@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Porte de sortie — le schéma</title>
+<style>
+  :root{--bg:#0b0e13;--panel:#111620;--line:#232a36;--fg:#e6e9ef;--dim:#8a93a3;--gold:#d4a83a;--green:#5fcf8a;--red:#e06c6c;--blue:#7fb2ff;
+        --mono:ui-monospace,SFMono-Regular,Menlo,monospace}
+  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 -apple-system,Inter,Segoe UI,sans-serif}
+  header{display:flex;align-items:baseline;gap:16px;padding:18px 24px;border-bottom:1px solid var(--line)}
+  header h1{font-size:18px;margin:0} header a{color:var(--blue);text-decoration:none;margin-left:auto}
+  main{max-width:1240px;margin:0 auto;padding:22px 24px 60px}
+  .row{display:grid;gap:14px;margin:0 0 14px} .r2{grid-template-columns:1fr 1fr} .r3{grid-template-columns:1fr 1fr 1fr}
+  .box{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;position:relative}
+  .box h2{font:600 11px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin:0 0 8px}
+  .box h3{font-size:15px;margin:0 0 6px} .box p{margin:6px 0;color:#c9cfd8} .box code{font:12px var(--mono);color:var(--blue)}
+  .tag{display:inline-block;font:600 10px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;padding:4px 7px;border-radius:6px;border:1px solid var(--line);margin:0 6px 6px 0;color:var(--dim)}
+  .signer{border-color:var(--gold)} .signer h2{color:var(--gold)} .agent{border-color:var(--green)} .agent h2{color:var(--green)}
+  .ring{border-color:var(--blue)} .ring h2{color:var(--blue)}
+  .arrow{text-align:center;color:var(--dim);font:13px var(--mono);padding:2px 0}
+  .files{font:12px var(--mono);color:var(--dim);margin-top:8px} .files span{display:inline-block;margin-right:12px}
+  .legend{display:flex;gap:18px;flex-wrap:wrap;color:var(--dim);font-size:13px;margin:8px 0 18px}
+  .legend b{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:middle}
+  .kv{font:12px var(--mono);color:var(--dim)} .kv em{color:var(--fg);font-style:normal}
+  .foot{color:var(--dim);font-size:13px;margin-top:18px;border-top:1px solid var(--line);padding-top:14px}
+</style>
+</head>
+<body>
+<header><h1>Porte de sortie — qui fait quoi</h1><span style="color:var(--dim)">les agents, les outils, et les trois briques du sujet</span><a href="/">← le banc</a></header>
+<main>
+  <div class="legend">
+    <span><b style="background:var(--gold)"></b><strong>Signer</strong> — approuver : la règle naît sur la Ledger</span>
+    <span><b style="background:var(--green)"></b><strong>Agent Stack</strong> — lire et comprendre : le vrai agent</span>
+    <span><b style="background:var(--blue)"></b><strong>Ring CLI</strong> — garder un secret : la clé maître</span>
+    <span style="margin-left:auto">celui qui agit n'a pas de LLM · celui qui a un LLM ne peut pas agir</span>
+  </div>
+
+  <div class="row r2">
+    <div class="box signer">
+      <h2>La Ledger du porteur</h2>
+      <h3>Ledger Flex · app Ethereum 1.22.4</h3>
+      <p>Signe <strong>une fois</strong> le mandat, et chaque dérogation — jamais un achat. Écran : <code>Budget · 0.5 WETH</code>, <code>Max round-trip loss (bps) · 150</code>, <code>Expires</code>, et pour une dérogation <code>EXIT COST (bps) · 2693</code>.</p>
+      <span class="tag">EIP-712</span><span class="tag">clear signing, filtres signés</span><span class="tag">Secure Element</span>
+      <div class="files"><span>Speculos en banc</span><span>USB / WebHID pour le vrai</span></div>
+    </div>
+    <div class="box signer">
+      <h2>Signer — trois chemins, une signature</h2>
+      <h3>Signer Kit ETH 1.18.1 sur DMK 1.9.1</h3>
+      <p><strong>Dans le navigateur du porteur</strong> (WebHID — le chemin d'un client chez lui), côté banc (Speculos / node-hid), ou le client Python officiel en APDU. Notre <em>context module</em> sert des descripteurs compilés et signés localement : aucun serveur de Ledger.</p>
+      <p>Connexion au site : <strong>Sign-In with Ethereum</strong> (EIP-4361), un message signé sur l'appareil, vérifié côté serveur. Un compte = une adresse prouvée.</p>
+      <div class="files"><span>ledger/dmk/src/ledger-web.js</span><span>ledger/dmk/sign_typed_data.cjs</span><span>ledger/compile_descriptor.py</span><span>ledger/sign_mandate.py</span></div>
+    </div>
+  </div>
+  <div class="arrow">↓ signature (r, s, v) — vérifiée on-chain par <code>ecrecover</code> ↓</div>
+
+  <div class="row">
+    <div class="box">
+      <h2>Le coffre — la règle appliquée à chaque position</h2>
+      <h3>ExitVault.sol · fork de Base, bloc 50 614 000</h3>
+      <p><strong>Swaps Uniswap v4</strong> : <code>buy()</code> = achat + <strong>revente intégrale simulée dans la même transaction</strong> → <code>revert CannotExit</code> si la sortie dépasse le mandat. <strong>Coffres ERC-4626</strong> : <code>enterVault()</code> = dépôt puis retrait réels annulés + la <strong>porte</strong> du plus gros déposant (<code>maxWithdraw</code> contre <code>convertToAssets</code>).</p>
+      <p>Hors bornes → une <strong>dérogation à usage unique</strong>, liée au nombre lu (<code>ExitWorseThanSeen</code> sinon). <code>sell()</code> / <code>exitVault()</code> / <code>withdraw()</code> : le porteur reprend tout quand il veut. 32 tests, 7 suites.</p>
+      <div class="files"><span>contracts/src/ExitVault.sol</span><span>contracts/test/*.t.sol</span></div>
+    </div>
+  </div>
+
+  <div class="row r3">
+    <div class="box">
+      <h2>Les bots — agents d'exécution, sans LLM</h2>
+      <h3>nommés, lancés, arrêtés par le porteur</h3>
+      <p><code>agent/agent.py</code> : DCA sur la longue traîne v4 — profondeur, entrée, registre. <code>agent/vaults.py</code> : rendement affiché, taille, listing Morpho. <strong>Aucun ne voit la sortie</strong> : c'est le coffre qui la mesure.</p>
+      <p>Un compte en lance autant qu'il veut (univers, tranches, rythme) ; un ordonnanceur exécute leurs tours <strong>un à la fois</strong>, tous dans le même coffre, sous le même mandat. Clé de session qui ne peut appeler <strong>que le coffre</strong>. L'historique garde chaque bot arrêté et son bilan.</p>
+      <span class="tag">heuristique, pas un modèle</span><span class="tag">journal.jsonl</span>
+    </div>
+    <div class="box">
+      <h2>La mesure — TARE, en direct</h2>
+      <h3>ce que le hook prend vraiment</h3>
+      <p><code>agent/counterfactual.py</code> : <code>anvil_setCode</code> remplace le hook par 89 octets inertes, on cote deux fois, l'écart est ce que le hook prend. Six pools réels : <strong>0 bps à l'entrée, 9 990 à la sortie</strong>.</p>
+      <p><code>agent/watch.py</code> : resonde les positions, sort tant qu'on peut. Vu : 354 → 818 bps après l'achat, <strong>vendu</strong>.</p>
+      <span class="tag">EIP-1153 · EIP-1014</span><span class="tag">Foundry / anvil</span>
+    </div>
+    <div class="box">
+      <h2>Le stratège — un LLM, une fois</h2>
+      <h3>une phrase → des bornes</h3>
+      <p><code>web/strategist.py</code> (Claude, CLI <code>claude</code>) traduit « 0,5 WETH prudemment » en budget, perte de sortie tolérée, échéance — <strong>et écrit ce que ces bornes ne protègent pas</strong>. Il n'achète rien, ne choisit aucun jeton.</p>
+      <span class="tag">Claude Agent SDK</span><span class="tag">propose, ne signe pas</span>
+    </div>
+  </div>
+  <div class="arrow">↓ journal du compte : chaque décision, chaque dérogation, chaque sonde ↓</div>
+
+  <div class="row r2">
+    <div class="box agent">
+      <h2>MCP — lecture seule, une clé par compte</h2>
+      <h3>mcp/pds_mcp.py · 10 outils</h3>
+      <p><code>bots</code> (actifs, arrêtés, bilan) · <code>operations(bot)</code> · <code>decision(seq | tick, kind)</code> · <code>positions</code> · <code>mandate</code> · <code>universe_facts</code> · <code>compare_entry_exit</code> · <code>hook_analysis</code> (TARE) · <code>vault_openness</code> (dix coffres, porte mesurée) · <code>ledger_earn_yields</code> (leur <code>wallet-cli</code>).</p>
+      <p>Il ne signe pas, n'envoie pas, ne lance rien. <strong>La clé de chaque compte est dérivée</strong> : <code>HMAC(maître, adresse)</code>, jamais stockée — collée dans ton Claude, elle n'ouvre que <em>tes</em> fichiers.</p>
+      <span class="tag">JSON-RPC 2.0 / stdio</span><span class="tag">PDS_ACCOUNT · PDS_JOURNAL · PDS_MANDATE</span>
+    </div>
+    <div class="box agent">
+      <h2>Agent Stack — le vrai agent</h2>
+      <h3>agent/analyst.py · Claude, branché <em>uniquement</em> sur le MCP</h3>
+      <p>Répond par les outils, jamais de mémoire ; cite l'outil sous chaque nombre ; conversation dans le banc, historique redonné. <code>--strict-mcp-config</code> : rien d'autre n'est chargé. <strong>Il ne peut rien faire.</strong></p>
+      <p><code>wallet-cli 2.1.0</code> lu (<code>earn yields</code> : rendement, jeton, dépôt — <strong>zéro champ sur la sortie</strong>) ; <code>SKILL.md</code> / <code>AGENTS.md</code> au format de leurs skills.</p>
+      <span class="tag">Claude Agent SDK</span><span class="tag">lecture seule</span>
+    </div>
+  </div>
+
+  <div class="row r2">
+    <div class="box ring">
+      <h2>Ring CLI — le secret maître</h2>
+      <h3>wallet-cli ring · Ledger Key Ring Protocol</h3>
+      <p><code>scripts/ring-seal.sh</code> scelle <code>mcp/.mcp-key</code>, le <strong>secret maître</strong> dont dérivent toutes les clés de compte : une seule clé à protéger, adossée à la graine de l'opérateur, révocable depuis l'appareil. <code>ring init</code> : un Flex en USB, une fois ; ensuite sans appareil, avec réseau.</p>
+      <p>En SaaS, le client n'a aucun secret à garder : le Ring est un outil d'opérateur — c'est la brique qu'on retirerait.</p>
+    </div>
+    <div class="box">
+      <h2>Le compte</h2>
+      <h3>accounts/&lt;adresse&gt;/</h3>
+      <p><code>profile.json</code> · <code>mandate.json</code> · <code>bots.json</code> · <code>journal.jsonl</code> (chaque ligne porte le bot) · <code>notifications.jsonl</code> · <code>events.jsonl</code> (ce que tu as fait : connexion, session, stratégie, signature, bots ajoutés et arrêtés, tours, dérogations, questions).</p>
+      <p>Prévenu quand ça déborde : webhook <code>PDS_NOTIFY_URL</code>, bannière et notification du navigateur. Rien ne part vers la Ledger tant que ça tient.</p>
+      <div class="kv">connexion : <em>SIWE dans le navigateur</em> ou <em>adresse lue sur l'appareil du banc</em> · cookie de session · un coffre par compte · une signature en attente n'est prise que par <em>l'onglet qui l'a demandée</em></div>
+    </div>
+  </div>
+
+  <div class="foot">
+    Deux instances, même mandat, même refus : six pièges réels d'Uniswap v4 (0 / 9 990 bps), dix coffres ERC-4626 réels de Base
+    (Moonwell : 27 % de la porte fermée, cinq coffres pleins). Cinq trouvailles amont dans <code>FEEDBACK.md</code>.
+    La phrase : <strong>vos Agent Policies bornent ce qu'un agent dépense ; personne ne borne ce qu'il pourra récupérer.</strong>
+  </div>
+</main>
+</body>
+</html>
