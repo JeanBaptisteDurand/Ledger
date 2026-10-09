@@ -15,3 +15,4 @@ mcp/.mcp-key
 mcp/.mcp-key.ring
 accounts/
 agent/notifications.jsonl
+captures/parcours/journey.log
