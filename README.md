@@ -397,6 +397,40 @@ navigateur).
 
 ![le parcours SaaS : connecté avec sa Ledger, mandat signé dans la page](captures/front-saas.png)
 
+## Prérequis
+
+**Une vraie Ledger Flex** (en plus de l'émulateur) : `ledger/build/build-flex.sh` compile app-ethereum 1.22.4 avec la
+clé de test (`CAL_TEST_KEY=1`, image `ledger-app-builder`, niveau d'API 26) ; `ledger/build/load-flex.sh` la charge en
+USB (`ledgerblue.loadApp`) — **à la place de l'app Ethereum officielle**, que Ledger Wallet réinstalle quand on veut.
+Appareil déverrouillé, Ledger Wallet fermé, accepter « Allow unsafe manager » et l'installation sur l'écran ; l'app se
+lance ensuite avec un avertissement « non vérifiée ». Chargé le 2 octobre sur une Flex (OS 1.6.1, MCU 6.9.2).
+
+
+- **Docker** (Speculos, `ledger-app-builder`), **Foundry**, **Python 3.12+**, un **RPC Base**
+  (`BASE_RPC_URL`, lu depuis `../ETH_Online_2026/.env` par défaut).
+- L'app Flex compilée avec les clés de test :
+
+  ```bash
+  cd ../ETH_Online_2026
+  docker pull ghcr.io/ledgerhq/ledger-app-builder/ledger-app-builder:latest   # indispensable
+  FORCE=1 TARGET=flex CAL_TEST_KEY=1 SET_PLUGIN_TEST_KEY=1 scripts/ledger/build-app.sh ethereum
+  ```
+
+- L'environnement Python :
+
+  ```bash
+  uv venv .venv && . .venv/bin/activate
+  uv pip install -e ../ETH_Online_2026/.cache/ledger-app-ethereum/client
+  ```
+
+- Les briques Ledger en JavaScript (**Node 20+**) — DMK, Signer Kit, transports, `wallet-cli` :
+
+  ```bash
+  (cd ledger/dmk && npm i)     # versions épinglées dans ledger/dmk/package.json
+  ```
+
+  Sans elles, tout tourne encore par le client Python (`--signer python`) ; le banc le dit.
+
 ## Ce que ça n'attrape pas — dit avant qu'on nous le demande
 
 - **L'interrupteur basculé après l'achat — ça ne se corrige pas, ça se surveille.** Un hook peut

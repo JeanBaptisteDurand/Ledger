@@ -16,3 +16,5 @@ mcp/.mcp-key.ring
 accounts/
 agent/notifications.jsonl
 captures/parcours/journey.log
+ledger/build/app-ethereum/
+ledger/build/logs/
