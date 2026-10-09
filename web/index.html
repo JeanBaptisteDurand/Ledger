@@ -1,0 +1,760 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Porte de sortie</title>
+<style>
+  :root{
+    --bg:#0b0e14; --panel:#131822; --line:#232c3b; --ink:#e8eef6; --dim:#8b97a8;
+    --gold:#e8b923; --ok:#3fb950; --no:#f85149; --blue:#58a6ff;
+    --mono:ui-monospace,"SF Mono",Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif}
+  header{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;
+         padding:20px 24px;border-bottom:1px solid var(--line)}
+  header h1{margin:0;font-size:19px;letter-spacing:-.01em}
+  header .tag{color:var(--dim);font-size:13px}
+  header .spacer{flex:1}
+  .account{display:flex;align-items:center;gap:9px;background:var(--panel);border:1px solid var(--line);
+           border-radius:999px;padding:6px 14px;font:12px var(--mono)}
+  .dot{width:7px;height:7px;border-radius:50%;background:#30363d}
+  .dot.on{background:var(--ok);box-shadow:0 0 8px var(--ok)}
+
+  main{display:grid;grid-template-columns:330px minmax(420px,1fr) 340px;gap:20px;padding:20px;
+       align-items:start;max-width:1720px;margin:0 auto}
+  @media (max-width:1180px){main{grid-template-columns:320px 1fr}
+    .right{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+    .right .card{margin-bottom:0}}
+  @media (max-width:820px){main{grid-template-columns:1fr}.right{grid-template-columns:1fr}}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:16px}
+  .card h2{margin:0 0 10px;font-size:14px;letter-spacing:.04em;text-transform:uppercase;color:var(--dim)}
+  .muted{color:var(--dim);font-size:13px}
+
+  /* l'appareil */
+  .device{position:sticky;top:20px}
+  .bezel{background:#1a202b;border:1px solid var(--line);border-radius:24px;padding:14px 14px 8px;
+         box-shadow:0 16px 44px rgba(0,0,0,.55)}
+  .bezel .brand{display:flex;justify-content:space-between;font:600 10px/1 var(--mono);
+                color:var(--dim);letter-spacing:.1em;margin-bottom:9px}
+  #screen{display:block;width:100%;aspect-ratio:480/600;background:#0b0e13;border-radius:9px;
+          cursor:grab;user-select:none;-webkit-user-drag:none;border:1px dashed var(--line)}
+  #screen.live{background:#fff;border-style:solid}
+  .hint{margin:9px 2px 0;font-size:11.5px;color:var(--dim);text-align:center;line-height:1.5}
+  .waiting{margin-top:10px;padding:9px 12px;border-radius:9px;font-size:13px;
+           background:rgba(232,185,35,.12);border:1px solid rgba(232,185,35,.35);color:var(--gold)}
+
+  /* chat */
+  .chat{display:flex;flex-direction:column;gap:10px;max-height:320px;overflow:auto;margin-bottom:12px}
+  .msg{padding:10px 13px;border-radius:12px;font-size:14px;max-width:92%}
+  .msg.user{align-self:flex-end;background:#1d2635;border:1px solid var(--line)}
+  .msg.bot{align-self:flex-start;background:#101722;border:1px solid var(--line)}
+  .msg .warn{display:block;margin-top:7px;padding-top:7px;border-top:1px solid var(--line);
+             color:var(--gold);font-size:12.5px}
+  .msg .src{display:block;margin-top:5px;color:var(--dim);font:11px var(--mono)}
+  .ask{display:flex;gap:8px}
+  .ask input{flex:1;background:#0b0e13;border:1px solid var(--line);border-radius:9px;
+             padding:10px 12px;color:var(--ink);font:14px inherit}
+  .ask input:focus{outline:none;border-color:var(--blue)}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+  .chip{background:#0b0e13;border:1px solid var(--line);border-radius:999px;padding:5px 11px;
+        font-size:12px;color:var(--dim);cursor:pointer}
+  .chip:hover{border-color:var(--blue);color:var(--ink)}
+
+  /* proposition */
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:9px;margin:12px 0}
+  .kv{background:#0b0e13;border:1px solid var(--line);border-radius:10px;padding:9px 11px}
+  .kv .k{font-size:10.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.06em}
+  .kv .v{font:15px var(--mono);margin-top:3px;overflow-wrap:anywhere;line-height:1.35}
+  .kv.hi .v{color:var(--gold)}
+
+  button{background:var(--gold);color:#1a1405;border:0;border-radius:9px;padding:10px 17px;
+         font:600 14px inherit;cursor:pointer}
+  button:disabled{background:#1d2431;color:#525c6b;cursor:not-allowed}
+  button.ghost{background:transparent;color:var(--dim);border:1px solid var(--line)}
+  button.danger{background:var(--no);color:#2a0a08}
+  .row{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-top:12px}
+
+  table{width:100%;border-collapse:collapse;font:12px/1.65 var(--mono)}
+  th{text-align:left;color:var(--dim);font-weight:600;border-bottom:1px solid var(--line);padding:5px 6px;
+     font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+  td{padding:5px 6px;border-bottom:1px solid #18202c}
+  td.y{color:var(--ok)} td.n{color:var(--no)}
+  td:first-child{white-space:nowrap}
+  .right table{font-size:11px}
+  .right th{font-size:10px;letter-spacing:.03em;padding:4px 5px;white-space:nowrap}
+  .right td{padding:4px 5px;white-space:nowrap}
+  tr.refused td:first-child{border-left:2px solid var(--no)}
+  tr.bought  td:first-child{border-left:2px solid var(--ok)}
+
+  .log{background:#080b10;border:1px solid var(--line);border-radius:10px;padding:10px 12px;
+       font:11.5px/1.7 var(--mono);color:#9fb0c4;max-height:230px;overflow:auto;white-space:pre-wrap}
+  .esc{border:1px solid rgba(232,185,35,.4);background:rgba(232,185,35,.08);border-radius:12px;padding:14px}
+  .esc .q{color:var(--gold);font-size:14px;margin-bottom:10px}
+  footer{padding:18px 24px 40px;color:var(--dim);font-size:12.5px;border-top:1px solid var(--line)}
+  code{font:12px var(--mono);color:var(--blue)}
+</style>
+<style>
+  /* le chemin de signature choisi, et l'univers de l'agent */
+  #c-stack .ghost.on, #c-run .ghost.on { border-color: var(--gold, #d4a83a); color: var(--gold, #d4a83a); font-weight: 600; }
+  /* la conversation avec l'analyste se lit en entier : pas de boite qui defile */
+  #an-thread { max-height: none; overflow: visible; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Porte de sortie</h1>
+  <span class="tag">un agent ne peut pas entrer dans une position dont il ne sait pas sortir</span>
+  <span class="spacer"></span>
+  <div class="account"><span class="dot" id="dot"></span><span id="acct">aucun compte</span></div>
+  <button class="ghost" id="b-login" title="Un compte = une adresse prouvée par ta Ledger : Sign-In with Ethereum dans ton navigateur, ou l'adresse lue sur l'appareil du banc">se connecter avec ma Ledger</button>
+  <a class="ghost" id="a-schema" href="/schema.html" target="_blank" title="qui fait quoi : les agents, les outils, les trois briques du sujet" style="text-decoration:none;display:inline-block">schéma</a>
+  <button class="ghost" id="b-reset">réinitialiser</button>
+</header>
+<div id="banner" class="waiting" hidden style="margin:0 20px"></div>
+
+<main>
+  <!-- ============================================ gauche : l'appareil -->
+  <section class="device">
+    <div class="bezel">
+      <div class="brand"><span>LEDGER FLEX</span><span id="devstate">hors tension</span></div>
+      <img id="screen" alt="écran du Ledger Flex">
+      <div class="hint">clic = appui · glisse vers la gauche = balayage<br>appui long = « Hold to sign »</div>
+    </div>
+    <div id="waiting" class="waiting" hidden></div>
+
+    <div class="card" style="margin-top:16px" id="c-stack">
+      <h2>le chemin vers l'appareil</h2>
+      <div class="row" style="gap:8px;flex-wrap:wrap">
+        <button class="ghost" id="s-dmk" title="@ledgerhq/device-signer-kit-ethereum sur le DMK — le « Signer » du brief, avec notre context module">Signer Kit · DMK</button>
+        <button class="ghost" id="s-py" title="ledger-app-clients.ethereum, APDU direct — le chemin qui a trouvé le bug chainId">client officiel · APDU</button>
+        <button class="ghost" id="s-browser" title="le même Signer Kit, mais dans TON navigateur : ta Ledger branchée chez toi, notre serveur ne reçoit qu'une signature">ma Ledger · navigateur</button>
+      </div>
+      <div class="row" id="transport-row" hidden style="gap:8px;flex-wrap:wrap">
+        <span class="muted" style="font-size:12px">ta Ledger :</span>
+        <button class="ghost" id="t-webhid" title="une vraie Ledger branchée à cet ordinateur — WebHID (Chrome, Edge, Brave)">USB (WebHID)</button>
+        <button class="ghost" id="t-speculos" title="l'appareil émulé du banc, joint par le proxy /speculos de la même origine">émulée (banc)</button>
+      </div>
+      <p class="muted" id="stacknote" style="margin-top:10px">Deux chemins, une même signature, vérifiée par
+         <code>ecrecover</code> dans le coffre. Le Signer Kit reçoit nos filtres d'un context module à nous :
+         des descripteurs compilés ici et signés avec la clé de test — aucun serveur de Ledger.</p>
+      <div class="kv" style="margin-top:9px"><div class="k">briques Ledger installées</div>
+        <div class="v" id="f-stack" style="font-size:11.5px">—</div></div>
+      <div class="kv" style="margin-top:9px"><div class="k">Key Ring (ring CLI)</div>
+        <div class="v" id="f-ring" style="font-size:11.5px">—</div></div>
+      <div class="kv" style="margin-top:9px" id="kv-report" hidden><div class="k">dernier rapport du Signer Kit</div>
+        <div class="v" id="f-report" style="font-size:11.5px">—</div></div>
+    </div>
+
+    <div class="card" style="margin-top:16px" id="c-account" hidden>
+      <h2>mon compte</h2>
+      <div class="kv"><div class="k">adresse — prouvée par ta Ledger</div><div class="v" id="ac-addr" style="font-size:11.5px">—</div></div>
+      <div class="kv" style="margin-top:9px"><div class="k">depuis · connexions · dossier</div><div class="v" id="ac-meta" style="font-size:11.5px">—</div></div>
+      <div class="kv" style="margin-top:9px"><div class="k">mes bots</div><div class="v" id="ac-bots" style="font-size:11.5px">—</div></div>
+      <div class="row" style="gap:8px">
+        <button class="ghost" id="b-go-bots">gérer mes bots</button>
+        <button class="ghost" id="b-go-analyst">parler à l'analyste</button>
+      </div>
+      <div class="kv" style="margin-top:9px"><div class="k">ta clé MCP <span class="muted">(dérivée du secret maître, jamais stockée)</span></div>
+        <div class="v" id="ac-key" style="font-size:11.5px">—</div></div>
+      <div class="row" style="gap:8px">
+        <button class="ghost" id="b-reveal">révéler la clé</button>
+        <button class="ghost" id="b-mcpcfg">config Claude</button>
+        <button class="ghost" id="b-logout">déconnexion</button>
+      </div>
+      <pre id="ac-cfg" hidden style="font:11px/1.35 var(--mono);white-space:pre-wrap;word-break:break-all;background:#0b0f16;border:1px solid var(--line);border-radius:8px;padding:10px;margin-top:10px;color:var(--dim)"></pre>
+      <p class="muted" style="margin-top:10px">Colle cette configuration dans ton Claude : il lira <b>ton</b> coffre, <b>ton</b> journal, avec <b>ta</b> clé — en lecture seule. Le secret maître dont elle dérive est celui que le Ring scelle.</p>
+      <div class="kv" style="margin-top:10px"><div class="k">ce que tu as fait</div><div class="log" id="ac-events" style="max-height:220px;overflow:auto;font-size:11px">—</div></div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <h2>le banc</h2>
+      <p class="muted" id="bootnote">Un fork de Base au bloc 50 614 000, un Ledger Flex émulé servant
+         l'app Ethereum 1.22.4 compilée avec les clés de test, et un coffre déployé au nom de ton compte.</p>
+      <div class="row"><button id="b-boot">ouvrir une session</button></div>
+      <div id="bootfacts" hidden>
+        <div class="kv" style="margin-top:12px"><div class="k">coffre</div>
+          <div class="v" id="f-vault" style="font-size:11.5px">—</div></div>
+        <div class="kv" style="margin-top:9px"><div class="k">budget disponible</div>
+          <div class="v" id="f-weth" style="font-size:13px">—</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================ centre : chat + agent -->
+  <section>
+    <div class="card">
+      <h2>1 · demande une stratégie</h2>
+      <div class="chat" id="chat">
+        <div class="msg bot">Dis-moi ce que tu veux faire, en français. Je n'achète rien et je ne
+          choisis aucun jeton : je traduis ton intention en <b>bornes</b> que tu liras sur ton Ledger
+          et signeras une fois.</div>
+      </div>
+      <form class="ask" id="askform">
+        <input id="prompt" placeholder="ex : 1 WETH prudemment sur des memecoins Base, je ne veux pas me faire piéger" autocomplete="off">
+        <button id="b-ask" type="submit">demander</button>
+      </form>
+      <div class="chips">
+        <span class="chip">1 WETH prudemment sur des memecoins Base</span>
+        <span class="chip">0,5 WETH, profil offensif, 10 tranches</span>
+        <span class="chip">2 WETH mais seulement des hooks connus du registre</span>
+        <span class="chip">0,5 WETH sur des coffres à rendement, prudemment, 4 tranches</span>
+      </div>
+    </div>
+
+    <div class="card" id="c-prop" hidden>
+      <h2>2 · le mandat, à lire et à signer sur l'appareil</h2>
+      <div class="grid">
+        <div class="kv hi"><div class="k">budget</div><div class="v" id="p-budget">—</div></div>
+        <div class="kv hi"><div class="k">sortie max</div><div class="v" id="p-bps">—</div></div>
+        <div class="kv"><div class="k">tranche</div><div class="v" id="p-slice">—</div></div>
+        <div class="kv"><div class="k">tranches</div><div class="v" id="p-ticks">—</div></div>
+        <div class="kv"><div class="k">validité</div><div class="v" id="p-days">—</div></div>
+        <div class="kv"><div class="k">profil</div><div class="v" id="p-risk">—</div></div>
+      </div>
+      <p class="muted">Seuls le <b>budget</b>, la <b>sortie maximale</b> et l'<b>échéance</b> partent sur
+         l'appareil : ce sont les trois seules choses que le contrat fait respecter. Le reste guide
+         l'agent, sans l'engager.</p>
+      <div class="row">
+        <button id="b-sign">valider sur le Ledger</button>
+        <span class="muted" id="signhint"></span>
+      </div>
+    </div>
+
+    <div class="card" id="c-run" hidden>
+      <h2>3 · mes bots</h2>
+      <p class="muted">Un bot est un agent d'exécution <b>sans LLM</b> que tu nommes, que tu lances et que tu arrêtes.
+         Il classe les pools sur la profondeur, le coût d'entrée et le registre, ou les coffres sur le rendement
+         affiché — <b>aucun terme de son score ne regarde la sortie</b>. Tous tes bots travaillent dans le même coffre,
+         sous le même mandat signé une fois : c'est le contrat qui tient le budget et la sortie, à chaque entrée.</p>
+      <div class="row" style="gap:8px;flex-wrap:wrap">
+        <button id="b-run" title="un bot d'un seul tour, dans l'univers choisi">lancer un tour</button>
+        <button class="ghost" id="u-pools" title="la longue traîne de Base : pools Uniswap v4 appariés au WETH, dont six pièges mesurés">pools v4</button>
+        <button class="ghost" id="u-vaults" title="dix coffres WETH réels de Base (Morpho) : le plus gros a 27 % de la porte fermée, cinq refusent le dépôt">coffres ERC-4626</button>
+      </div>
+      <p class="muted" id="universenote" style="margin-top:8px"></p>
+      <form id="botform">
+        <input class="name" id="bot-name" placeholder="nom du bot (ex : DCA prudente)" autocomplete="off" maxlength="40">
+        <select id="bot-universe" title="univers"><option value="pools">pools v4</option><option value="vaults">coffres ERC-4626</option></select>
+        <input id="bot-ticks" type="number" min="1" max="12" value="3" title="tranches par tour">
+        <select id="bot-interval" title="rythme">
+          <option value="0">un seul tour</option><option value="30">toutes les 30 s</option>
+          <option value="60" selected>toutes les 60 s</option><option value="300">toutes les 5 min</option>
+        </select>
+        <button id="b-bot-add" type="submit">ajouter et lancer</button>
+      </form>
+      <div class="scroll"><table id="t-bots" class="bots" hidden style="margin-top:12px"></table></div>
+      <p class="muted" id="botsnote" style="margin-top:8px" hidden></p>
+      <details class="old" id="bots-old" open hidden style="margin-top:10px">
+        <summary class="muted">bots arrêtés — l'historique</summary>
+        <div class="scroll"><table id="t-bots-old" class="bots" style="margin-top:8px"></table></div>
+      </details>
+      <table id="t-journal" hidden style="margin-top:14px"></table>
+      <p class="muted" id="reading" hidden style="margin-top:10px"></p>
+    </div>
+
+    <div class="card" id="c-analyst" hidden>
+      <h2>4 · l'analyste de ton compte</h2>
+      <p class="muted">Le vrai agent, branché sur <b>ton</b> compte avec <b>ta</b> clé. Il ne parle pas de mémoire :
+         pour répondre, il interroge le MCP en <b>lecture seule</b> — tes bots, tes décisions, tes positions, le
+         contrefactuel TARE, la porte des coffres, ce que l'Earn de Ledger montre — et cite l'outil derrière chaque
+         nombre. Il ne peut rien faire d'autre : le MCP ne signe pas, n'envoie pas, n'arrête pas un bot.</p>
+      <form class="ask" id="askanalyst">
+        <input id="aq" placeholder="ex : pourquoi le tour 2 a été refusé ? Moonwell, on peut en sortir aujourd'hui ?" autocomplete="off">
+        <button id="b-analyze" type="submit">demander</button>
+      </form>
+      <div class="chips">
+        <span class="chip achip">pourquoi le dernier tour a été refusé, et que prenait le hook ?</span>
+        <span class="chip achip">quels coffres ont la porte fermée aujourd'hui, et de combien ?</span>
+        <span class="chip achip">que dit l'Earn de Ledger d'une position, et que ne dit-il pas ?</span>
+        <span class="chip achip">que font mes bots, et lequel a le plus de refus ?</span>
+      </div>
+      <div class="chat" id="an-thread" hidden style="margin-top:12px"></div>
+    </div>
+
+    <div class="card esc" id="c-esc" hidden>
+      <h2 style="color:var(--gold)">hors bornes — ta décision</h2>
+      <div class="q" id="esc-q">—</div>
+      <p class="muted">Le coffre a refusé : la sortie coûte plus que ton mandat n'autorise. Hors bornes
+         ne veut pas dire non — ça veut dire <b>demande à l'humain</b>. Tu peux signer une dérogation
+         à usage unique, liée à ce pool, ce montant, et <b>au nombre que tu vas lire</b> : si la sortie
+         empire d'ici là, elle ne vaudra plus rien.</p>
+      <div class="row">
+        <button id="b-esc">lire et signer sur le Ledger</button>
+        <button class="ghost" id="b-esc-no">laisser refusé</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================ droite : positions + journal -->
+  <section class="right">
+    <div class="card">
+      <h2>positions</h2>
+      <div class="grid">
+        <div class="kv"><div class="k">budget consommé</div><div class="v" id="f-spent" style="font-size:12px">0</div></div>
+        <div class="kv"><div class="k">lignes</div><div class="v" id="f-npos">0</div></div>
+      </div>
+      <table id="t-pos" hidden></table>
+      <p class="muted" id="posnote" style="margin-top:10px">Rien encore. Les positions apparaîtront
+         ici, avec le coût de sortie mesuré au moment de l'achat.</p>
+    </div>
+
+    <div class="card" id="c-watch" hidden>
+      <h2>surveillance des sorties</h2>
+      <p class="muted">Un hook peut laisser vendre aujourd'hui et bloquer demain. La sonde regarde le
+         bloc d'exécution, pas l'avenir : <b>elle ne peut pas l'empêcher</b>. La seule parade est de
+         resonder, et de sortir tant qu'on peut encore. La sonde est gratuite.</p>
+      <div class="row">
+        <button id="b-watch">resonder</button>
+        <button class="ghost" id="b-watch-sell">resonder et sortir</button>
+      </div>
+      <table id="t-watch" hidden style="margin-top:12px"></table>
+      <p class="muted" id="watchnote" style="margin-top:10px"></p>
+    </div>
+
+    <div class="card">
+      <h2>journal du banc</h2>
+      <div class="log" id="log">En attente d'une session.</div>
+      <p class="muted" style="margin-top:10px">Tout est interrogeable après coup par le MCP en lecture
+         seule : <code>operations</code>, <code>decision(tick)</code>, <code>hook_analysis</code>,
+         <code>positions</code>, <code>compare_entry_exit</code>.</p>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <b>La frontière</b> — l'agent choisit quelle position prendre, quand, à quel montant, seul, autant de
+  fois qu'il veut ; l'humain signe une fois le budget, la perte de sortie tolérée et l'échéance ; le
+  contrat applique à chaque entrée, et renvoie à l'humain ce qui sort des bornes.
+  &nbsp;·&nbsp; <span style="color:var(--dim)">Deux instances, même mandat, même refus : six pièges réels
+  d'Uniswap v4, et dix coffres ERC-4626 réels de Base dont le plus gros a 27 % de sa porte fermée.</span>
+</footer>
+
+<style>
+  #botform{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px}
+  #botform input,#botform select{background:#0b0f16;border:1px solid var(--line);color:var(--fg);border-radius:8px;padding:8px 10px;font:inherit}
+  #botform input[type=number]{width:64px} #botform .name{flex:1;min-width:150px}
+  .st{display:inline-block;font:600 10px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;padding:4px 7px;border-radius:6px;border:1px solid var(--line)}
+  .st.run{color:var(--green);border-color:var(--green)} .st.stop{color:var(--dim)} .st.done{color:var(--gold);border-color:var(--gold)}
+  .scroll{overflow-x:auto;max-width:100%} table.bots{min-width:100%} table.bots td,table.bots th{vertical-align:top;white-space:nowrap}
+  table.bots .act button{padding:3px 8px;font-size:11px;margin-left:4px}
+  details.old summary{cursor:pointer}
+</style>
+<script src="dist/ledger-web.js"></script>
+<script>
+  const LOADED_AT = Date.now();  // un onglet sans jeton n'adopte qu'une demande plus vieille que lui (l'onglet demandeur a été rechargé), jamais une demande née pendant qu'il était déjà ouvert
+const $ = s => document.querySelector(s);
+let st = {}, live = false;
+
+/* ---------- l'écran de l'appareil, en direct ---------- */
+async function poll(){
+  if (live){
+    $('#screen').src = '/api/screen?t=' + Date.now();
+    $('#screen').classList.add('live');
+  }
+  setTimeout(poll, 420);
+}
+poll();
+
+/* ---------- tes doigts ---------- */
+function xy(e){
+  const r = $('#screen').getBoundingClientRect();
+  return {x: Math.round((e.clientX-r.left)/r.width*480), y: Math.round((e.clientY-r.top)/r.height*600)};
+}
+const finger = (action,x,y) => fetch('/api/finger',{method:'POST',
+  headers:{'content-type':'application/json'}, body:JSON.stringify({action,x,y})});
+let down = null;
+$('#screen').addEventListener('mousedown', e => { if(!live) return;
+  down = xy(e); finger('press', down.x, down.y); $('#screen').style.cursor='grabbing'; });
+addEventListener('mouseup', e => { if(!down) return;
+  const u = xy(e); finger('release', u.x, u.y); down=null; $('#screen').style.cursor='grab'; });
+
+/* ---------- appels ---------- */
+async function post(path, body){
+  const r = await fetch('/api'+path, {method:'POST', headers:{'content-type':'application/json'},
+                                      body: JSON.stringify(body||{})});
+  return r.json();
+}
+function busy(btn, on, label){ btn.disabled = on; if(label) btn.textContent = label; }
+
+/* ---------- rendu ---------- */
+function fmtWei(w){ if(w==null) return '—'; const n = Number(w)/1e18;
+  return n >= 0.001 ? n.toFixed(4)+' WETH' : Number(w).toLocaleString('fr')+' wei'; }
+
+async function refresh(){
+  st = await (await fetch('/api/state')).json();
+  live = !!st.speculos;
+
+  $('#dot').className = 'dot' + (st.owner ? ' on' : '');
+  $('#acct').textContent = st.owner ? st.owner.slice(0,10)+'…'+st.owner.slice(-6) : 'aucun compte';
+  $('#devstate').textContent = st.signing ? 'en attente de toi' : (live ? 'sous tension' : 'hors tension');
+  $('#b-boot').disabled = !!st.vault;
+  if (st.vault){ $('#bootfacts').hidden = false; $('#f-vault').textContent = st.vault;
+                 $('#f-weth').textContent = fmtWei(st.weth); }
+
+  const w = $('#waiting');
+  const txc = st.signer === 'dmk' ? " (Si l'appareil demande d'abord « Enable Transaction Check ? », c'est le Signer Kit qui pose la question de Ledger : « Maybe later ».)" : '';
+  if (st.signing === 'mandate'){ w.hidden=false; w.textContent = "L'appareil affiche ton mandat. Balaie les pages, lis les trois champs, puis maintiens « Hold to sign »." + txc; }
+  else if (st.signing === 'exception'){ w.hidden=false; w.textContent = "L'appareil affiche le coût de sortie réel. Lis-le, puis maintiens « Hold to sign » — ou refuse." + txc; }
+  else w.hidden = true;
+
+  // le chemin vers l'appareil, et les briques Ledger réellement installées
+  $('#s-dmk').classList.toggle('on', st.signer === 'dmk');
+  $('#s-py').classList.toggle('on', st.signer === 'python');
+  $('#s-browser').classList.toggle('on', st.signer === 'browser');
+  $('#transport-row').hidden = st.signer !== 'browser';
+  const tr = transportChoice();
+  $('#t-webhid').classList.toggle('on', tr === 'webhid');
+  $('#t-speculos').classList.toggle('on', tr === 'speculos');
+  $('#b-login').textContent = st.address ? 'mon compte · ' + st.address.slice(0,8) + '…' : 'se connecter avec ma Ledger';
+  $('#b-boot').disabled = !!st.vault || !st.address;
+  $('#bootnote').textContent = st.address
+    ? 'Un fork de Base au bloc 50 614 000, un Ledger Flex émulé servant l\'app Ethereum 1.22.4 compilée avec les clés de test, et un coffre déployé au nom de ton compte.'
+    : 'Connecte-toi d\'abord — ta Ledger dans ce navigateur, ou l\'appareil du banc : le coffre est déployé au nom de l\'adresse prouvée.';
+  fetchAccount();
+  // le chemin « navigateur » : ce que le serveur attend, c'est la page qui le fait signer, puis le lui rend
+  // la signature en attente n'est prise en charge que par l'onglet qui l'a demandée — ou, après un rechargement,
+  // par un onglet au premier plan. Un onglet oublié en arrière-plan ouvrirait une 2e session sur l'appareil,
+  // et deux clients qui parlent à la Ledger en même temps cassent la signature en cours (0x6980 / 0x6901 mesurés).
+  if (st.signer === 'browser' && st.pending && !window.__pendingBusy
+      && (st.pending.token === window.__myPending || (!window.__myPending && (st.pending.ts || 0) * 1000 < LOADED_AT && document.hasFocus()))) signPending(st.pending);
+  // un seul maître à bord : si le banc signe côté serveur, la page ne garde pas de session DMK ouverte
+  // (son battement b001 interférerait avec l'APDU en attente sur l'appareil — statut 0x6901 observé)
+  if (st.signer !== 'browser' && window.LedgerWeb && LedgerWeb.address() && !window.__pendingBusy && !window.__siweBusy) LedgerWeb.disconnect();
+  // un achat déborde : bannière, et notification si le porteur l'a permise
+  const escQ = st.escalation && st.escalation.possible ? st.escalation.question : null;
+  const bn = $('#banner');
+  if (escQ){ bn.hidden = false; bn.textContent = 'hors bornes — ' + escQ + ' (carte « ta décision », au centre)';
+    if (window.__lastEsc !== escQ){ window.__lastEsc = escQ;
+      try { if (Notification.permission === 'granted') new Notification('Porte de sortie — hors bornes', {body: escQ}); } catch(e){} } }
+  else bn.hidden = true;
+  const ls = st.ledger_stack || {};
+  $('#f-stack').textContent = [
+    ls.dmk ? `DMK ${ls.dmk}` : 'DMK absent', ls.signer_kit ? `Signer Kit ETH ${ls.signer_kit}` : null,
+    ls.transport_speculos ? `transport Speculos ${ls.transport_speculos}` : null,
+    ls.transport_usb ? `transport USB ${ls.transport_usb}` : null,
+    ls.wallet_cli ? `wallet-cli ${ls.wallet_cli}` : 'wallet-cli absent'].filter(Boolean).join(' · ');
+  const rg = st.ring;
+  $('#f-ring').textContent = !rg ? 'lu à l\'ouverture de session'
+    : rg.initialised ? 'initialisé sur cette machine — la clé du MCP peut être scellée (scripts/ring-seal.sh)'
+    : 'non initialisé ici — `wallet-cli ring init` demande un Flex en USB, une fois ; ensuite chiffrer/déchiffrer se fait sans appareil';
+  if (st.last_report){ $('#kv-report').hidden = false; const r = st.last_report;
+    $('#f-report').textContent = `isBlindSign=${r.isBlindSign} · ${r.ethContext ? r.ethContext.clearSigningType + ', ' + r.ethContext.partialContextErrors + ' erreur(s) de contexte' : ''} — partirait chez Ledger ; le développeur ne reçoit que {r,s,v}`; }
+
+  // chat
+  const c = $('#chat');
+  if (c.dataset.n !== String(st.chat.length)){
+    c.dataset.n = String(st.chat.length);
+    c.innerHTML = c.firstElementChild.outerHTML + st.chat.map(m =>
+      m.role==='user' ? `<div class="msg user">${esc(m.text)}</div>`
+      : `<div class="msg bot">${esc(m.text)}<span class="warn">⚠ ${esc(m.warning||'')}</span><span class="src">${esc(m.source||'')}</span></div>`
+    ).join('');
+    c.scrollTop = c.scrollHeight;
+  }
+
+  // proposition
+  if (st.proposal){
+    const p = st.proposal;
+    $('#c-prop').hidden = false;
+    $('#p-budget').textContent = p.budget_weth+' WETH';
+    $('#p-bps').textContent = p.max_round_trip_loss_bps+' bps';
+    $('#p-slice').textContent = p.slice_weth+' WETH';
+    $('#p-ticks').textContent = p.ticks;
+    $('#p-days').textContent = p.days+' j';
+    $('#p-risk').textContent = p.risk;
+    $('#b-sign').disabled = !!st.signed || !!st.signing;
+    $('#signhint').textContent = st.signed ? 'mandat signé ✓' : '';
+  }
+
+  $('#c-run').hidden = !st.signed;
+  $('#b-run').disabled = !st.signed;
+  $('#b-run').textContent = st.running ? 'un tour est en cours…' : "lancer un tour";
+  if (document.activeElement !== $('#bot-universe')) $('#bot-universe').value = st.universe === 'vaults' ? 'vaults' : 'pools';
+
+  // mes bots : ceux qui tournent, et l'historique de ceux qui sont arrêtés
+  const bots = st.bots || [], liveBots = bots.filter(b => b.status === 'running'), oldBots = bots.filter(b => b.status !== 'running');
+  const fmtDur = s => s < 60 ? `${s} s` : `${Math.round(s/60)} min`;
+  const when = ts => ts ? new Date(ts*1000).toLocaleTimeString('fr') : '—';
+  const tb = $('#t-bots'); tb.hidden = !liveBots.length;
+  if (liveBots.length){
+    tb.innerHTML = '<tr><th>bot</th><th>univers</th><th>état</th><th>tours</th><th>achats / refus</th><th>dérog.</th><th>positions</th><th>dépensé</th></tr>'
+      + liveBots.map(b => {
+        const now = Date.now()/1000, next = Math.max(0, Math.round((b.next_run||0) - now));
+        const etat = st.bot_running === b.id ? '<span class="st run">tour en cours</span>'
+          : (b.interval_s ? `<span class="st run">actif</span> <span class="muted">prochain tour dans ${fmtDur(next)}</span>` : '<span class="st run">en attente</span>');
+        return `<tr><td class="act"><b>${esc(b.name)}</b><br><span class="muted">${b.ticks} tranche${b.ticks>1?'s':''} · ${b.interval_s ? 'toutes les ' + fmtDur(b.interval_s) : 'un tour'}</span>
+          &nbsp;<button class="ghost" data-stop="${b.id}">arrêter</button></td>
+          <td>${b.universe === 'vaults' ? 'coffres 4626' : 'pools v4'}</td><td>${etat}</td><td>${b.rounds}</td>
+          <td><span class="y">${b.executed}</span> / <span class="n">${b.refused}</span></td><td>${b.exceptions || 0}</td><td>${b.positions}</td>
+          <td>${fmtWei(b.spent_wei)}</td></tr>`; }).join('');
+    tb.querySelectorAll('button[data-stop]').forEach(btn => btn.onclick = async () => {
+      btn.disabled = true; const r = await post('/bots/stop', {id: btn.dataset.stop}); if(!r.ok) alert(r.msg); await refresh(); });
+  }
+  $('#botsnote').hidden = !!liveBots.length || !!oldBots.length;
+  if (!liveBots.length && !oldBots.length) $('#botsnote').textContent = 'Aucun bot pour l\'instant : lance un tour, ou ajoute un bot qui tourne à son rythme.';
+  const od = $('#bots-old'); od.hidden = !oldBots.length;
+  if (oldBots.length){
+    $('#t-bots-old').innerHTML = '<tr><th>bot</th><th>univers</th><th>du → au</th><th>tours</th><th>achats / refus</th><th>dérog.</th><th>dépensé</th><th>fin</th></tr>'
+      + oldBots.slice().reverse().map(b => `<tr><td class="act"><b>${esc(b.name)}</b> <button class="ghost" data-restart="${b.id}">relancer</button></td><td>${b.universe === 'vaults' ? 'coffres 4626' : 'pools v4'}</td>
+          <td>${when(b.started)} → ${when(b.stopped)}</td><td>${b.rounds}</td><td><span class="y">${b.executed}</span> / <span class="n">${b.refused}</span></td>
+          <td>${b.exceptions || 0}</td><td>${fmtWei(b.spent_wei)}</td>
+          <td class="wrap"><span class="st ${b.status === 'done' ? 'done' : 'stop'}">${b.status === 'done' ? 'terminé' : 'arrêté'}</span> <span class="muted">${esc(b.stop_reason || '')}</span></td></tr>`).join('');
+    od.querySelectorAll('button[data-restart]').forEach(btn => btn.onclick = async () => {
+      btn.disabled = true; const r = await post('/bots/restart', {id: btn.dataset.restart}); if(!r.ok) alert(r.msg); await refresh(); });
+  }
+  $('#u-pools').classList.toggle('on', st.universe !== 'vaults');
+  $('#u-vaults').classList.toggle('on', st.universe === 'vaults');
+  $('#universenote').textContent = st.universe === 'vaults'
+    ? "L'agent choisit un coffre sur le rendement affiché, la taille et le listing Morpho — rien dans l'API ne parle de la porte. Le coffre fait l'aller-retour pour de vrai et demande si le plus gros déposant pourrait sortir aujourd'hui."
+    : "L'agent classe les pools sur la profondeur, l'entrée et le registre — aucun terme ne regarde la sortie. Le coffre la mesure à chaque achat.";
+
+  // journal
+  if (st.journal.length){
+    // le journal vit le temps de la session : il peut mêler pools v4, coffres 4626 et entrées sous dérogation
+    const vaults = st.journal.some(r => r.kind === 'vault');
+    const t = $('#t-journal'); t.hidden = false;
+    const withBots = st.journal.some(r => r.bot);
+    t.innerHTML = `<tr><th>t</th>${withBots ? '<th>bot</th>' : ''}<th>position</th><th>hook →/←</th><th>entrée · affiché</th><th>sortie · porte</th><th>décision</th></tr>`
+      + st.journal.map(r => {
+        const ok = r.decision === 'EXECUTED', isVault = r.kind === 'vault';
+        const pos = isVault ? esc(r.name || r.pool) : r.pool;
+        const hook = isVault ? '—' : `${r.hook_in ?? '—'} / ${r.hook_out ?? '—'}`;
+        const entry = r.under_exception ? 'décision humaine' : (isVault ? `${r.apy_pct ?? '—'} % affiché` : `${r.entry} bps`);
+        const exit = r.under_exception ? `sortie lue ${r.exit ?? '—'} bps`
+          : (isVault ? (r.deposit_refused ? esc(r.deposit_refused) : `porte ${r.stuck_bps ?? '—'} bps`) : `${r.exit ?? '—'} bps`);
+        const dec = r.under_exception ? 'entré · dérogation ⚑' : (ok ? (isVault ? 'entré' : 'acheté') : 'refusé');
+        return `<tr class="${ok?'bought':'refused'}"><td>${r.under_exception ? 'déro.' : r.tick}</td>${withBots ? `<td class="muted">${esc(r.bot || '—')}</td>` : ''}<td>${pos}</td><td>${hook}</td>
+                <td>${entry}</td><td>${exit}</td><td class="${ok?'y':'n'}">${dec}</td></tr>`; }).join('');
+    const ent = st.journal.filter(r=>r.kind!=='vault').map(r=>r.entry), ok = st.journal.filter(r=>r.decision==='EXECUTED').length;
+    $('#reading').hidden = false;
+    $('#reading').innerHTML = vaults
+      ? `<b>${ok} entrée${ok>1?'s':''}, ${st.journal.length-ok} refus.</b> La colonne « affiché » est tout ce que l'agent voyait.
+         « aller-retour » est ce que le dépôt puis le retrait rendent vraiment, à notre taille. « porte fermée » est la part de la
+         position du plus gros déposant qui ne peut pas sortir aujourd'hui — <code>maxWithdraw</code> contre <code>convertToAssets</code>,
+         deux vues du standard, que <code>previewRedeem</code> a l'obligation d'ignorer.`
+      : `<b>${ok} acheté${ok>1?'s':''}, ${st.journal.length-ok} refusé${st.journal.length-ok>1?'s':''}.</b>
+      Trie la colonne « entrée » : rien ne sépare les deux (de ${ent.length?Math.min(...ent):'—'} à ${ent.length?Math.max(...ent):'—'} bps).
+      Trie « sortie » : tout se sépare. Les colonnes « hook » sont le contrefactuel de TARE remesuré en direct —
+      on remplace le hook par 89 octets inertes et on cote deux fois.`;
+  }
+
+  // l'analyste : une conversation, et sous chaque réponse la trace des outils — comme un client MCP
+  $('#c-analyst').hidden = !st.vault;
+  const thread = st.analyses || [];
+  const th = $('#an-thread');
+  const sig = JSON.stringify(thread.map(a => [a.question, a.pending, (a.answer||'').length]));
+  if (th.dataset.sig !== sig){
+    th.dataset.sig = sig;
+    th.hidden = !thread.length;
+    th.innerHTML = thread.map(a => {
+      const used = (a.tools_used || []).map(t => `<code>${esc(t.tool)}(${esc(Object.entries(t.args||{}).map(([k,v])=>k+'='+v).join(', '))})</code>`);
+      return `<div class="msg user">${esc(a.question)}</div>
+        <div class="msg bot">${a.pending ? '<i>il interroge les outils du MCP…</i>' : esc(a.answer || ('(pas de réponse : ' + (a.error || '?') + ')'))}
+          ${a.pending ? '' : `<span class="src">MCP → ${used.length ? used.join(' · ') : 'aucun outil appelé'}</span>`}</div>`;
+    }).join('');
+    th.scrollTop = th.scrollHeight;
+  }
+  $('#b-analyze').disabled = !!(st.analysis && st.analysis.pending);
+
+  // escalade
+  if (st.escalation && st.escalation.possible && !st.signing){
+    $('#c-esc').hidden = false;
+    $('#esc-q').textContent = (st.escalation.bot ? `bot « ${st.escalation.bot.name} » — ` : '') + st.escalation.question
+      + ((st.escalation_queue || []).length ? ` (${st.escalation_queue.length} autre${st.escalation_queue.length>1?'s':''} demande${st.escalation_queue.length>1?'s':''} en attente)` : '');
+  } else if (!st.escalation) $('#c-esc').hidden = true;
+
+  // positions
+  $('#f-spent').textContent = fmtWei(st.spent);
+  $('#f-npos').textContent = st.positions.length;
+  if (st.positions.length){
+    $('#posnote').hidden = true;
+    const t = $('#t-pos'); t.hidden=false;
+    t.innerHTML = '<tr><th>t</th><th>pool</th><th>solde</th><th>sortie</th></tr>'
+      + st.positions.map(p=>`<tr><td>${p.tick}</td><td>${esc(p.name || p.pool)}${p.under_exception?' <span style="color:var(--gold)">⚑</span>':''}</td>
+        <td>${Number(p.balance).toExponential(3)}</td><td>${p.exit_bps} bps</td></tr>`).join('');
+    $('#posnote').hidden = !st.positions.some(p=>p.under_exception);
+    if (st.positions.some(p=>p.under_exception))
+      $('#posnote').innerHTML = '⚑ acquis sous dérogation : tu as lu le coût de sortie sur l\'appareil et tu l\'as assumé.';
+  }
+
+  // surveillance
+  $('#c-watch').hidden = !st.signed;
+  $('#b-watch').disabled = st.watching; $('#b-watch-sell').disabled = st.watching;
+  $('#b-watch').textContent = st.watching ? 'sondage…' : 'resonder';
+  if (st.watch){
+    const rows = st.watch.rows || [];
+    const t2 = $('#t-watch');
+    if (rows.length){
+      t2.hidden = false;
+      t2.innerHTML = '<tr><th>pool</th><th>à l\'achat</th><th>maintenant</th><th>écart</th><th></th></tr>'
+        + rows.map(r=>{
+          const now = r.blocked ? 'BLOQUÉE' : (r.exit_bps_now ?? '—')+' bps';
+          const d = r.delta_bps==null ? '—' : (r.delta_bps>0?'+':'')+r.delta_bps+' bps';
+          const cls = (r.delta_bps>0 || r.blocked) ? 'n' : 'y';
+          return `<tr><td>${esc(r.name || r.pool_id.slice(0,12))}</td><td>${r.exit_bps_at_buy} bps</td>
+                  <td class="${cls}">${now}</td><td class="${cls}">${d}</td>
+                  <td>${r.action && r.action!=='aucune' ? r.action : ''}</td></tr>`;}).join('');
+    } else t2.hidden = true;
+    const worse = rows.filter(r=>(r.delta_bps||0)>0 || r.blocked).length;
+    $('#watchnote').textContent = rows.length
+      ? `${rows.length} position(s), ${worse} dont la sortie s'est refermée. Ce n'est pas une garantie : entre deux passages, la porte peut se fermer.`
+      : 'aucune position détenue';
+  }
+
+  $('#log').textContent = st.log.length ? st.log.join('\n') : 'En attente d\'une session.';
+  $('#log').scrollTop = $('#log').scrollHeight;
+}
+function esc(s){ return String(s).replace(/[<>&]/g, m=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[m])); }
+
+/* ---------- actions ---------- */
+$('#b-boot').onclick = async () => { busy($('#b-boot'), true, 'ouverture…');
+  const r = await post('/boot'); busy($('#b-boot'), false, 'ouvrir une session');
+  if(!r.ok) alert(r.msg); await refresh(); };
+
+$('#askform').onsubmit = async ev => { ev.preventDefault();
+  const p = $('#prompt').value.trim(); if(!p) return;
+  $('#prompt').value=''; busy($('#b-ask'), true, '…');
+  await post('/chat', {prompt: p}); busy($('#b-ask'), false, 'demander'); await refresh(); };
+
+document.querySelectorAll('.chip').forEach(c => c.onclick = () => {
+  $('#prompt').value = c.textContent; $('#askform').dispatchEvent(new Event('submit')); });
+
+$('#b-sign').onclick = async () => { const r = await post('/sign_mandate');
+  if(!r.ok) alert(r.msg); else if (r.pending_token) window.__myPending = r.pending_token; await refresh(); };
+$('#b-run').onclick = async () => { const r = await post('/run');
+  if(!r.ok) alert(r.msg); await refresh(); };
+$('#b-esc').onclick = async () => { const r = await post('/escalate'); if (r.ok && r.pending_token) window.__myPending = r.pending_token;
+  if(!r.ok) alert(r.msg); await refresh(); };
+$('#b-watch').onclick = async () => { const r = await post('/watch'); if(!r.ok) alert(r.msg); await refresh(); };
+$('#b-watch-sell').onclick = async () => { const r = await post('/watch_sell'); if(!r.ok) alert(r.msg); await refresh(); };
+$('#b-esc-no').onclick = async () => { const r = await post('/escalate_no'); if(!r.ok) alert(r.msg); await refresh(); };
+$('#b-reset').onclick = async () => { await post('/reset'); location.reload(); };
+$('#s-dmk').onclick = async () => { const r = await post('/signer', {signer:'dmk'}); if(!r.ok) alert(r.msg); await refresh(); };
+$('#s-py').onclick  = async () => { const r = await post('/signer', {signer:'python'}); if(!r.ok) alert(r.msg); await refresh(); };
+$('#s-browser').onclick = async () => { const r = await post('/signer', {signer:'browser'}); if(!r.ok) alert(r.msg); await refresh(); };
+
+/* ---------- ta Ledger, dans ce navigateur (Signer Kit + WebHID, ou l'émulateur via le proxy) ---------- */
+function transportChoice(){
+  try { return localStorage.getItem('pdsTransport') || (window.LedgerWeb && LedgerWeb.webHidSupported() ? 'webhid' : 'speculos'); }
+  catch(e){ return 'speculos'; }
+}
+async function setTransport(t){ try { localStorage.setItem('pdsTransport', t); } catch(e){}
+  if (window.LedgerWeb) await LedgerWeb.disconnect(); await refresh(); }
+$('#t-webhid').onclick   = () => setTransport('webhid');
+$('#t-speculos').onclick = () => setTransport('speculos');
+
+const errText = e => (e && (e.message || e._tag || (typeof e === 'object' ? JSON.stringify(e) : String(e)))) || 'erreur';
+async function ledgerConnect(){
+  if (!window.LedgerWeb) throw new Error('bundle absent : cd ledger/dmk && npm run build:web');
+  if (LedgerWeb.address()) return LedgerWeb.address();
+  try { return await LedgerWeb.connect(transportChoice(), location.origin + '/speculos'); }
+  catch(e){ // l'appareil (ou l'émulateur) n'est pas encore prêt : on réessaie une fois, 1,5 s plus tard
+    if (/refus|reject|6985|denied|NoDevice|cancel/i.test(errText(e))) throw e;
+    await new Promise(r => setTimeout(r, 1500)); await LedgerWeb.disconnect();
+    return await LedgerWeb.connect(transportChoice(), location.origin + '/speculos'); }
+}
+
+// Sign-In with Ethereum (EIP-4361) : un message texte signé sur la Ledger (personal_sign, EIP-191)
+async function siwe(){
+  busy($('#b-login'), true, 'connexion…'); window.__siweBusy = true;
+  try {
+    const addr = await ledgerConnect();
+    const n = await (await fetch('/api/siwe/nonce')).json();
+    // EIP-4361 sans « statement », horodatage à la seconde : le message tient dans UNE APDU (< 229 octets).
+    // Au-delà, le Signer Kit 1.18.1 tronque le message à rien et laisse l'app coincée (FEEDBACK.md § 7).
+    const msg = `${n.domain} wants you to sign in with your Ethereum account:\n${addr}\n\n` +
+                `URI: ${location.origin}\nVersion: 1\nChain ID: ${n.chainId}\nNonce: ${n.nonce}\nIssued At: ${new Date().toISOString().replace(/\.\d{3}Z$/, 'Z')}`;
+    $('#waiting').hidden = false; $('#waiting').textContent = 'ta Ledger : lis le message de connexion, puis signe.';
+    const { signature } = await LedgerWeb.signMessage(msg);
+    const r = await post('/siwe/verify', { message: msg, signature, address: addr });
+    if (!r.ok) alert(r.msg);
+  } catch(e){ alert('connexion : ' + (e.message || e)); }
+  finally { window.__siweBusy = false; busy($('#b-login'), false); $('#waiting').hidden = true; await refresh(); }
+}
+// se connecter : ta Ledger dans ce navigateur (SIWE), ou l'adresse lue sur l'appareil du banc
+async function login(){
+  await refresh();   // le chemin choisi à l'instant, pas celui du dernier rafraîchissement
+  if (st.address){ $('#c-account').hidden = false; $('#c-account').scrollIntoView({behavior:'smooth'}); return; }
+  if (st.signer === 'browser') return siwe();
+  busy($('#b-login'), true, 'lecture de l\'appareil…');
+  const r = await post('/login_device'); if(!r.ok) alert(r.msg);
+  busy($('#b-login'), false); await refresh(); await fetchAccount(true);
+}
+$('#b-login').onclick = login;
+
+/* ---------- mon compte : ce que j'ai fait, ma clé MCP, la config à coller dans mon Claude ---------- */
+let acReveal = false, acLast = 0;
+async function fetchAccount(force){
+  if (!st.address){ $('#c-account').hidden = true; return; }
+  if (!force && Date.now() - acLast < 6000) return; acLast = Date.now();
+  const a = await (await fetch('/api/account' + (acReveal ? '?reveal=1' : ''))).json();
+  if (!a.ok) return;
+  $('#c-account').hidden = false;
+  $('#ac-addr').textContent = a.profile.address;
+  const since = a.profile.created ? new Date(a.profile.created*1000).toLocaleString('fr') : '—';
+  $('#ac-meta').textContent = `${since} · ${a.profile.logins || 1} connexion(s) · ${a.dir.replace(/^.*\/porte-de-sortie\//,'')}`;
+  $('#ac-key').textContent = a.mcp_key;
+  const bl = (st.bots || []).filter(b => b.status === 'running'), bo = (st.bots || []).filter(b => b.status !== 'running');
+  $('#ac-bots').textContent = (st.bots || []).length
+    ? `${bl.length} actif${bl.length>1?'s':''} (${bl.map(b => b.name).join(', ') || '—'}) · ${bo.length} arrêté${bo.length>1?'s':''}`
+    : 'aucun — lance un tour ou ajoute un bot';
+  $('#ac-cfg').textContent = JSON.stringify(a.mcp_config, null, 1);
+  const kinds = {login:'connexion', session:'session ouverte', strategy:'stratégie demandée', mandate_signed:'mandat signé',
+                 run:'agent lancé', run_done:'tour terminé', notified:'prévenu', exception_signed:'dérogation signée',
+                 watch:'surveillance', analysis:'question à l\'analyste', reset:'remise à zéro'};
+  $('#ac-events').textContent = (a.events || []).slice().reverse().map(e => {
+    const t = new Date(e.ts*1000).toLocaleTimeString('fr');
+    const extra = Object.entries(e).filter(([k]) => !['ts','kind'].includes(k)).map(([k,v]) => `${k}=${typeof v==='object'?JSON.stringify(v):v}`).join(' · ');
+    return `${t}  ${kinds[e.kind] || e.kind}${extra ? '  —  ' + extra : ''}`; }).join('\n') || 'rien encore';
+}
+$('#b-reveal').onclick = async () => { acReveal = !acReveal; $('#b-reveal').textContent = acReveal ? 'masquer la clé' : 'révéler la clé'; await fetchAccount(true); };
+$('#b-mcpcfg').onclick = () => { $('#ac-cfg').hidden = !$('#ac-cfg').hidden; };
+$('#b-logout').onclick = async () => { await post('/logout'); if (window.LedgerWeb) await LedgerWeb.disconnect(); location.reload(); };
+
+// ce que le serveur a mis en attente (mandat, dérogation) : on le fait signer ici, puis on le lui rend
+async function signPending(p){
+  if (window.__pendingBusy) return; window.__pendingBusy = true;
+  const onStep = iv => { const w = $('#waiting'); w.hidden = false;
+    w.textContent = 'ta Ledger : ' + (iv.requiredUserInteraction && iv.requiredUserInteraction !== 'none'
+      ? (iv.requiredUserInteraction === 'sign-typed-data' ? 'lis les champs, puis maintiens « Hold to sign »' : iv.requiredUserInteraction)
+      : (iv.step || '').replace('signer.eth.steps.', '')); };
+  try {
+    const desc = await (await fetch('/api/descriptor?kind=' + p.kind)).json();
+    if (desc.error) throw new Error(desc.error);
+    let r;
+    try { await ledgerConnect(); r = await LedgerWeb.signTypedData(p.typedData, desc, onStep); }
+    catch(e1){ // la session peut être morte (appareil rebranché, émulateur relancé) : on se reconnecte UNE fois
+      if (/refus|reject|6985|denied/i.test(errText(e1))) throw e1;
+      console.warn('signature, 1er essai :', errText(e1));
+      try { await LedgerWeb.disconnect(); await ledgerConnect(); r = await LedgerWeb.signTypedData(p.typedData, desc, onStep); }
+      catch(e2){ throw new Error(errText(e1) + ' — puis, après reconnexion : ' + errText(e2)); } }
+    await post('/signed', { kind: p.kind, signature: r.signature, owner: r.address, report: r.report });
+  } catch(e){ await post('/signed', { kind: p.kind, error: errText(e) }); }
+  finally { window.__pendingBusy = false; await refresh(); }
+}
+
+// la permission de notifier, demandée sur un geste : le lancement de l'agent
+for (const sel of ['#b-run', '#b-bot-add']) $(sel).addEventListener('click', () => { try { if (Notification.permission === 'default') Notification.requestPermission(); } catch(e){} });
+$('#botform').onsubmit = async ev => { ev.preventDefault();
+  const body = { name: $('#bot-name').value.trim(), universe: $('#bot-universe').value,
+                 ticks: Number($('#bot-ticks').value) || 3, interval_s: Number($('#bot-interval').value) || 0 };
+  busy($('#b-bot-add'), true, '…'); const r = await post('/bots', body); busy($('#b-bot-add'), false, 'ajouter et lancer');
+  if(!r.ok) alert(r.msg); else $('#bot-name').value = ''; await refresh(); };
+$('#b-go-bots').onclick = () => $('#c-run').scrollIntoView({behavior:'smooth'});
+$('#b-go-analyst').onclick = () => { $('#c-analyst').scrollIntoView({behavior:'smooth'}); $('#aq').focus(); };
+$('#u-pools').onclick  = async () => { const r = await post('/universe', {universe:'pools'});  if(!r.ok) alert(r.msg); await refresh(); };
+$('#u-vaults').onclick = async () => { const r = await post('/universe', {universe:'vaults'}); if(!r.ok) alert(r.msg); await refresh(); };
+$('#askanalyst').onsubmit = async ev => { ev.preventDefault();
+  const q = $('#aq').value.trim(); if(!q) return;
+  $('#aq').value=''; const r = await post('/analyze', {question: q}); if(!r.ok) alert(r.msg); await refresh(); };
+document.querySelectorAll('.achip').forEach(c => c.onclick = () => {
+  $('#aq').value = c.textContent; $('#askanalyst').dispatchEvent(new Event('submit')); });
+
+refresh(); setInterval(refresh, 1400);
+</script>
+</body>
+</html>

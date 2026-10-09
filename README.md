@@ -56,6 +56,45 @@ La simulation est gratuite et n'écrit rien : c'est le motif du `V4Quoter` d'Uni
 (`try poolManager.unlock(...) {} catch`, le callback revert avec son résultat). Elle revend **la
 totalité** de ce qui vient d'être acheté : un piège à seuil de taille ne passe pas au travers.
 
+## Le banc, dans le navigateur
+
+```bash
+python3 web/server.py     #  ->  http://127.0.0.1:8099
+```
+
+![le banc](captures/front-final.png)
+
+Cinq gestes, dans l'ordre :
+
+0. **Connecte-toi avec ta Ledger.** Un compte, c'est une adresse **prouvée par l'appareil** : Sign-In with
+   Ethereum signé dans ton navigateur (Signer Kit + WebHID, ou l'émulateur en banc), ou l'adresse lue sur
+   l'appareil du banc. Tout ce qui t'appartient vit sous `accounts/<adresse>/` — profil, mandat, journal,
+   notifications, et **ce que tu as fait** (`events.jsonl`). La carte **mon compte** montre ta **clé MCP**,
+   dérivée du secret maître (`HMAC(maître, adresse)`, jamais stockée) et la configuration à coller dans ton
+   Claude pour lire *ton* coffre, en lecture seule ; ses bots (actifs, arrêtés) et deux raccourcis : **gérer mes
+   bots**, **parler à l'analyste** — l'analyste de ton compte, branché avec ta clé sur tes bots, tes décisions,
+   tes positions. Le lien **schéma** ouvre `/schema.html` : qui fait quoi.
+1. **Ouvre une session.** Un fork de Base au bloc 50 614 000, un Ledger Flex émulé servant l'app
+   Ethereum 1.22.4 compilée avec les clés de test, et un coffre déployé **au nom de ton compte** —
+   l'adresse prouvée à l'étape 0, pas un compte inventé.
+2. **Demande une stratégie, en français.** Le CLI `claude` traduit ton intention en **bornes** :
+   budget, coût de sortie toléré, taille de tranche, échéance. Il n'achète rien, ne choisit aucun
+   jeton, et il écrit lui-même ce que ses bornes **ne** protègent **pas**.
+3. **Valide sur le Ledger.** L'écran du Flex est à gauche, en direct, et **c'est toi qui l'approuves** :
+   clic = appui, glissement vers la gauche = balayage, appui long = « Hold to sign ».
+4. **Lance tes bots.** Un bot est un agent d'exécution sans LLM que tu nommes, que tu lances et que tu
+   arrêtes : son univers (pools v4 ou coffres ERC-4626), ses tranches par tour, son rythme (un seul tour,
+   ou toutes les 30 s, 60 s, 5 min). Tous tes bots travaillent dans le même coffre, sous le même mandat —
+   le budget et la sortie sont tenus par le contrat, pas par eux. La carte **mes bots** montre ceux qui
+   tournent (tours, achats/refus, dérogations, positions, dépensé, prochain tour), et **l'historique des
+   bots arrêtés** avec leur bilan et leur motif de fin. Chaque ligne du journal porte le nom du bot ;
+   quand un achat sort des bornes, la carte de dérogation le nomme : *« bot « DCA prudente » — ce pool
+   coûte 387 bps à la sortie, ton mandat en autorise 150 — tu signes quand même ? »*
+
+![mes bots : ceux qui tournent, l'historique de ceux qui sont arrêtés, le journal par bot](captures/front-bots.png)
+
+![mon compte : adresse prouvée, clé MCP dérivée, configuration Claude, ce que tu as fait](captures/front-compte.png)
+
 ## L'agent, et pourquoi il se fait piéger
 
 ```bash
