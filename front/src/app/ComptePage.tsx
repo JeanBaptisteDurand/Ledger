@@ -127,6 +127,10 @@ export function ComptePage() {
           {showConfig ? (
             <Panel raised kicker="À coller dans la configuration MCP de Claude">
               <pre className="t-mono-data m-0 overflow-auto whitespace-pre-wrap break-all is-info">{config}</pre>
+              <p className="t-caption m-0 mt-4 is-faint">
+                Cette configuration lance le MCP <b>sur la machine du banc</b> : il lit vos fichiers sur place. Ailleurs, il faudrait le
+                servir en HTTP. Sur le site, votre agent d’analyse y a déjà accès : <a className="nav-link" {...linkProps('/app/analyste')}>lui parler</a>.
+              </p>
               <div className="mt-5"><Ghost small onClick={() => copyText('config')}>{copied === 'config' ? 'Copiée' : 'Copier'}</Ghost></div>
             </Panel>
           ) : (
