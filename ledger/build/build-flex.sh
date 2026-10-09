@@ -1,6 +1,7 @@
 #!/bin/bash
-# Compile app-ethereum (1.22.4) pour une VRAIE Ledger Flex avec la clé de test (CAL_TEST_KEY=1) — l'appareil accepte
-# alors nos descripteurs de clear signing. Sortie : ledger/build/app-ethereum/bin/app.hex ; chargement : load-flex.sh.
+# Compile app-ethereum (1.22.4, tag épinglé) avec la clé de test (CAL_TEST_KEY=1) : l'app accepte alors nos descripteurs
+# de clear signing. La même sortie sert l'émulateur (build/flex/bin/app.elf, que ledger/speculos.sh prend en premier)
+# et une VRAIE Ledger Flex (bin/app.hex, chargé par load-flex.sh). Le client Python officiel est dans app-ethereum/client.
 set -e; cd "$(dirname "$0")"
 [ -d app-ethereum ] || git clone --depth 1 -b stax_1.10.1_1.22.4_sdk_v26.6.2 https://github.com/LedgerHQ/app-ethereum.git
 (cd app-ethereum && git submodule update --init --recursive --depth 1)

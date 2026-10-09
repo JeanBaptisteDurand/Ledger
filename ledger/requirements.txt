@@ -1,5 +1,6 @@
-# Le client officiel d'app-ethereum (il signe nos filtres avec la clé de test) + ragger.
-# Installe-le depuis le clone fait par build-app.sh :
+# Le client officiel d'app-ethereum (il signe nos filtres avec la clé de test), ragger et ledgered viennent avec lui.
+# Installe-le depuis le clone que ledger/build/build-flex.sh fait ici :
 #   uv venv .venv && . .venv/bin/activate
-#   uv pip install -e ../ETH_Online_2026/.cache/ledger-app-ethereum/client
+#   uv pip install -e ledger/build/app-ethereum/client -r ledger/requirements.txt
 requests
+ledgerblue        # load-flex.sh : charger l'app sur une vraie Flex (ledgerblue.loadApp)

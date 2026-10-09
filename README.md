@@ -442,7 +442,8 @@ scripts/ring-seal.sh          scelle la clé du MCP dans le Ledger Key Ring (rin
 SKILL.md · AGENTS.md          le projet au format des skills de Ledger, pour un agent de code
 FRONT.md                      le cahier des charges du front, écran par écran, routes et modèle de données (pour qui refait l'interface)
 MAINNET.md                    du fork au réseau réel : ce qui change, dans quel ordre, avec la Ledger
-captures/                     ce que l'appareil a affiché, page par page (dmk/ : par le Signer Kit ; app-officielle/ : l'app de série, en brut)
+captures/                     ce que l'appareil a affiché, page par page (dmk/ : par le Signer Kit, nos descripteurs — accueil, revue, contrat, bornes,
+                              signature, et un mandat dont le budget est en USDC ; app-officielle/ : l'app de série, en brut)
 front/                        le site (Vite + React) : le héros de Florent et le pitch, puis l'espace du compte — front/APP.md
   src/app/                    un SaaS : avant le compte /, /schema, /connexion ; dans le compte /app, /app/agents (agents de
                               trading), /app/analyste (agent d'analyse), /compte, /appareil ; le client du banc, la Ledger dans la page
@@ -450,6 +451,12 @@ front/                        le site (Vite + React) : le héros de Florent et l
   scripts/tests-appareil.mjs  refus sur l'appareil, deux onglets du même compte, redémarrage du banc
   scripts/fetch-models.sh     les deux modèles 3D du héros (assets officiels de Ledger, non commités)
 ```
+
+### Depuis un clone neuf
+
+Rejoué le 10 octobre dans un dossier vide, en suivant ce README : `build-flex.sh` (5 min), `demo.sh`, les 32 tests,
+le parcours du banc (242 s), le parcours du front (171 s), les tests appareil (refus, deux onglets, redémarrage) — tout
+est passé, avec l'app compilée sur place. Ce qui n'a pas été rejoué : la vraie Flex en USB.
 
 ### Les tests, séparément
 
@@ -484,18 +491,26 @@ lance ensuite avec un avertissement « non vérifiée ». Chargé le 2 octobre s
 
 - **Docker** (Speculos, `ledger-app-builder`), **Foundry**, **Python 3.12+**, **Node 20+**, le CLI **`claude`**
   (le stratège et l'analyste), un **RPC Base** (`BASE_RPC_URL`).
-- **[TARE](https://github.com/JeanBaptisteDurand/ETH_Online_2026) cloné à côté** — il fournit trois choses : le script
-  qui compile l'app Flex de test (`scripts/ledger/build-app.sh` → `infra/speculos/apps/ethereum-flex-testkey.elf`, que
-  `ledger/speculos.sh` lance), le client Python officiel d'app-ethereum que ce build clone (`.cache/ledger-app-ethereum/client`),
-  et le RPC (`.env`, d'après `.env.example`). Ailleurs : `TARE_ROOT=<chemin>` ; le RPC seul : `BASE_RPC_URL=<url>` dans
+- **[TARE](https://github.com/JeanBaptisteDurand/ETH_Online_2026) cloné à côté** — il fournit deux choses : le corpus
+  des mesures que l'agent de pools lit (`docs/dataset/`, `docs/hooklist-live-*.json`, versionnés : un clone suffit), et le
+  RPC (`.env`, d'après `.env.example`). Ailleurs : `TARE_ROOT=<chemin>` ; le RPC seul : `BASE_RPC_URL=<url>` dans
   l'environnement.
 
   ```bash
   git clone https://github.com/JeanBaptisteDurand/ETH_Online_2026 ../ETH_Online_2026
   cd ../ETH_Online_2026 && cp .env.example .env    # puis BASE_RPC_URL=<ton RPC Base>
-  docker pull ghcr.io/ledgerhq/ledger-app-builder/ledger-app-builder:latest   # indispensable
-  FORCE=1 TARGET=flex CAL_TEST_KEY=1 SET_PLUGIN_TEST_KEY=1 scripts/ledger/build-app.sh ethereum
   ```
+
+- **L'app Ethereum avec la clé de test** — une seule compilation sert l'émulateur et une vraie Flex :
+
+  ```bash
+  docker pull ghcr.io/ledgerhq/ledger-app-builder/ledger-app-builder:latest   # indispensable
+  ledger/build/build-flex.sh      # app-ethereum 1.22.4 (tag épinglé), CAL_TEST_KEY=1, ~5 min
+  ```
+
+  Elle sort dans `ledger/build/app-ethereum/build/flex/bin/app.elf`, que `ledger/speculos.sh` prend en premier, et
+  `bin/app.hex` pour `load-flex.sh`. Testé depuis un clone neuf le 10 octobre. (Le script de TARE compile `master`, qui ne
+  compile plus contre l'image du builder — FEEDBACK § 3 — et ne passe pas la clé de test : ne pas s'en servir ici.)
 
 - Les contrats — `forge-std` est figé en sous-module, au commit avec lequel les 32 tests tournent :
 
@@ -507,7 +522,7 @@ lance ensuite avec un avertissement « non vérifiée ». Chargé le 2 octobre s
 
   ```bash
   uv venv .venv && . .venv/bin/activate
-  uv pip install -e ../ETH_Online_2026/.cache/ledger-app-ethereum/client -r ledger/requirements.txt
+  uv pip install -e ledger/build/app-ethereum/client -r ledger/requirements.txt   # le client officiel, cloné par build-flex.sh
   ```
 
 - Les briques Ledger en JavaScript — DMK, Signer Kit, transports, `wallet-cli` :
