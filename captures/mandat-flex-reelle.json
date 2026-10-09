@@ -1,0 +1,16 @@
+{
+ "owner": "0xe0046E0C02Dd89cB4F0Fb01352C2bB1Ca54a1FA4",
+ "vault": "0xb63d7Cb4E21Afebb7E69AE653ab8F421fF7E4f20",
+ "chainId": 8453,
+ "signature": "0x0bfcc2072d55d64e140effb010264974494d1dee5a8cb4366a3b087ff317e9f707dd395d94d8639cfd5240684e1ed2dc5cbef7ec5a98c8a2aa6e4a9e67b262b61b",
+ "signer": "dmk",
+ "mandate": {
+  "agent": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+  "budgetToken": "0x4200000000000000000000000000000000000006",
+  "budgetAmount": "1000000000000000000",
+  "maxRoundTripLossBps": 300,
+  "expiry": 1791563046,
+  "nonce": 1
+ },
+ "screens": null
+}
