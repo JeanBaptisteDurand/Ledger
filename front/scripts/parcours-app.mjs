@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // The whole product journey through the app pages, in headless Chromium, against the live bench (port 8099 behind
 // the Vite proxy) and the emulated Flex. An automatic holder must approve the device screens:
-//   python3 ../../porte-de-sortie/scripts/porteur.py 3600 2 &
+//   python3 ../scripts/porteur.py 3600 2 &
 //   node scripts/parcours-app.mjs [output dir]
 import { chromium } from 'playwright'
 import fs from 'node:fs'

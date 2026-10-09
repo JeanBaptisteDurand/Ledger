@@ -2,12 +2,12 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
-/** The bench of porte-de-sortie (web/server.py). */
+/** The bench (web/server.py, at the repository root). */
 const BENCH = 'http://127.0.0.1:8099'
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  // The app pages talk to the bench (porte-de-sortie/web/server.py). Same origin through the proxy: the session
+  // The app pages talk to the bench (web/server.py, repository root). Same origin through the proxy: the session
   // cookie, the emulator (/speculos) and the Ledger bundle (/dist) all come from it, with no CORS to set up.
   server: {
     proxy: Object.fromEntries(

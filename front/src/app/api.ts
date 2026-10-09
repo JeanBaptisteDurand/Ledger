@@ -1,7 +1,7 @@
 /**
- * The bench's API (web/server.py in porte-de-sortie, port 8099), reached through the Vite proxy (/api, /speculos, /dist).
+ * The bench's API (web/server.py at the repository root, port 8099), reached through the Vite proxy (/api, /speculos, /dist).
  * Every POST answers { ok, msg, … }; an ok:false is a sentence to show, not an exception.
- * Shapes are those documented in porte-de-sortie/FRONT.md § 4–5.
+ * Shapes are those documented in FRONT.md (repository root) § 4–5.
  */
 
 export type Signer = 'browser' | 'dmk' | 'python'

@@ -18,11 +18,11 @@ not in git; without them the scene fails to load and the landing stays black. `s
 
 ## Run
 
-The pages talk to the bench of `porte-de-sortie` (port 8099) through the Vite proxy (`/api`, `/speculos`, `/dist`).
+The pages talk to the bench at the root of this repository (`web/server.py`, port 8099) through the Vite proxy (`/api`, `/speculos`, `/dist`).
 
 ```bash
 # 1. the bench: fork of Base, emulated Flex, server
-cd ../../porte-de-sortie && . .venv/bin/activate
+cd .. && . .venv/bin/activate
 ledger/speculos.sh up && python3 web/server.py          # http://127.0.0.1:8099
 
 # 2. this front
@@ -30,13 +30,13 @@ npm install && npm run dev                               # http://127.0.0.1:5173
 ```
 
 With a real Ledger: Chrome, Edge or Brave; Ledger Wallet closed; device unlocked with the Ethereum app open (the
-test-key build, see `porte-de-sortie/ledger/build/`). On `/appareil`, choose **Ma Ledger · ce navigateur**, then
+test-key build, see `../ledger/build/`). On `/appareil`, choose **Ma Ledger · ce navigateur**, then
 **Vraie Ledger (USB)**. To switch during a demo: log out, change the device, log in again — one address, one account.
 
 ## Check everything end to end
 
 ```bash
-python3 ../../porte-de-sortie/scripts/porteur.py 3600 2 &   # an automatic holder approves the emulated device's screens
+python3 ../scripts/porteur.py 3600 2 &   # an automatic holder approves the emulated device's screens
 node scripts/parcours-app.mjs                                 # the whole journey in headless Chromium, screenshots in design-shots/app/
 ```
 
@@ -55,7 +55,7 @@ the bench's device landing on the same state — 98 to 177 s depending on the ho
 
 ## Files
 
-- `src/app/api.ts` — the bench's routes and shapes (the contract is `porte-de-sortie/FRONT.md`)
+- `src/app/api.ts` — the bench's routes and shapes (the contract is `../FRONT.md`)
 - `src/app/useBench.ts` — the polled state, actions, the rule "only the tab that asked signs"
 - `src/app/ledger.ts` — the Ledger in the browser: connect, Sign-In with Ethereum, signing a pending mandate or exception
 - `src/app/ui.tsx` — the components of `DESIGN.md` as React

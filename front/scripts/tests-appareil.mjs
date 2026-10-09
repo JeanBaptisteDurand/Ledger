@@ -7,9 +7,11 @@
 import { chromium } from 'playwright'
 import { spawn, execSync } from 'node:child_process'
 import fs from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 const URL = 'http://127.0.0.1:5173'
-const BENCH = '/Users/beorlor/Documents/ethonline/porte-de-sortie'
+const BENCH = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')  // the repository root: the bench
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 const T0 = Date.now(); let failed = false
 const log = (...a) => console.log(`[${((Date.now() - T0) / 1000).toFixed(1).padStart(6)}s] ${a.join(' ')}`)
