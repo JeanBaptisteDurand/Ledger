@@ -36,24 +36,25 @@ const shot = (name) => page.screenshot({ path: `${OUT}/${name}.png`, fullPage: t
 
 for (let i = 0; i < 120; i++) { try { const r = await fetch(URL + '/speculos/events?currentscreenonly=true'); if (r.ok) break } catch {} await sleep(500) }
 
-// 0 · the device page: the client's path, on the emulated Flex
-await page.goto(URL + '/appareil'); await sleep(1500)
+// 0 · the door: /connexion, the client's path, on the emulated Flex
+await page.goto(URL + '/connexion'); await sleep(1500)
 let s = await state()
-if (s.address) { await api('/logout'); await page.reload(); await sleep(1200) }
+if (s.address) { await api('/logout'); await page.goto(URL + '/connexion'); await sleep(1200) }
 await btn('Ma Ledger · ce navigateur').click(); await sleep(700)
 await btn('Flex émulée (banc)').click(); await sleep(500)
 s = await until((x) => x.signer === 'browser', 'chemin = ma Ledger · ce navigateur')
 
-// 1 · sign in with the Ledger, in the page
+// 1 · sign in with the Ledger, in the page — then the door hands over to the account
+await shot('01-connexion')
 let t = Date.now()
 await btn('Se connecter avec ma Ledger').click()
 s = await until((x) => !!x.address, 'connexion SIWE', 120000)
 log(`compte ${s.address} (${((Date.now() - t) / 1000).toFixed(1)} s)`)
+await page.waitForURL('**/app', { timeout: 15000 }).then(() => log('ok  après la connexion : /app')).catch(() => fail('la connexion ne mène pas à /app : ' + page.url()))
 await api('/reset'); await sleep(600)
-await shot('01-appareil')
 
 // 2 · session
-await go('Tableau de bord')
+await go('Vue d’ensemble')
 await btn('Ouvrir une session').click()
 s = await until((x) => !!x.vault, 'session ouverte : coffre déployé', 180000)
 
@@ -69,7 +70,8 @@ s = await until((x) => x.signed, 'mandat signé dans la page', 180000)
 log(`mandat signé (${((Date.now() - t) / 1000).toFixed(1)} s) · ${JSON.stringify(s.last_report || {}).slice(0, 110)}`)
 await shot('02-mandat')
 
-// 5 · a pools bot, one round
+// 5 · a pools bot, one round — on the trading agents' page
+await go('Agents de trading')
 await page.getByLabel('Nom').fill('DCA prudente')
 await page.getByLabel('Univers').selectOption('pools')
 await page.getByLabel('Tranches').fill('10')
@@ -96,7 +98,8 @@ if (s.escalation) {
 } else fail('aucune demande hors bornes après le tour pools')
 await shot('03-bots-demandes')
 
-// 7 · watch, then watch and exit
+// 7 · watch, then watch and exit — the positions are on the overview
+await go('Vue d’ensemble')
 await btn('Resonder').click()
 s = await until((x) => !x.watching && x.watch, 'resondage', 180000)
 await page.getByRole('button', { name: 'Resonder et sortir' }).click()
@@ -104,6 +107,7 @@ s = await until((x) => !x.watching && x.watch && x.watch.sell_if != null, 'reson
 log(`surveillance : ${JSON.stringify(s.watch.rows.map((r) => [r.name || r.pool_id.slice(0, 10), r.exit_bps_at_buy, r.exit_bps_now, r.action]))}`)
 
 // 8 · a vaults bot that runs on a rhythm, then is stopped
+await go('Agents de trading')
 await page.getByLabel('Nom').fill('veilleur de coffres')
 await page.getByLabel('Univers').selectOption('vaults')
 await page.getByLabel('Tranches').fill('5')
@@ -121,13 +125,14 @@ if (s.escalation) {
   s = await until((x) => x.exception_buys.length > n, 'dérogation coffre signée', 240000)
 }
 
-// 9 · the account's analyst
+// 9 · the account's analysis agent
+await go('Analyste')
 t = Date.now()
 await page.getByRole('button', { name: /Que font mes bots/ }).click()
 s = await until((x) => x.analysis && !x.analysis.pending, 'réponse de l’analyste', 300000, 2500)
 log(`analyste (${((Date.now() - t) / 1000).toFixed(1)} s) · outils : ${s.analysis.tools_used.map((u) => u.tool).join(', ')} · ${(s.analysis.answer || s.analysis.error || '').slice(0, 160)}`)
 if (!s.analysis.tools_used.length) fail('l’analyste n’a appelé aucun outil')
-await sleep(1200); await shot('05-tableau-de-bord')
+await sleep(1200); await shot('05-analyste')
 
 // 10 · the account
 await go('Compte'); await sleep(1500)
@@ -153,6 +158,18 @@ await btn('Se connecter avec ma Ledger').click()
 s = await until((x) => !!x.address && x.signed, 'reconnexion par l’appareil du banc : même compte, même mandat', 120000)
 log(`état retrouvé : coffre ${s.vault} · ${s.positions.length} positions · ${s.bots.length} bots`)
 await btn('Ma Ledger · ce navigateur').click(); await sleep(600)
+
+// 13 · the SaaS door: logged out, an account page sends you to /connexion, and back there once logged in
+await api('/logout'); await page.goto(URL + '/app/agents'); await sleep(1500)
+if (/\/connexion$/.test(page.url())) log('ok  déconnecté : /app/agents renvoie vers /connexion')
+else fail('déconnecté, /app/agents ne renvoie pas vers /connexion : ' + page.url())
+await btn('Signer Kit · banc').click()
+s = await until((x) => x.signer === 'dmk', 'chemin = Signer Kit · banc')
+await btn('Se connecter avec ma Ledger').click()
+s = await until((x) => !!x.address, 'reconnexion depuis la porte', 120000)
+await page.waitForURL('**/app/agents', { timeout: 15000 }).then(() => log('ok  reconnecté : retour sur /app/agents')).catch(() => fail('après la connexion, pas de retour sur /app/agents : ' + page.url()))
+await shot('09-retour-agents')
+await api('/signer', { signer: 'browser' })   // leave the bench on the client's path
 
 log(failed ? 'PARCOURS : des échecs' : 'PARCOURS : tout est passé')
 await browser.close()
