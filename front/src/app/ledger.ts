@@ -113,7 +113,18 @@ export async function signIn(onStep?: (text: string) => void): Promise<{ ok: boo
     `URI: ${location.origin}\nVersion: 1\nChain ID: ${n.chainId}\nNonce: ${n.nonce}\nIssued At: ${issued}`
   onStep?.('Sur l’appareil : lisez le message de connexion, puis signez.')
   const lw = await loadLedger()
-  const { signature } = await lw.signMessage(message)
+  let signature: string
+  try {
+    ({ signature } = await lw.signMessage(message))
+  } catch (first) {
+    if (REFUSED.test(errText(first))) throw first
+    // The session may be dead (DeviceSessionNotFound: emulator restarted, device replugged, a session dropped right
+    // after connecting) while the address is still remembered: reconnect once, as signPending does.
+    await lw.disconnect().catch(() => {})
+    const again = await lw.connect(getTransport(), location.origin + '/speculos')
+    if (again.toLowerCase() !== address.toLowerCase()) throw new Error('L’appareil a changé d’adresse pendant la connexion : reconnectez-vous.')
+    ;({ signature } = await lw.signMessage(message))
+  }
   const r = await post('/siwe/verify', { message, signature, address })
   return { ok: r.ok, msg: r.msg, address: r.address as string | undefined }
 }
