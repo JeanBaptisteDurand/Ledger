@@ -526,3 +526,41 @@ lance ensuite avec un avertissement « non vérifiée ». Chargé le 2 octobre s
   déjà le mandat champ par champ (valeurs brutes) ; l'app compilée avec les clés de test, chargée par
   `ledgerctl`, l'affiche formaté comme ici.
 
+## Cinq trouvailles amont, en construisant ceci
+
+- **Deux clients sur une app : un sondage de trop pendant qu'un humain lit, et l'app répond `0x6901` à tout.**
+  Un onglet du banc oublié dans un autre navigateur, connecté au même compte, a lancé la même signature que
+  la page testée : deux sessions DMK, un `B0010000` arrivé pendant que l'écran « Transaction Check ? » attendait
+  le porteur. Le SDK refuse le nouveau venu (`SWO_COMMAND_NOT_ACCEPTED`, verrou TOCTOU d'`os_io_legacy.c`) —
+  mais la commande en attente est refusée aussi, et **plus rien n'est accepté, même `GET_APP_AND_VERSION`,
+  jusqu'au redémarrage** (émulateur, trois fois). Speculos aggrave : un `APDUBridge` par requête HTTP, aucun
+  verrou commun, chaque réponse livrée à toutes les requêtes en attente. Parade ici : signature en attente liée
+  à l'onglet qui l'a demandée, sessions de signature sans le rafraîchisseur du DMK (`b001000000` chaque seconde,
+  délai 800 ms) — et le parcours repasse avec un porteur qui met 20 s par écran (`FEEDBACK.md` § 8).
+
+- **`signMessage` du Signer Kit perd tout message de plus de ~229 octets — et laisse l'app coincée.**
+  Le payload est assemblé dans un `ApduBuilder` (plafonné à une APDU) *avant* le découpage ; le
+  dépassement est enregistré, jamais lu : le kit envoie un premier bloc sans un octet de message, l'app
+  répond `9000` et attend, le kit échoue (`InvalidStatusWordError`), et l'app reste en `SIGNING_MESSAGE`
+  (`0x6980` pour tout message suivant) jusqu'à redémarrage. Un message Sign-In with Ethereum fait 250-350
+  octets : **toute connexion SIWE par le kit échoue.** Reproduit en Node et dans le navigateur ; notre
+  message tient en 217 octets (`FEEDBACK.md` § 7).
+- **Le Signer Kit détecte le blind signing, le rapporte à Ledger, et ne le dit pas au développeur.**
+  `BuildEIP712ContextTask` retombe en silence sur `ClearSigningType.BASIC` quand les filtres manquent ;
+  `BlindSigningDetectionTask` calcule `isBlindSign`, envoie le rapport au *reporter* du context module
+  et le loggue en *debug* ; la sortie de l'action est `{r, s, v}`, rien d'autre. Mesuré ici dans les deux
+  sens (`--blind`, `FEEDBACK.md` § 1). Suggestion : mettre `isBlindSign` dans la sortie, à côté de la
+  signature — la donnée existe déjà dans l'état interne.
+- **Client Python d'app-ethereum : tout `chainId ≥ 256` casse le filtrage EIP-712.**
+  `eip712/InputData.py` : `sig_ctx["chainid"].append(chainid & (0xff << (i * 8)))` — l'octet n'est pas
+  redécalé, donc `bytearray.append` reçoit 0x2100 pour Base (8453) et lève `ValueError`. Leurs tests
+  tournent en chainId 1. Correctif : `bytearray(chainid.to_bytes(8, "big"))`. Contourné dans
+  [`ledger/sign_mandate.py`](ledger/sign_mandate.py) (`patch_chainid_bug`), PR à ouvrir.
+- **`ledger-app-builder:latest` n'est pas synchrone avec `master`.** L'app inclut `nbgl_icons.h`
+  (13 août 2026) ; une image téléchargée avant la mi-septembre porte un SDK Flex de juin et la
+  compilation échoue. `docker pull` avant chaque build, et `-j4` plutôt que `-j` sans limite.
+
+---
+
+Fait pour le hackathon **Ledger N3XT** (6-13 octobre 2026). Le moteur de mesure qui a trouvé les six
+pools est [TARE](../ETH_Online_2026) — finaliste ETHOnline 2026, prix Uniswap Foundation.

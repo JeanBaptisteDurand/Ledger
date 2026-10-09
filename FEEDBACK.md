@@ -280,3 +280,31 @@ exchanges are serialized instead of mixed.
 
 ---
 
+## 9. Smaller things, in one line each
+
+- **The device's display vocabulary has 12 `ParamType`s and none of them is a number with provenance.**
+  `MUST_BE` compares a field to at most five constants — never a field to another field. We needed
+  "this value, compared to that one" and had to do it in a contract instead.
+- **`interoperableAddressName` (ERC-7930) is in the spec and on `develop`, but no registry descriptor
+  uses it.** Worth a line in the docs saying which format is live on which firmware.
+- **The Speculos finger API is undocumented for swipes.** `press` at one point and `release` at another
+  is a swipe; we found it by trial. Two lines in the Speculos README would help every team writing
+  device tests.
+- **Test keys are the best-kept secret of this stack.** `makefile_conf/features.mk` (`CAL_TEST_KEY`,
+  `SET_PLUGIN_TEST_KEY`) plus `client/.../keychain/*.pem` let anyone sign their own filters and test
+  them end to end on Speculos. That is exactly what a hackathon team needs, and it is documented
+  nowhere we could find. One paragraph in the clear-signing docs would turn a two-day dig into a
+  ten-minute setup.
+
+---
+
+## What we would keep
+
+The TLV documentation (`doc/tlv_structs.md`) is genuinely good — it is how we understood that nine
+signed structures are verified on the Secure Element, and it is more precise than most protocol docs we
+read this year. Speculos plus the official app builder means a team with no hardware can still ship
+something real. And the Python client, chainId bug aside, does the hard part: it signs the filters, so
+we never had to reimplement your format.
+
+*Contact: the team behind [TARE](../ETH_Online_2026) — ETHOnline 2026 finalist, Uniswap Foundation
+"Best Uniswap Stack Contribution".*
