@@ -1,5 +1,6 @@
 /**
- * /schema — who does what. The agents, the tools, and the three bricks of the brief, each with its role.
+ * /schema — who does what, as complete as we can make it: the principle, the agents, the site and the account, one signature
+ * step by step, the analyst's ten tools, the bricks of the brief, the numbers, the limits, what it needs to run, the findings.
  * No diagram library: panels and one-turn hairlines, the grammar the hero established.
  */
 import { AnchoredNote, Band, Panel, Row } from './ui'
@@ -140,6 +141,130 @@ export function SchemaPage() {
 
       <Band
         index="04"
+        eyebrow="Le site"
+        title="Avant le compte, l’idée. Dans le compte, ce qui est à vous."
+        lead="Un service comme un autre : on comprend d’abord, on se connecte avec sa Ledger, puis on retrouve son coffre, ses agents, son analyste et ses données."
+      >
+        <div className="grid gap-6 lg:grid-cols-2">
+          <Panel kicker="Ouvert à tous" title="La pub et l’idée">
+            <Row label="/" value="le héros, le pitch, comment ça marche" />
+            <Row label="/schema" value="tout le système — cette page" />
+            <Row label="/connexion" value="choisir sa Ledger, signer le message" />
+          </Panel>
+          <Panel kicker="Avec votre Ledger" title="Votre espace">
+            <Row label="/app" value="vue d’ensemble : coffre, mandat, demandes, positions" />
+            <Row label="/app/agents" value="mes agents de trading" />
+            <Row label="/app/analyste" value="mon agent d’analyse" />
+            <Row label="/compte" value="mes infos, ma clé MCP, mon historique" />
+            <Row label="/appareil" value="ma Ledger, son écran en direct" />
+          </Panel>
+        </div>
+        <AnchoredNote>
+          Une page du compte ouverte sans session renvoie vers la connexion, puis revient où vous alliez. Se déconnecter
+          ramène à la porte : rien de votre compte ne reste à l’écran.
+        </AnchoredNote>
+      </Band>
+
+      <Band
+        index="05"
+        eyebrow="Le compte"
+        title="Une adresse prouvée, un dossier, une clé écrite nulle part"
+        lead="Pas de base d’utilisateurs, pas de mot de passe : un compte, c’est l’adresse qui a signé le message de connexion. Tout ce qui lui appartient est rangé sous elle, et rien d’un autre compte ne lui est visible."
+      >
+        <div className="grid gap-6 lg:grid-cols-3">
+          <Panel kicker="Se connecter" title="Sign-In with Ethereum">
+            <p className="t-body-sm m-0 text-on-primary-mute">
+              Un message EIP-4361 court — moins de 229 octets, à cause d’un bug du Signer Kit — signé sur l’appareil dans le
+              navigateur, vérifié par le serveur : nonce à usage unique, adresse, signature. Ensuite, une session par cookie.
+              En banc, l’adresse peut aussi être lue sur la Flex émulée.
+            </p>
+            <div className="mt-5">
+              <Row label="Standard" value="EIP-4361" />
+              <Row label="Session" value="cookie HttpOnly" />
+            </div>
+          </Panel>
+          <Panel kicker="Ce qui est à vous" title="accounts/‹adresse›/">
+            <Row label="profile.json" value="arrivée, connexions, coffre" />
+            <Row label="mandate.json" value="le mandat signé" />
+            <Row label="bots.json" value="vos agents de trading" />
+            <Row label="journal.jsonl" value="chaque décision, au nom du bot" />
+            <Row label="notifications.jsonl" value="ce dont on vous a prévenu" />
+            <Row label="events.jsonl" value="ce que vous avez fait" />
+          </Panel>
+          <Panel kicker="Votre clé MCP" title="Dérivée, jamais stockée">
+            <p className="t-body-sm m-0 text-on-primary-mute">
+              HMAC-SHA256(secret maître, adresse) : la clé se recalcule à chaque besoin et n’ouvre que vos fichiers. Un seul
+              secret à garder pour tous les comptes — celui que le Ledger Key Ring scelle.
+            </p>
+            <div className="mt-5">
+              <Row label="Votre clé" value="vos données, en lecture" />
+              <Row label="Celle d’un autre" value="refusée" />
+              <Row label="Aucune" value="refusée" />
+            </div>
+          </Panel>
+        </div>
+        <AnchoredNote>
+          Ce que la connexion prouve, honnêtement : <b>une adresse</b>, pas un appareil — tout portefeuille sait signer ce message.
+          La Ledger fait la différence au <b>mandat</b> : c’est sur son écran que la règle se lit en clair et se signe.
+        </AnchoredNote>
+      </Band>
+
+      <Band
+        index="06"
+        eyebrow="Une signature, pas à pas"
+        title="Le serveur demande, votre page fait signer, le contrat vérifie"
+        lead="Le serveur ne voit jamais l’appareil. Il met une signature en attente ; seule la page qui l’a demandée la fait signer sur votre Ledger ; le contrat vérifie avant d’agir. Ici, une dérogation."
+      >
+        <div className="data-scroll">
+          <table className="data-table">
+            <thead><tr><th>Étape</th><th>Qui</th><th>Ce qui se passe</th></tr></thead>
+            <tbody>
+              <tr><td className="num">1</td><td className="label text-text-050">Un agent de trading</td><td className="label is-mute">veut entrer ; le coffre mesure la sortie dans la transaction même et refuse : elle coûte plus que votre mandat</td></tr>
+              <tr><td className="num">2</td><td className="label text-text-050">Le serveur</td><td className="label is-mute">prépare la dérogation (EIP-712 : position, montant, coût de sortie lu, échéance) et la met en attente avec un jeton</td></tr>
+              <tr><td className="num">3</td><td className="label text-text-050">Votre page</td><td className="label is-mute">celle qui a demandé — elle tient le jeton — récupère le descripteur de clear signing de votre coffre</td></tr>
+              <tr><td className="num">4</td><td className="label text-text-050">Le Signer Kit</td><td className="label is-mute">dans votre navigateur, envoie la dérogation à l’appareil : WebHID, ou la Flex émulée par le proxy</td></tr>
+              <tr><td className="num">5</td><td className="label text-text-050">Votre Ledger</td><td className="label is-mute">affiche EXIT COST (BPS) et le reste en clair ; vous signez, ou vous refusez</td></tr>
+              <tr><td className="num">6</td><td className="label text-text-050">Le contrat</td><td className="label is-mute">vérifie la signature et remesure la sortie : si elle a empiré depuis votre lecture, il refuse ; sinon il entre, une fois</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <AnchoredNote>
+          Un seul client à la fois sur l’appareil : deux pages qui lui parlent pendant que vous lisez cassent la signature
+          (<span className="t-mono-data">0x6901</span>). Un second onglet ne signe donc jamais ce qu’il n’a pas demandé.
+        </AnchoredNote>
+      </Band>
+
+      <Band
+        index="07"
+        eyebrow="Les outils de l’analyste"
+        title="Dix outils, tous en lecture"
+        lead="L’analyste est lancé avec ces dix outils et rien d’autre. Il répond en les appelant, et la page montre sous chaque réponse lesquels il a appelés, avec leurs arguments."
+      >
+        <div className="data-scroll">
+          <table className="data-table">
+            <thead><tr><th>Outil</th><th>Ce qu’il rend</th></tr></thead>
+            <tbody>
+              <tr><td className="label t-mono-data text-text-050">bots</td><td className="label is-mute">vos agents de trading : actifs et arrêtés, univers, rythme, tours, achats et refus, dérogations, dépense, motifs de refus</td></tr>
+              <tr><td className="label t-mono-data text-text-050">operations</td><td className="label is-mute">les opérations tentées, l’issue et son motif — par agent si on le demande</td></tr>
+              <tr><td className="label t-mono-data text-text-050">decision</td><td className="label is-mute">tout ce qui a mené à une décision : univers, liste courte, scores et leur détail, sonde, issue</td></tr>
+              <tr><td className="label t-mono-data text-text-050">positions</td><td className="label is-mute">ce que le coffre détient, quel agent l’a pris, ce qui reste du budget signé</td></tr>
+              <tr><td className="label t-mono-data text-text-050">mandate</td><td className="label is-mute">le mandat signé sur la Ledger, et ce qu’il autorise</td></tr>
+              <tr><td className="label t-mono-data text-text-050">compare_entry_exit</td><td className="label is-mute">l’entrée contre la sortie, opération par opération</td></tr>
+              <tr><td className="label t-mono-data text-text-050">universe_facts</td><td className="label is-mute">pourquoi un piège est indiscernable avant l’achat, chiffres à l’appui</td></tr>
+              <tr><td className="label t-mono-data text-text-050">hook_analysis</td><td className="label is-mute">ce que chaque hook prend, remesuré en direct par le contrefactuel de TARE, à l’entrée et à la sortie</td></tr>
+              <tr><td className="label t-mono-data text-text-050">vault_openness</td><td className="label is-mute">la porte des coffres ERC-4626, mesurée maintenant : aller-retour réel, part bloquée du plus gros déposant, coffres pleins</td></tr>
+              <tr><td className="label t-mono-data text-text-050">ledger_earn_yields</td><td className="label is-mute">ce que l’Agent Stack de Ledger (wallet-cli earn yields) dit d’une position à rendement — et ce qu’il n’en dit pas : la sortie</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <AnchoredNote>
+          Aucun de ces outils ne signe, n’envoie de transaction, ne lance ni n’arrête un agent. La clé qui les ouvre est celle
+          de votre compte : l’analyste ne voit que vos données.
+        </AnchoredNote>
+      </Band>
+
+      <Band
+        index="08"
         eyebrow="Les briques du sujet"
         title="Trois briques, un rôle chacune"
         lead="Le sujet demande d’utiliser Ledger comme couche de confiance. Voici ce que chaque brique fait ici, et pas ailleurs."
@@ -159,7 +284,7 @@ export function SchemaPage() {
       </Band>
 
       <Band
-        index="05"
+        index="09"
         eyebrow="Ce qui est mesuré"
         title="Deux univers, le même refus"
         lead="Les nombres viennent de la chaîne, sur un fork de Base au bloc 50 614 000."
@@ -185,7 +310,7 @@ export function SchemaPage() {
       </Band>
 
       <Band
-        index="06"
+        index="10"
         eyebrow="Ce que ça n’attrape pas"
         title="Dit avant qu’on nous le demande"
         lead="Pas « garanti ». La sonde regarde le bloc d’exécution : ce qui est vrai à l’entrée l’est à l’entrée. Voici les limites, et ce qu’il faudrait pour le réseau principal."
@@ -216,7 +341,27 @@ export function SchemaPage() {
       </Band>
 
       <Band
-        index="07"
+        index="11"
+        eyebrow="Ce qu’il faut pour le faire tourner"
+        title="Les clés, et ce qui se passe quand l’une manque"
+        lead="Le banc tourne sur une machine : un fork de Base, une Flex émulée, un serveur. Voici ce qu’il lui faut, et ce qu’il dit quand ça manque."
+      >
+        <div className="data-scroll">
+          <table className="data-table">
+            <thead><tr><th>Quoi</th><th>Son rôle</th><th>S’il manque</th></tr></thead>
+            <tbody>
+              <tr><td className="label t-mono-data text-text-050">BASE_RPC_URL</td><td className="label">le fork de Base au bloc 50 614 000</td><td className="label is-mute">obligatoire : le banc démarre, et l’ouverture de session dit « BASE_RPC_URL introuvable »</td></tr>
+              <tr><td className="label t-mono-data text-text-050">claude</td><td className="label">le stratège et l’analyste (le CLI)</td><td className="label is-mute">le stratège retombe sur une règle de repli et la page le dit ; l’analyste refuse de répondre de mémoire</td></tr>
+              <tr><td className="label t-mono-data text-text-050">mcp/.mcp-key</td><td className="label">le secret maître des clés de compte</td><td className="label is-mute">créé au premier appel ; scellable dans le Ledger Key Ring de l’opérateur</td></tr>
+              <tr><td className="label t-mono-data text-text-050">PDS_NOTIFY_URL</td><td className="label">un webhook quand un achat déborde</td><td className="label is-mute">optionnel : la demande s’affiche quand même et s’écrit dans notifications.jsonl</td></tr>
+              <tr><td className="label t-mono-data text-text-050">Speculos</td><td className="label">la Flex émulée, l’app Ethereum de test</td><td className="label is-mute">sans elle, seule une vraie Ledger branchée en USB signe ; la vue d’ensemble montre la Flex hors tension</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </Band>
+
+      <Band
+        index="12"
         eyebrow="Trouvé chez Ledger, en construisant"
         title="Cinq retours, sourcés"
         lead="Chacun a une commande, un fichier ou une trace derrière lui. Le détail est dans FEEDBACK.md, avec ce qu’on changerait."
@@ -236,7 +381,7 @@ export function SchemaPage() {
       </Band>
 
       <Band
-        index="08"
+        index="13"
         eyebrow="En service"
         title="Ta Ledger reste chez toi"
         lead="Nous n’avons qu’un mandat, et il se révoque d’un geste. Le serveur ne tient aucun secret qui compte."
