@@ -17,7 +17,8 @@ const PATHS: { value: Signer; label: string; what: string }[] = [
   { value: 'python', label: 'Client APDU · banc', what: 'Le client Python officiel d’app-ethereum, en APDU directes. Le chemin qui a trouvé le bug chainId.' },
 ]
 
-export function AppareilPage() {
+/** The device choice, the signing path, the login, the live screen. Used by /appareil and by /connexion. */
+export function DeviceBand({ index = '01' }: { index?: string }) {
   const { state, act, say, refresh } = useBench()
   const { login, logout, busy, step } = useLogin()
   const [transport, setT] = useState<Transport>(() => getTransport())
@@ -38,9 +39,8 @@ export function AppareilPage() {
   }
 
   return (
-    <>
       <Band
-        index="01"
+        index={index}
         eyebrow="L’appareil"
         title={real ? 'Votre Ledger, branchée ici' : browser ? 'La Flex émulée, dans ce navigateur' : 'La Flex émulée du banc'}
         lead="Une vraie Ledger ou la Flex émulée : le même code, les mêmes écrans, la même signature vérifiée par le contrat. Choisissez l’appareil, puis l’endroit où la signature se fait."
@@ -110,7 +110,16 @@ export function AppareilPage() {
           </div>
         </div>
       </Band>
+  )
+}
 
+/** /appareil — my Ledger: the device band, then the Ledger bricks by name. */
+export function AppareilPage() {
+  const { state } = useBench()
+  if (!state) return <div className="app-column pt-12"><Skeleton rows={6} /></div>
+  return (
+    <>
+      <DeviceBand />
       <Band
         index="02"
         eyebrow="Ce qui tourne"

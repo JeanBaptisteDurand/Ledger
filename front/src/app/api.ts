@@ -20,7 +20,7 @@ export interface Proposal {
   warning: string
 }
 
-export interface ChatLine { role: 'user' | 'assistant'; text: string; warning?: string }
+export interface ChatLine { role: 'user' | 'assistant'; text: string; warning?: string; source?: string }
 
 export interface Mandate {
   owner: string

@@ -1,13 +1,14 @@
 /**
- * /app — the command deck. Six bands, in the order a person lives them:
- * session → strategy and mandate → bots → out-of-bounds requests → positions → the account's analyst.
+ * The account's three working pages, in the order a person lives them:
+ *   /app            session → strategy and mandate → the agents at a glance → out-of-bounds requests → positions
+ *   /app/agents     the trading agents (bots) and the requests they raise
+ *   /app/analyste   the analysis agent
  * The Ledger signs three things here: the mandate, once; and each exception, with the number on its screen.
  */
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { fmtWei, short, type Bot, type BenchState, type JournalRow } from './api'
 import { linkProps } from './router'
 import { askToNotify, useBench } from './useBench'
-import { useLogin } from './session'
 import { AnchoredNote, Badge, Band, Empty, Field, Ghost, Mirror, Panel, Row, Segments, Select, SignOnDevice, Skeleton, duration, time } from './ui'
 
 const STRATEGY_IDEAS = [
@@ -22,44 +23,108 @@ const ANALYST_IDEAS = [
   'Que dit l’Earn de Ledger d’une position, et que ne dit-il pas ?',
 ]
 
-export function DashboardPage() {
+const Loading = () => <div className="app-column pt-12"><Skeleton rows={6} /></div>
+
+/** /app — the overview: the vault, the mandate, the agents at a glance, what waits for the Ledger, the positions. */
+export function OverviewPage() {
   const { state } = useBench()
-  if (!state) return <div className="app-column pt-12"><Skeleton rows={6} /></div>
-  if (!state.address) return <Welcome />
+  if (!state) return <Loading />
   return (
     <>
       <SessionBand s={state} />
       {state.vault ? <MandateBand s={state} /> : null}
-      {state.signed ? <BotsBand s={state} /> : null}
+      {state.signed ? <GlanceBand s={state} /> : null}
       {state.signed ? <RequestsBand s={state} /> : null}
       {state.signed ? <PositionsBand s={state} /> : null}
-      {state.vault ? <AnalystBand s={state} /> : null}
       <LogBand s={state} />
     </>
   )
 }
 
-/* ───────────────────────────── before an account ───────────────────────────── */
-
-function Welcome() {
+/** /app/agents — my trading agents: add, stop, restart, the history, the journal; and the requests they raise. */
+export function AgentsPage() {
   const { state } = useBench()
-  const { login, busy, step } = useLogin()
-  const browser = state?.signer === 'browser'
+  if (!state) return <Loading />
+  if (!state.signed) {
+    return (
+      <NotYet
+        eyebrow="Mes agents de trading"
+        title="D’abord, le mandat"
+        lead="Vos agents achètent dans votre coffre et sous votre mandat : rien ne part avant que vous l’ayez lu et signé sur votre Ledger."
+      />
+    )
+  }
+  return (
+    <>
+      <BotsBand s={state} />
+      {state.escalation?.possible ? <RequestsBand s={state} index="02" /> : null}
+    </>
+  )
+}
+
+/** /app/analyste — my analysis agent: the conversation, and the MCP calls under each answer. */
+export function AnalystePage() {
+  const { state } = useBench()
+  if (!state) return <Loading />
+  if (!state.vault) {
+    return (
+      <NotYet
+        eyebrow="Mon agent d’analyse"
+        title="D’abord, une session"
+        lead="L’analyste lit votre coffre, votre mandat, vos agents et leurs décisions. Ouvrez une session pour qu’il ait de quoi répondre."
+      />
+    )
+  }
+  return <AnalystBand s={state} />
+}
+
+function NotYet({ eyebrow, title, lead }: { eyebrow: string; title: string; lead: string }) {
+  return (
+    <Band eyebrow={eyebrow} title={title} lead={lead}>
+      <a className="btn-ghost t-button-cap" {...linkProps('/app')}>Aller à la vue d’ensemble</a>
+    </Band>
+  )
+}
+
+/* ───────────────────────────── 03 · the agents at a glance ───────────────────────────── */
+
+const clip = (t: string, n = 220) => (t.length > n ? t.slice(0, n).replace(/\s+\S*$/, '') + '…' : t)
+
+function GlanceBand({ s }: { s: BenchState }) {
+  const live = s.bots.filter((b) => b.status === 'running')
+  const executed = s.bots.reduce((n, b) => n + b.executed, 0)
+  const refused = s.bots.reduce((n, b) => n + b.refused, 0)
+  const last = s.analyses.length ? s.analyses[s.analyses.length - 1] : null
+  const waiting = (s.escalation?.possible ? 1 : 0) + s.escalation_queue.length
   return (
     <Band
-      eyebrow="Avant tout"
-      title="Votre Ledger est votre compte"
-      lead="Pas d’adresse e-mail, pas de mot de passe. Vous signez un message sur votre appareil ; l’adresse qu’il prouve devient votre compte, votre coffre et vos bots."
+      index="03"
+      eyebrow="Votre espace"
+      title="Vos agents, d’un coup d’œil"
+      lead="Les agents de trading achètent dans votre coffre, sous votre mandat. L’agent d’analyse lit tout et ne peut rien faire."
     >
-      <div className="flex flex-wrap items-center gap-4">
-        <Ghost onClick={login} disabled={busy}>{busy ? 'Connexion…' : 'Se connecter avec ma Ledger'}</Ghost>
-        <a className="nav-link t-button-cap" {...linkProps('/appareil')}>Choisir l’appareil</a>
+      <div className="grid gap-6 lg:grid-cols-3">
+        <Panel kicker="Mes agents de trading">
+          <Row label="En activité" value={live.length ? live.map((b) => b.name).join(' · ') : '—'} />
+          <Row label="Arrêtés" value={s.bots.length - live.length} />
+          <Row label="Entrées · refus" value={`${executed} · ${refused}`} />
+          <div className="mt-6"><a className="btn-ghost btn-ghost--small t-button-cap" {...linkProps('/app/agents')}>Gérer mes agents</a></div>
+        </Panel>
+        <Panel kicker="Mon agent d’analyse">
+          <p className="t-body-sm m-0 text-on-primary-mute">
+            {last
+              ? (last.pending ? 'Il interroge les outils…' : clip(last.answer || `Pas de réponse : ${last.error ?? ''}`))
+              : 'Il répond par les données de votre compte, et nomme l’outil derrière chaque nombre.'}
+          </p>
+          <div className="mt-6"><a className="btn-ghost btn-ghost--small t-button-cap" {...linkProps('/app/analyste')}>{last ? 'Reprendre la conversation' : 'Lui poser une question'}</a></div>
+        </Panel>
+        <Panel kicker="Ce qui attend votre Ledger">
+          <Row label="Demandes hors bornes" value={waiting} keyFigure={waiting > 0} />
+          <Row label="Dérogations signées" value={s.exception_buys.length} />
+          <Row label="Positions tenues" value={s.positions.length} />
+          {waiting ? <div className="mt-6"><a className="nav-link t-button-cap -ml-3" href="#demandes">Voir la demande</a></div> : null}
+        </Panel>
       </div>
-      <p className="t-caption mt-6 max-w-[60ch] is-faint">
-        {step ?? (browser
-          ? 'Le message de connexion se signe dans ce navigateur, sur votre appareil : une vraie Ledger en USB, ou la Flex émulée du banc.'
-          : 'L’adresse sera lue sur l’appareil du banc. Pour signer dans ce navigateur, choisissez « ma Ledger » sur la page Appareil.')}
-      </p>
     </Band>
   )
 }
@@ -149,6 +214,7 @@ function MandateBand({ s }: { s: BenchState }) {
                   <div key={i} className="thread__them t-body-sm">
                     {c.text}
                     {c.warning ? <span className="mt-2 block is-warning">Ce que ces bornes ne protègent pas : {c.warning}</span> : null}
+                    {c.source && /repli/.test(c.source) ? <span className="t-caption mt-2 block is-faint">Proposé par une règle de repli, pas par le modèle : {c.source}</span> : null}
                   </div>
                 ))}
             </div>
@@ -231,8 +297,8 @@ function BotsBand({ s }: { s: BenchState }) {
   return (
     <Band
       id="bots"
-      index="03"
-      eyebrow="Mes bots"
+      index="01"
+      eyebrow="Mes agents de trading"
       title="Ils achètent, le contrat décide"
       lead="Un bot est un agent d’exécution sans modèle de langage. Il choisit sur ce qu’il voit — la profondeur, le rendement affiché — et ne voit jamais la sortie. Tous vos bots travaillent dans le même coffre, sous le même mandat."
     >
@@ -387,7 +453,7 @@ function Journal({ rows }: { rows: JournalRow[] }) {
 
 /* ───────────────────────────── 04 · out-of-bounds requests ───────────────────────────── */
 
-function RequestsBand({ s }: { s: BenchState }) {
+function RequestsBand({ s, index = '04' }: { s: BenchState; index?: string }) {
   const { act } = useBench()
   const e = s.escalation
   const waiting = s.escalation_queue.length
@@ -395,7 +461,7 @@ function RequestsBand({ s }: { s: BenchState }) {
   return (
     <Band
       id="demandes"
-      index="04"
+      index={index}
       eyebrow="Hors bornes"
       title="Hors bornes ne veut pas dire non"
       lead="Quand un bot veut entrer dans une position que votre mandat refuse, la demande revient à vous, sur l’appareil, avec le nombre réel. Une dérogation vaut pour cette position, ce montant et ce nombre — une fois."
@@ -516,8 +582,8 @@ function AnalystBand({ s }: { s: BenchState }) {
   return (
     <Band
       id="analyste"
-      index="06"
-      eyebrow="L’analyste de votre compte"
+      index="01"
+      eyebrow="Mon agent d’analyse"
       title="Il comprend, il ne peut rien faire"
       lead="Un agent branché sur votre compte, en lecture seule. Il ne parle pas de mémoire : il interroge vos bots, vos décisions, vos positions et les mesures, et nomme l’outil derrière chaque nombre."
     >

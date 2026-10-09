@@ -10,12 +10,12 @@ import { useLogin } from './session'
 import { Badge, Band, Empty, Ghost, Panel, Row, Skeleton, dateTime, time } from './ui'
 
 export function ComptePage() {
-  const { state, act } = useBench()
+  const { state, act, say } = useBench()
   const { login, logout, busy, step } = useLogin()
   const [account, setAccount] = useState<Account | null>(null)
   const [reveal, setReveal] = useState(false)
   const [showConfig, setShowConfig] = useState(false)
-  const [copied, setCopied] = useState(false)
+  const [copied, setCopied] = useState<'key' | 'config' | null>(null)
   const address = state?.address
 
   const load = useCallback(async () => {
@@ -41,7 +41,7 @@ export function ComptePage() {
       >
         <div className="flex flex-wrap items-center gap-4">
           <Ghost onClick={login} disabled={busy}>{busy ? 'Connexion…' : 'Se connecter avec ma Ledger'}</Ghost>
-          <a className="nav-link t-button-cap" {...linkProps('/appareil')}>Choisir l’appareil</a>
+          <a className="nav-link t-button-cap" {...linkProps('/connexion')}>Choisir l’appareil</a>
         </div>
         {step ? <p className="t-caption mt-6 is-faint">{step}</p> : null}
       </Band>
@@ -51,8 +51,16 @@ export function ComptePage() {
   const live = state.bots.filter((b) => b.status === 'running')
   const old = state.bots.filter((b) => b.status !== 'running')
   const config = account ? JSON.stringify(account.mcp_config, null, 2) : ''
-  const copy = async () => {
-    try { await navigator.clipboard.writeText(config); setCopied(true); window.setTimeout(() => setCopied(false), 1600) } catch { /* no clipboard */ }
+  /** One click: fetch the key in clear (it is derived on the server, never stored), copy it, done. */
+  const copyText = async (what: 'key' | 'config') => {
+    try {
+      const a = await getAccount(true)
+      await navigator.clipboard.writeText(what === 'key' ? a.mcp_key : JSON.stringify(a.mcp_config, null, 2))
+      setCopied(what)
+      window.setTimeout(() => setCopied(null), 1600)
+    } catch {
+      say('Copie impossible : le presse-papiers est refusé par ce navigateur.')
+    }
   }
   const reset = async () => {
     if (window.confirm('Remettre ce compte à zéro ? Le mandat et les bots sont supprimés ; le coffre reste sur la chaîne.')) await act('/reset')
@@ -82,14 +90,14 @@ export function ComptePage() {
             </div>
           </Panel>
 
-          <Panel kicker="Mes bots">
+          <Panel kicker="Mes agents de trading">
             <Row label="En activité" value={live.length ? live.map((b) => b.name).join(' · ') : '—'} />
             <Row label="Arrêtés" value={old.length} />
             <Row label="Positions tenues" value={state.positions.length} />
             <Row label="Demandes en attente" value={(state.escalation ? 1 : 0) + state.escalation_queue.length} />
             <div className="mt-6 flex flex-wrap gap-3">
-              <a className="btn-ghost btn-ghost--small t-button-cap" {...linkProps('/app')}>Gérer mes bots</a>
-              <a className="nav-link t-button-cap" {...linkProps('/app')}>Parler à l’analyste</a>
+              <a className="btn-ghost btn-ghost--small t-button-cap" {...linkProps('/app/agents')}>Gérer mes agents</a>
+              <a className="nav-link t-button-cap" {...linkProps('/app/analyste')}>Parler à l’analyste</a>
             </div>
           </Panel>
         </div>
@@ -108,6 +116,10 @@ export function ComptePage() {
               <Ghost small onClick={() => setReveal((v) => !v)}>{reveal ? 'Masquer' : 'Révéler'}</Ghost>
               <Ghost small quiet onClick={() => setShowConfig((v) => !v)}>{showConfig ? 'Fermer la configuration' : 'Configuration Claude'}</Ghost>
             </div>
+            <div className="mt-3 flex flex-wrap gap-3">
+              <Ghost small quiet onClick={() => copyText('key')}>{copied === 'key' ? 'Clé copiée' : 'Copier la clé'}</Ghost>
+              <Ghost small quiet onClick={() => copyText('config')}>{copied === 'config' ? 'Configuration copiée' : 'Copier la configuration'}</Ghost>
+            </div>
             <p className="t-caption m-0 mt-5 is-faint">
               Le secret maître dont elle dérive peut être scellé dans le Ledger Key Ring de l’opérateur : une seule clé à protéger pour tous les comptes.
             </p>
@@ -115,7 +127,7 @@ export function ComptePage() {
           {showConfig ? (
             <Panel raised kicker="À coller dans la configuration MCP de Claude">
               <pre className="t-mono-data m-0 overflow-auto whitespace-pre-wrap break-all is-info">{config}</pre>
-              <div className="mt-5"><Ghost small onClick={copy} disabled={!reveal}>{copied ? 'Copié' : reveal ? 'Copier' : 'Révélez la clé pour copier'}</Ghost></div>
+              <div className="mt-5"><Ghost small onClick={() => copyText('config')}>{copied === 'config' ? 'Copiée' : 'Copier'}</Ghost></div>
             </Panel>
           ) : (
             <Empty>
