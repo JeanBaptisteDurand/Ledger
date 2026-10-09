@@ -184,3 +184,35 @@ open that PR too.
 
 ---
 
+## 7. `signMessage` silently drops any message longer than ~229 bytes — and strands the app
+
+**What happened.** We wired Sign-In with Ethereum (EIP-4361) through the Signer Kit
+(`device-signer-kit-ethereum` 1.18.1, `signMessage`). A 272-byte SIWE message fails in ~150 ms with
+`InvalidStatusWordError`; a 229-byte one signs fine. Reproduced on Speculos (app-ethereum 1.22.4) from
+Node and from the browser; the exchange is:
+
+```
+=> e008000019 05 8000002c 8000003c 80000000 00000000 00000000 0000010e     (path + length, ZERO message bytes)
+<= 9000                                                                       (the app waits for the rest)
+   SendSignPersonalMessageTask → InvalidStatusWordError                       (no second chunk is ever sent)
+```
+
+**Where.** `internal/app-binder/task/SendSignPersonalMessageTask.js` assembles path + length + message in an
+**`ApduBuilder`**, whose payload is capped at `APDU_MAX_PAYLOAD` and which *records* an overflow instead of
+throwing; the task never checks `getErrors()`, so `build()` yields a header-only payload, which
+`SendCommandInChunksTask` then sends as a single "first chunk". `SignPersonalMessageCommand.parseResponse`
+turns the app's intermediate `9000` into `InvalidStatusWordError("R is missing")`.
+
+**Why it hurts twice.** A typical SIWE message is 250–350 bytes, so every Sign-In-with-Ethereum flow through
+the kit fails. And on the device side, `handle_sign_personal_message` (`src/features/sign_message/cmd_sign_message.c`)
+sets `appState = APP_STATE_SIGNING_MESSAGE` **before** parsing the first chunk: once the client gives up, the
+app stays in that state and answers `0x6980` (`SWO_COMMAND_NOT_ALLOWED`) to every following message until
+it is quit and reopened. A user sees "it worked yesterday, now nothing signs".
+
+**One concrete suggestion.** Build the payload as a plain `ByteArrayBuilder` (no APDU cap) before chunking,
+and check `getErrors()` where an `ApduBuilder` is used for data that may exceed one APDU. On the app, arm
+`APP_STATE_SIGNING_MESSAGE` only after the first chunk parses, or drop back to idle on a parse error.
+Our workaround: a SIWE message without `statement`, seconds-precision `Issued At`, 8-hex nonce — 217 bytes.
+
+---
+
