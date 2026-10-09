@@ -44,32 +44,32 @@ export const NOTE_COPY: Record<number, NoteCopy> = {
     pieces: [
       { t: 'In ' },
       { mark: 'July', roll: { from: '0000', to: 2026, decimals: 0, pad: 4 } },
-      { t: ', LEDGER ships ' },
-      { mark: 'Wallet', roll: { from: '0.0', to: 4, decimals: 1, pad: 0 } },
-      { t: ', bringing Real World Assets to your device.' },
+      { t: ', LEDGER ships its ' },
+      { mark: 'Agent Stack' },
+      { t: ': AI agents now act with your funds.' },
     ],
   },
   1: {
     pieces: [
-      { t: 'But your device can only hand over a signature. Third party sites ask you for the same trust you place in your Ledger.' },
+      { t: 'Its policies cap what an agent spends. Nothing caps what it can get back out: some positions cost nothing to enter and everything to leave.' },
     ],
   },
   2: {
     pieces: [
-      { t: 'Turn ' },
-      { mark: 'the only device you can fully trust' },
-      { t: ' into the ' },
-      { mark: 'command deck' },
-      { t: ' for your positions.' },
+      { t: 'Sign ' },
+      { mark: 'one exit rule' },
+      { t: ' on your Ledger. A contract ' },
+      { mark: 'enforces it on every position' },
+      { t: ' your agents take.' },
     ],
   },
 }
 
 /** The plain sentences, for each hotspot's accessible name. */
 export const NOTE_SENTENCE: Record<number, string> = {
-  0: 'In July 2026, LEDGER ships Wallet 4.0, bringing Real World Assets to your device.',
-  1: 'But your device can only hand over a signature. Third party sites ask you for the same trust you place in your Ledger.',
-  2: 'Turn the only device you can fully trust into the command deck for your positions.',
+  0: 'In July 2026, LEDGER ships its Agent Stack: AI agents now act with your funds.',
+  1: 'Its policies cap what an agent spends. Nothing caps what it can get back out: some positions cost nothing to enter and everything to leave.',
+  2: 'Sign one exit rule on your Ledger. A contract enforces it on every position your agents take.',
 }
 
 export function ScreenNotes({ notes }: { notes: NotesState }) {
