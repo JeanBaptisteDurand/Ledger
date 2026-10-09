@@ -346,6 +346,57 @@ the settings »* et refuse (`0x6a80`) ; le kit rapporte `isBlindSign=true · dev
 à Ledger, pas au développeur, qui ne reçoit que l'erreur. L'appareil est strict. La pile est muette.
 C'est le point 1 de [`FEEDBACK.md`](FEEDBACK.md), mesuré.
 
+## En SaaS — la Ledger reste chez le client
+
+Quelqu'un chez lui, sa Ledger, notre site. Rien à installer, aucun secret à nous confier :
+
+1. **Il se connecte avec sa Ledger** — *Sign-In with Ethereum* (EIP-4361) : un message texte normé, signé
+   sur l'appareil **dans son navigateur** (Signer Kit + WebHID), vérifié par notre serveur (nonce, adresse,
+   `cast wallet verify`). Pas de compte, pas de mot de passe.
+2. **Le coffre est déployé à son nom** — `owner` = l'adresse prouvée à l'étape 1.
+3. **Il signe le mandat dans la page** — le même Signer Kit qu'en banc, transport WebHID, notre descripteur
+   servi par `/api/descriptor` ; la page rend la signature à `/api/signed`. Notre serveur ne voit jamais
+   l'appareil.
+4. **Il débranche.** L'agent travaille avec sa clé de session — qui ne peut appeler que le coffre, dans le
+   mandat. Si notre serveur est compromis, l'attaquant hérite d'un mandat, pas d'un pouvoir ; le porteur
+   révoque on-chain.
+5. **Ça déborde : il est prévenu** — webhook (`PDS_NOTIFY_URL`), fichier `agent/notifications.jsonl`, bannière
+   et notification du navigateur. Il revient, rebranche, lit le nombre, signe la dérogation **dans la page** —
+   ou refuse.
+
+6. **Il a un compte, et une clé pour son Claude.** `accounts/<adresse>/` : profil, mandat, journal, notifications,
+   `events.jsonl` (chaque geste : connexion, session, stratégie, mandat signé, tours, dérogations signées,
+   surveillance, questions à l'analyste). Sa clé MCP est **dérivée** — `HMAC-SHA256(maître, adresse)`, jamais
+   écrite — et n'ouvre que *ses* fichiers (`PDS_ACCOUNT`, `PDS_JOURNAL`, `PDS_MANDATE`) ; le secret maître dont
+   elle dérive est celui que le Ring scelle. Il la lit dans **mon compte**, avec la configuration à coller.
+   Une session par compte, plusieurs comptes par serveur ; la reconnexion (SIWE, ou l'appareil du banc)
+   retrouve le coffre, le mandat, les positions — et ses bots : ceux qui tournaient reprennent.
+7. **Il a des bots, pas un agent.** Il en ajoute autant qu'il veut, chacun nommé, dans un univers, à un rythme ;
+   il les voit tourner, les arrête d'un clic, retrouve les arrêtés avec leur bilan. Ils partagent le mandat : le
+   contrat tient le budget commun. Le MCP les expose en lecture seule (`bots`, `operations(bot=…)`) : l'analyste
+   du compte répond à « que font mes bots, lequel a le plus de refus ? ».
+
+Tout ce chemin est **exercé de bout en bout dans un vrai navigateur**, par `scripts/parcours.mjs` (Chromium
+headless, le même bundle `web/dist/ledger-web.js` qui parle soit à une vraie Ledger en WebHID, soit à
+l'émulateur par le proxy de même origine `/speculos/*`), avec un porteur automatique **volontairement lent :
+20 s de lecture avant chaque « Hold to sign »**. Dernier passage complet, le 24 septembre : connexion SIWE
+24 s · mandat signé dans la page 29 s (`isBlindSign=false · eip7730`, question « Transaction Check ? »
+comprise) · dix tours pools (2 achats, 8 refus) · dérogation signée dans la page 28 s · surveillance
+**354 → 808 bps, vendu** · cinq tours coffres (Gauntlet, Clearstar entrés ; Moonwell refusé, porte 2 685 bps ;
+deux coffres pleins) · dérogation Moonwell signée 30 s · surveillance 2 685 → 2 683 · l'analyste répond en
+33 s par quatre outils · le compte montre onze genres d'événements · déconnexion, reconnexion par l'appareil
+du banc : même compte, même coffre, cinq positions. Sur le banc, bouton **« ma Ledger · navigateur »**, puis
+**USB (WebHID)** ou **émulée (banc)**.
+
+Trois limites, dites : WebHID/Web Bluetooth = Chrome, Edge, Brave (pas Firefox ni Safari) ; le Key Ring
+n'apparaît pas dans ce parcours — le client n'a aucun secret à garder, c'est la brique qu'on retirerait ; et
+**un seul client à la fois sur l'appareil** : une signature en attente n'est prise que par l'onglet qui l'a
+demandée, parce qu'un second client pendant qu'un humain lit l'écran tue la signature et laisse l'app
+répondre `0x6901` à tout (`FEEDBACK.md` § 8 — trouvé en laissant un onglet du banc ouvert dans un autre
+navigateur).
+
+![le parcours SaaS : connecté avec sa Ledger, mandat signé dans la page](captures/front-saas.png)
+
 ## Ce que ça n'attrape pas — dit avant qu'on nous le demande
 
 - **L'interrupteur basculé après l'achat — ça ne se corrige pas, ça se surveille.** Un hook peut

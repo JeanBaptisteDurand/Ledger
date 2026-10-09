@@ -14,3 +14,4 @@ agent/watch.jsonl
 mcp/.mcp-key
 mcp/.mcp-key.ring
 accounts/
+agent/notifications.jsonl
