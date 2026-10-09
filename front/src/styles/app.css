@@ -1,0 +1,458 @@
+/*
+ * The product screens. Everything here is DESIGN.md's component frontmatter turned into classes: card-panel,
+ * device-screen-mirror, data-table, badge-state, text-input, button-sign-on-device, anchored-note, and the three
+ * type tiers the hero did not need (body-sm, mono-data, mono-data-lg).
+ *
+ * No hex in this file: tokens.css is the only place a colour is written. No shadow, no blur, no gradient, no fade.
+ * Things arrive by blinking (DESIGN.md › Interaction grammar › 1) and data does not move.
+ */
+@layer components {
+  /* ─── Type tiers specified in DESIGN.md and not yet built ─── */
+  .t-body-sm {
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.5;
+    letter-spacing: 0.2px;
+  }
+  .t-mono-data {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.5;
+    letter-spacing: 0;
+    font-variant-numeric: tabular-nums;
+  }
+  .t-mono-data-lg {
+    font-family: var(--font-mono);
+    font-size: 22px;
+    font-weight: 500;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+  }
+  .t-note {
+    font-family: var(--font-note);
+    font-size: clamp(17px, 1.32vw, 22px);
+    font-weight: 400;
+    line-height: 1.55;
+    letter-spacing: 0.005em;
+    max-width: 46ch;
+    text-wrap: pretty;
+    color: var(--color-text-050);
+  }
+  .t-note b,
+  .t-note strong {
+    font-weight: 500;
+    color: var(--color-accent);
+  }
+
+  /* ─── App shell: the page under the fixed nav ─── */
+  .app-page {
+    min-height: 100dvh;
+    padding-top: 72px;
+    background: var(--color-canvas-night);
+    color: var(--color-page-text);
+  }
+  .app-column {
+    max-width: 1200px;
+    margin-inline: auto;
+    padding-inline: var(--spacing-xl);
+  }
+  .app-band {
+    padding-block: var(--spacing-section);
+    border-top: 1px solid var(--color-page-hairline);
+  }
+  .app-band:first-of-type {
+    border-top: 0;
+    padding-top: var(--spacing-huge);
+  }
+  .eyebrow {
+    color: var(--color-page-text-faint);
+  }
+  .hairline-bottom {
+    border-bottom: 1px solid var(--color-hairline-on-dark);
+  }
+
+  /* ─── card-panel ─── */
+  .panel {
+    background: var(--color-page-panel);
+    border: 1px solid var(--color-page-hairline);
+    border-radius: var(--radius-sm);
+    padding: var(--spacing-xl);
+    color: var(--color-page-text);
+  }
+  .panel--raised {
+    background: var(--color-page-panel-raised);
+  }
+  /* device pending: the fields with a 1px accent left border, no spinner */
+  .panel--pending {
+    border-left-color: var(--color-accent);
+  }
+
+  /* ─── device-screen-mirror: exactly the fields the device shows, one per line ─── */
+  .mirror {
+    background: var(--color-device-screen-off);
+    color: var(--color-device-screen-on);
+    border: 1px solid var(--color-page-hairline-strong);
+    border-radius: var(--radius-device-flex);
+    padding: 20px 24px;
+  }
+  .mirror__line {
+    display: flex;
+    gap: 14px;
+    align-items: baseline;
+  }
+  .mirror__label {
+    color: var(--color-page-text-faint);
+    flex: none;
+  }
+  .mirror--pending {
+    border-left-color: var(--color-accent);
+  }
+  /* the live screen of the emulated device: a picture, framed like the mirror */
+  .device-frame {
+    background: var(--color-device-screen-off);
+    border: 1px solid var(--color-page-hairline-strong);
+    border-radius: var(--radius-device-flex);
+    padding: 14px;
+    width: fit-content;
+    max-width: 100%;
+  }
+  .device-frame img {
+    display: block;
+    width: 100%;
+    max-width: 300px;
+    border-radius: var(--radius-device-nano);
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-drag: none;
+    touch-action: none;
+  }
+
+  /* ─── data-table: static, numeric right-aligned, hover = a 1px left border ─── */
+  .data-scroll {
+    overflow-x: auto;
+    max-width: 100%;
+  }
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .data-table th {
+    background: var(--color-page-panel-raised);
+    color: var(--color-page-text-faint);
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 2;
+    letter-spacing: 0.96px;
+    text-transform: uppercase;
+    text-align: left;
+    padding: 4px 16px;
+    white-space: nowrap;
+  }
+  .data-table td {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    line-height: 1.5;
+    font-variant-numeric: tabular-nums;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--color-page-hairline);
+    border-left: 1px solid transparent;
+    vertical-align: top;
+    color: var(--color-page-text);
+  }
+  .data-table tr:hover td:first-child {
+    border-left-color: var(--color-page-hairline-strong);
+  }
+  .data-table .num {
+    text-align: right;
+    white-space: nowrap;
+  }
+  .data-table .label {
+    font-family: var(--font-body);
+    letter-spacing: 0.2px;
+  }
+  .is-success { color: var(--color-state-success); }
+  .is-warning { color: var(--color-state-warning); }
+  .is-error { color: var(--color-state-error); }
+  .is-info { color: var(--color-state-info); }
+  .is-mute { color: var(--color-page-text-mute); }
+  .is-faint { color: var(--color-page-text-faint); }
+
+  /* ─── cost-breakdown-row ─── */
+  .row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: var(--spacing-md);
+    padding: 12px 0;
+    border-top: 1px solid var(--color-page-hairline);
+    font-family: var(--font-mono);
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+  }
+  .row:first-child {
+    border-top: 0;
+  }
+  .row__label {
+    color: var(--color-page-text-mute);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .row__value {
+    color: var(--color-page-text);
+    text-align: right;
+    overflow-wrap: anywhere;
+  }
+  /* the total is the one place the accent may appear on a ticket */
+  .row__value--key {
+    color: var(--color-accent);
+  }
+
+  /* ─── badge-state: text in the state colour, 1px border at 40 %, no fill ─── */
+  .badge {
+    display: inline-block;
+    font-family: var(--font-body);
+    font-size: 12px;
+    line-height: 1.6;
+    letter-spacing: 0.96px;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: var(--radius-xs);
+    border: 1px solid color-mix(in oklab, currentColor 40%, transparent);
+    white-space: nowrap;
+  }
+
+  /* ─── text-input ─── */
+  .field {
+    display: block;
+    width: 100%;
+    min-height: 48px;
+    background: var(--color-page-surface-lift);
+    color: var(--color-page-text);
+    border: 1px solid var(--color-page-hairline);
+    border-radius: var(--radius-xs);
+    padding: 12px 16px;
+    font-family: var(--font-mono);
+    font-size: 16px;
+    font-variant-numeric: tabular-nums;
+  }
+  .field::placeholder {
+    color: var(--color-page-text-faint);
+  }
+  .field:focus {
+    outline: none;
+    border-color: var(--color-accent);
+  }
+  .field-label {
+    display: block;
+    margin-bottom: 6px;
+    color: var(--color-page-text-faint);
+  }
+
+  /* ─── buttons: the ghost pill is Florent's .btn-ghost; these only add the states the app needs ─── */
+  .btn-ghost[disabled],
+  .btn-sign[disabled] {
+    opacity: 0.38;
+    pointer-events: none;
+  }
+  .btn-ghost--quiet {
+    border-color: var(--color-page-hairline-strong);
+    color: var(--color-page-text-mute);
+  }
+  .btn-ghost--small {
+    min-height: 44px;
+    padding: 12px 18px;
+  }
+  /* button-sign-on-device: the ONLY filled button, once per flow */
+  .btn-sign {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 50px;
+    padding: 18px 24px;
+    border: 1px solid var(--color-text-050);
+    border-radius: var(--radius-pill);
+    background: var(--color-text-050);
+    color: var(--color-ink);
+    white-space: nowrap;
+    cursor: pointer;
+    transition: transform 120ms ease-out;
+  }
+  .btn-sign:active {
+    transform: scale(0.97);
+  }
+  button.btn-ghost,
+  button.nav-link {
+    cursor: pointer;
+    font: inherit;
+    background: transparent;
+  }
+  button.nav-link {
+    border: 0;
+  }
+  .nav-link[aria-current='page'] {
+    opacity: 1;
+    box-shadow: inset 0 -1px 0 var(--color-accent);
+  }
+
+  /* ─── segmented choice: two micro-cap segments, the active one underlined in the accent ─── */
+  .segments {
+    display: inline-flex;
+    gap: var(--spacing-md);
+  }
+  .segment {
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid transparent;
+    padding: 6px 0;
+    min-height: 44px;
+    color: var(--color-page-text-faint);
+    cursor: pointer;
+    font-family: var(--font-body);
+    font-size: 13px;
+    letter-spacing: 0.2px;
+  }
+  .segment[aria-pressed='true'] {
+    color: var(--color-page-text);
+    border-bottom-color: var(--color-accent);
+  }
+
+  /* ─── anchored-note: a 1px accent line with one right angle and a 5px dot at each end ─── */
+  .anchored {
+    position: relative;
+    padding-left: 220px;
+    padding-top: 34px;
+  }
+  .anchored::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 200px;
+    height: 46px;
+    border-left: 1px solid var(--color-accent);
+    border-bottom: 1px solid var(--color-accent);
+  }
+  .anchored__dot {
+    position: absolute;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--color-accent);
+  }
+  .anchored__dot--from { left: -2px; top: -2px; }
+  .anchored__dot--to { left: 198px; top: 44px; }
+  @media (max-width: 767px) {
+    /* below 768px anchored notes become ordinary paragraphs */
+    .anchored { padding-left: 0; padding-top: 0; }
+    .anchored::before, .anchored__dot { display: none; }
+  }
+
+  /* ─── chat: the strategist and the analyst ─── */
+  .thread {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
+  .thread__you {
+    align-self: flex-end;
+    max-width: 60ch;
+    padding: 12px 16px;
+    border: 1px solid var(--color-page-hairline-strong);
+    border-radius: var(--radius-sm);
+    color: var(--color-page-text);
+  }
+  .thread__them {
+    max-width: 68ch;
+    padding: 12px 0 12px 16px;
+    border-left: 1px solid var(--color-page-hairline-strong);
+    color: var(--color-page-text);
+    white-space: pre-wrap;
+  }
+  .thread__trace {
+    display: block;
+    margin-top: 10px;
+    color: var(--color-state-info);
+  }
+
+  /* ─── the log: the device's voice, mono, calm ─── */
+  .log {
+    max-height: 320px;
+    overflow: auto;
+    white-space: pre-wrap;
+    color: var(--color-page-text-mute);
+  }
+
+  /* ─── toasts and the device hint: text and a hairline, never a filled surface ─── */
+  .toasts {
+    position: fixed;
+    right: var(--spacing-xl);
+    bottom: var(--spacing-xl);
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+    max-width: min(460px, calc(100vw - 48px));
+  }
+  .toast {
+    background: var(--color-page-panel-raised);
+    border: 1px solid var(--color-page-hairline-strong);
+    border-left-color: currentColor;
+    border-radius: var(--radius-xs);
+    padding: 12px 16px;
+    cursor: pointer;
+    text-align: left;
+    font: inherit;
+  }
+  .device-hint {
+    position: fixed;
+    left: 50%;
+    bottom: var(--spacing-xl);
+    transform: translateX(-50%);
+    z-index: 30;
+    background: var(--color-device-screen-off);
+    color: var(--color-device-screen-on);
+    border: 1px solid var(--color-page-hairline-strong);
+    border-left-color: var(--color-accent);
+    border-radius: var(--radius-xs);
+    padding: 12px 18px;
+    max-width: calc(100vw - 48px);
+  }
+
+  /* ─── loading: hairline skeleton rows, no shimmer ─── */
+  .skeleton {
+    height: 1px;
+    background: var(--color-page-hairline);
+    margin: 22px 0;
+  }
+}
+
+/* ─── Blinking is how things arrive (DESIGN.md: pulses [0–0.05] [0.13–0.17] [0.31–0.42], steady at 0.52 s) ─── */
+@keyframes blink-on {
+  0% { opacity: 1; }
+  9.6% { opacity: 0; }
+  25% { opacity: 1; }
+  32.7% { opacity: 0; }
+  59.6% { opacity: 1; }
+  80.8% { opacity: 0; }
+  100% { opacity: 1; }
+}
+.blink-in {
+  animation: blink-on 520ms steps(1, end) both;
+}
+/* something acknowledges you: [0–0.05] [0.11–0.17] [0.25–0.34], steady at 0.44 s */
+@keyframes blink-ack {
+  0% { opacity: 1; }
+  11.4% { opacity: 0; }
+  25% { opacity: 1; }
+  38.6% { opacity: 0; }
+  56.8% { opacity: 1; }
+  77.3% { opacity: 0; }
+  100% { opacity: 1; }
+}
+.blink-ack {
+  animation: blink-ack 440ms steps(1, end) both;
+}
