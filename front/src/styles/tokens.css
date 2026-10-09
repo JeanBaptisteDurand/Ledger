@@ -1,0 +1,836 @@
+/* Tokens from DESIGN.md frontmatter. The ONLY file allowed to hold hex values. */
+@import 'tailwindcss';
+@import '@fontsource/barlow-condensed/600.css';
+@import '@fontsource/barlow-condensed/700.css';
+@import '@fontsource/barlow/400.css';
+@import '@fontsource/barlow/700.css';
+@import '@fontsource/jetbrains-mono/400.css';
+@import '@fontsource/jetbrains-mono/500.css';
+@import '@fontsource/cabin/400.css';
+@import '@fontsource/cabin/500.css';
+@import '@fontsource/inter/latin-600.css';
+@import 'lenis/dist/lenis.css';
+
+@theme {
+  /* ─── Canvas (SpaceX) ─── */
+  --color-canvas-night: #000000;
+  --color-canvas-night-soft: #0a0705;
+  --color-canvas-panel: #14100c;
+  --color-canvas-panel-raised: #1c1712;
+  --color-hairline-on-dark: #3a2e22;
+  --color-hairline-strong: #55432f;
+  /* ─── Text ─── */
+  --color-on-primary: #ffffff;
+  --color-on-primary-mute: #d6c2a4;
+  --color-ink-mute: #94806a;
+  --color-ink: #000000;
+  /* ─── Martian sky ramp (Mistral sunset hexes + rose stop) ─── */
+  --color-sky-ember: #cc3a05;
+  --color-sky-orange: #fa520f;
+  --color-sky-amber: #ff8105;
+  --color-sky-peach: #ffb83e;
+  --color-sky-rose: #c9667a;
+  --color-sky-night: #050308;
+  /* Added (not in DESIGN.md): the violet band a real dusk puts between the blue night and the warm horizon.
+     Without it the sky runs black to red in one hue and reads as a single orange wash. */
+  --color-sky-violet: #2f1b45;
+  /* ─── Space (added: deep night blue that answers the dusk orange) ─── */
+  --color-space-deep: #06101f;
+  --color-space-azure: #2b7fb8;
+  --color-space-azure-soft: #8fc2e6;
+  /* ─── Regolith ─── */
+  --color-regolith-deep: #2e1c11;
+  --color-regolith: #6b4529;
+  --color-regolith-light: #a8784a;
+  /* ─── Accent ─── */
+  --color-accent-incandescent: #ffca6e;
+  /* ─── Narrative ramp: every text colour comes from here and nowhere else.
+         Sampled off the base scene, from the horizon's brightest glow down to the regolith and to black. ─── */
+  --color-text-050: #fff1d4;
+  --color-text-100: #ffca6e;
+  --color-text-200: #ffb83e;
+  --color-text-300: #ff8105;
+  --color-text-400: #c9667a;
+  --color-text-500: #a8784a;
+  --color-text-600: #fa520f;
+  --color-text-700: #cc3a05;
+  --color-text-800: #6b4529;
+  --color-text-900: #2e1c11;
+  --color-text-950: #000000;
+  /*
+   * The ramp is the chromatic system of the WHOLE page, not just the hero: the sections under it belong to the
+   * same world without replaying the spectacle. Surfaces are the regolith end of the ramp, text the horizon end,
+   * hairlines in between. The page tokens above carry the literal values because Tailwind v4 generates its
+   * utilities from @theme at build time and cannot resolve a var() there; these aliases are for hand-written CSS.
+   */
+  --color-page-surface: var(--color-text-950);
+  --color-page-surface-lift: #0a0705;
+  --color-page-panel: #14100c;
+  --color-page-panel-raised: #1c1712;
+  --color-page-hairline: #3a2e22;
+  --color-page-hairline-strong: #55432f;
+  --color-page-text: var(--color-text-050);
+  --color-page-text-mute: #d6c2a4;
+  --color-page-text-faint: #94806a;
+  --color-page-accent: var(--color-text-300);
+  --color-accent: #fa520f;
+  --color-accent-soft: #ffb83e;
+  --color-on-accent: #000000;
+  /* ─── State ─── */
+  --color-state-success: #7fb069;
+  --color-state-warning: #ffb83e;
+  --color-state-error: #e0483a;
+  --color-state-info: #a0b4c8;
+  /* ─── Ledger device ─── */
+  --color-device-body: #0b0b0b;
+  --color-device-edge: #1f1f1f;
+  --color-device-screen-off: #050505;
+  --color-device-screen-on: #f5f0e8;
+  --color-device-eink: #c9cac6;
+  --color-device-ink: #141414;
+  --color-device-alu: #b8b8b4;
+
+  /* ─── Type families ─── */
+  --font-display: 'Barlow Condensed', 'Arial Narrow', Arial, sans-serif;
+  --font-display-weight: 700;
+  --font-display-stretch: 100%;
+  /* The horizon title's face. Two self-hosted display faces were tried here and both were dropped by the
+     author, so it is back to the condensed grotesk the project already loads: no extra bytes, no licence
+     question, and at a fixed line length it gives the tallest caps of anything in the stack. */
+  --font-title: 'Barlow Condensed', 'Arial Narrow', Arial, sans-serif;
+  --font-title-weight: 700;  /* the heaviest Barlow Condensed this project loads */
+  --font-title-variation: normal;
+  /*
+   * The note's face. Gill Sans is a Monotype commercial release and is in no libre catalogue; it is NOT
+   * installed here and nothing falls back to a copy of it. Cabin is the stand-in: an OFL humanist drawn after
+   * Johnston and Gill, so the proportions and the open apertures the sentence needs are there, self-hosted
+   * from npm rather than fetched off a font-sharing site. Source Sans 3 is the runner-up; it was installed and
+   * never imported, and has been uninstalled with the rest of the dead weight, so switching now means adding
+   * the package back, one import and one name here. Nothing is named in this stack that the project does not
+   * load: a face the project does not ship only resolves on a machine that happens to already have it.
+   */
+  --font-note: Cabin, Barlow, Arial, sans-serif;
+  /*
+   * The face the DEVICE writes in: the MONOLITH wordmark on the Flex's E Ink panel.
+   *
+   * Ledger's own brand page names three faces and none of them can be here. Brut Grotesque is a retail
+   * release, bought per licence, not redistributable in a repository. HM ALPHA Mono and Ledger Mono were drawn
+   * for Ledger and are not distributed at all. Nothing was downloaded from a font-sharing site to stand in for
+   * any of them.
+   *
+   * Inter is what is loaded instead, and it is not an arbitrary substitute: it is the face Ledger's own
+   * interface ships, it is SIL OFL, and it comes from npm rather than off a page. It is a neutral grotesque of
+   * the same family of shapes as the brand face — same vertical stress, same closed apertures, same flat
+   * terminals — so the wordmark reads as the right kind of object even though it is not the right font. If a
+   * Brut Grotesque licence exists, dropping the woff2 in and changing this one line is the whole swap.
+   */
+  --font-device: Inter, 'Helvetica Neue', Arial, sans-serif;
+  --font-body: Barlow, Arial, Verdana, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+
+  /* ─── Radii ─── */
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-pill: 32px;
+  --radius-device-nano: 14px;
+  --radius-device-flex: 22px;
+
+  /* ─── Spacing ─── */
+  --spacing-xxs: 4px;
+  --spacing-xs: 8px;
+  --spacing-sm: 12px;
+  --spacing-md: 16px;
+  --spacing-lg: 18px;
+  --spacing-xl: 24px;
+  --spacing-xxl: 32px;
+  --spacing-huge: 48px;
+  --spacing-section: 96px;
+}
+
+:root {
+  --hero-p: 0;
+  color-scheme: dark;
+  /* No 300 ms double-tap delay on anything tappable. */
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  background: var(--color-canvas-night);
+}
+
+body {
+  margin: 0;
+  background: var(--color-canvas-night);
+  color: var(--color-on-primary);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.5;
+  letter-spacing: 0.2px;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Reveal elements stay hidden only when motion is on; GSAP sets autoAlpha 1. */
+html.has-motion [data-reveal] {
+  visibility: hidden;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+}
+
+@layer components {
+  /* ─── Typography tiers (DESIGN.md › typography) ─── */
+  .t-display-monolith {
+    font-family: var(--font-display);
+    font-size: clamp(88px, 11.5vw, 200px);
+    font-weight: 700;
+    line-height: 0.88;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+  /* Hero title: one line, its baseline on the horizon (66%), the device stands in front of it. */
+  .hero-title {
+    top: 66%;
+    transform: translateY(-104%);
+    white-space: nowrap;
+  }
+  /* Portrait / mobile poster: a title card above the slab, two centred lines. */
+  @media (max-width: 767px) {
+    .hero-title {
+      top: 31%;
+      font-size: 64px;
+      white-space: normal;
+      text-align: center;
+      padding: 0 20px;
+      transform: translateY(-100%);
+    }
+  }
+  .t-display-xxl {
+    font-family: var(--font-display);
+    font-size: 80px;
+    font-weight: 700;
+    line-height: 0.95;
+    letter-spacing: 1.6px;
+    text-transform: uppercase;
+  }
+  .t-display-xl {
+    font-family: var(--font-display);
+    font-size: 60px;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+  }
+  .t-display-lg {
+    font-family: var(--font-display);
+    font-size: 48px;
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: 0.96px;
+    text-transform: uppercase;
+  }
+  .t-numeral-hero {
+    font-family: var(--font-display);
+    font-size: clamp(96px, 12vw, 160px);
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+  }
+  .t-body-lg {
+    font-family: var(--font-body);
+    font-size: 18px;
+    font-weight: 400;
+    line-height: 1.7;
+    letter-spacing: 0.2px;
+  }
+  .t-body-md {
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.5;
+    letter-spacing: 0.2px;
+  }
+  .t-button-cap {
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 0.94;
+    letter-spacing: 1.17px;
+    text-transform: uppercase;
+  }
+  .t-micro-cap {
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 2;
+    letter-spacing: 0.96px;
+    text-transform: uppercase;
+  }
+  .t-caption {
+    font-family: var(--font-body);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .t-mono-device {
+    font-family: var(--font-mono);
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1.6;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Responsive stair-step for display tiers (DESIGN.md › Responsive) */
+  @media (max-width: 1279px) {
+    .t-display-xxl { font-size: 60px; line-height: 1.05; }
+  }
+  @media (max-width: 960px) {
+    .t-display-xxl { font-size: 48px; }
+  }
+  @media (max-width: 767px) {
+    .t-display-xxl { font-size: 40px; letter-spacing: 1px; }
+  }
+
+  /* ─── Components ─── */
+  .btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 50px;
+    padding: 18px 24px;
+    border: 1px solid var(--color-on-primary);
+    border-radius: var(--radius-pill);
+    background: transparent;
+    color: var(--color-on-primary);
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background-color 200ms cubic-bezier(0.23, 1, 0.32, 1), color 200ms cubic-bezier(0.23, 1, 0.32, 1), transform 120ms ease-out;
+  }
+  .btn-ghost:hover {
+    background: var(--color-on-primary);
+    color: var(--color-ink);
+  }
+  .btn-ghost:active {
+    transform: scale(0.97);
+  }
+
+  .nav-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 12px;
+    color: var(--color-on-primary);
+    text-decoration: none;
+    opacity: 0.86;
+    transition: opacity 200ms ease-out;
+  }
+  .nav-link:hover {
+    opacity: 1;
+  }
+
+  .hairline-top {
+    border-top: 1px solid var(--color-hairline-on-dark);
+  }
+}
+
+/* ─── Hero sky (CSS layer under the title; same tokens the 3D fog reads) ─── */
+/*
+ * Stops are in viewport fractions: the peach horizon sits at 66% of the viewport at rest.
+ *
+ * The ramp is a real dusk, read from the bottom up: peach at the horizon, amber and orange just above it, the
+ * ember red of the last scattered light, then a dusty rose that carries the warmth into a deep violet, a night
+ * blue above that, and black at the top. The rose stop matters: violet meeting red directly renders as a muddy
+ * band in sRGB interpolation, and the rose is what makes the crossing read as air rather than as a seam.
+ *
+ * On top of the ramp sit three radial layers. A vertical gradient alone has no volume, because every pixel on
+ * a row is the same colour: nothing tells the eye the light has a source or that the dome curves away. The
+ * radials give it one, by letting the light fall off sideways as well as upward.
+ */
+.hero-sky {
+  /*
+   * Fallback first, for browsers without `in oklab` or `color-mix()`: an invalid interpolation method makes the
+   * WHOLE declaration invalid, and a hero whose sky silently disappears is worse than one without volume. This
+   * plain sRGB ramp is what they keep; everything below overrides it where the syntax is understood.
+   */
+  background: linear-gradient(to bottom, var(--color-canvas-night) 0.0%, var(--color-canvas-night) 6.0%, var(--color-space-deep) 24.0%, var(--color-sky-violet) 38.0%, var(--color-sky-rose) 50.0%, var(--color-sky-ember) 56.5%, var(--color-sky-orange) 60.8%, var(--color-sky-amber) 64.0%, var(--color-sky-peach) 66.0%, var(--color-sky-amber) 69.0%, var(--color-regolith-deep) 76.0%, var(--color-canvas-night) 100.0%);
+
+  background:
+    /* the sun's own bloom, tight on the horizon line */
+    radial-gradient(ellipse 52% 14% at 50% 66%, color-mix(in srgb, var(--color-sky-peach) 62%, transparent) 0%, color-mix(in srgb, var(--color-sky-amber) 20%, transparent) 46%, transparent 100%),
+    /* the warm scatter spreading up and out of it, wider and weaker */
+    radial-gradient(ellipse 118% 38% at 50% 70% in oklab, color-mix(in srgb, var(--color-sky-ember) 42%, transparent) 0%, color-mix(in srgb, var(--color-sky-ember) 10%, transparent) 60%, transparent 100%),
+    /* the dome deepening toward the top corners: this is the layer that stops the sky reading flat */
+    radial-gradient(ellipse 92% 62% at 50% 12% in oklab, color-mix(in srgb, var(--color-sky-violet) 58%, transparent) 0%, color-mix(in srgb, var(--color-sky-violet) 14%, transparent) 62%, transparent 100%),
+    linear-gradient(
+      to bottom in oklab,
+      var(--color-canvas-night) 0.0%,
+      var(--color-canvas-night) 6.0%,
+      var(--color-space-deep) 24.0%,
+      var(--color-sky-violet) 38.0%,
+      var(--color-sky-rose) 50.0%,
+      var(--color-sky-ember) 56.5%,
+      var(--color-sky-orange) 60.8%,
+      var(--color-sky-amber) 64.0%,
+      var(--color-sky-peach) 66.0%,
+      var(--color-sky-amber) 69.0%,
+      var(--color-regolith-deep) 76.0%,
+      var(--color-canvas-night) 100.0%
+    );
+}
+/* Scene variant: twice the viewport height so it can slide down with the camera without leaving a gap. */
+.hero-sky--tall {
+  /*
+   * Fallback first, for browsers without `in oklab` or `color-mix()`: an invalid interpolation method makes the
+   * WHOLE declaration invalid, and a hero whose sky silently disappears is worse than one without volume. This
+   * plain sRGB ramp is what they keep; everything below overrides it where the syntax is understood.
+   */
+  background: linear-gradient(to bottom, var(--color-canvas-night) 0.0%, var(--color-canvas-night) 24.0%, var(--color-space-deep) 45.0%, var(--color-sky-violet) 60.0%, var(--color-sky-rose) 71.5%, var(--color-sky-ember) 77.5%, var(--color-sky-orange) 80.7%, var(--color-sky-amber) 82.2%, var(--color-sky-peach) 83.0%, var(--color-sky-amber) 84.3%, var(--color-regolith-deep) 87.8%, var(--color-canvas-night) 100.0%);
+
+  top: -100vh;
+  height: 200vh;
+  /* Dawn: a radial mask centred on the horizon line (83% of this layer) grows from nothing; exposure follows. */
+  /* Fixed-size ellipse; the stops travel with --dawn-reach (0% → fully transparent, 150% → fully opaque). */
+  -webkit-mask-image: radial-gradient(ellipse 170% 45% at 50% 83%, #000 max(0%, calc(var(--dawn-reach, 200%) - 55%)), transparent max(0.01%, var(--dawn-reach, 200%)));
+  mask-image: radial-gradient(ellipse 170% 45% at 50% 83%, #000 max(0%, calc(var(--dawn-reach, 200%) - 55%)), transparent max(0.01%, var(--dawn-reach, 200%)));
+  filter: brightness(var(--dawn-bright, 1));
+  background:
+    radial-gradient(ellipse 52% 7% at 50% 83%, color-mix(in srgb, var(--color-sky-peach) 62%, transparent) 0%, color-mix(in srgb, var(--color-sky-amber) 20%, transparent) 46%, transparent 100%),
+    radial-gradient(ellipse 118% 19% at 50% 85% in oklab, color-mix(in srgb, var(--color-sky-ember) 42%, transparent) 0%, color-mix(in srgb, var(--color-sky-ember) 10%, transparent) 60%, transparent 100%),
+    radial-gradient(ellipse 92% 34% at 50% 44% in oklab, color-mix(in srgb, var(--color-sky-violet) 58%, transparent) 0%, color-mix(in srgb, var(--color-sky-violet) 14%, transparent) 62%, transparent 100%),
+    linear-gradient(
+      to bottom in oklab,
+      var(--color-canvas-night) 0.0%,
+      var(--color-canvas-night) 24.0%,
+      var(--color-space-deep) 45.0%,
+      var(--color-sky-violet) 60.0%,
+      var(--color-sky-rose) 71.5%,
+      var(--color-sky-ember) 77.5%,
+      var(--color-sky-orange) 80.7%,
+      var(--color-sky-amber) 82.2%,
+      var(--color-sky-peach) 83.0%,
+      var(--color-sky-amber) 84.3%,
+      var(--color-regolith-deep) 87.8%,
+      var(--color-canvas-night) 100.0%
+    );
+}
+/* The dusk glow breathes slowly: one CSS animation, paused when the hero is out of view. */
+.hero-night-solid {
+  background: var(--color-space-deep);
+}
+.hero--lit .hero-sky--tall {
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+.hero-breathe {
+  position: absolute;
+  inset-inline: -20%;
+  top: 70%;
+  height: 26%;
+  background: radial-gradient(ellipse at 50% 50%, var(--color-sky-orange) 0%, transparent 62%);
+  mix-blend-mode: screen;
+  opacity: 0.06;
+  animation: hero-breathe 16s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
+}
+@keyframes hero-breathe {
+  from { opacity: 0.04; transform: scaleX(1); }
+  to { opacity: 0.16; transform: scaleX(1.08); }
+}
+.hero--inactive .hero-breathe,
+#hero[data-space='true'] .hero-breathe {
+  /* It is the dusk's own glow: once the sky has gone out there is nothing left for it to breathe on. */
+  animation-play-state: paused;
+}
+/*
+ * Vignette: a cinema edge on the WHOLE frame, not only the sides. The centre is still left alone, so the key
+ * standing in the middle is never darkened; the falloff only starts past 44% of the radius. The side gradient
+ * survives underneath it because the frame is much wider than it is tall, and a single ellipse would otherwise
+ * leave the left and right edges lighter than the corners.
+ */
+.hero-vignette {
+  background:
+    radial-gradient(
+      ellipse 76% 70% at 50% 50%,
+      rgb(0 0 0 / 0) 42%,
+      rgb(0 0 0 / 0.36) 74%,
+      rgb(0 0 0 / 0.82) 100%
+    ),
+    linear-gradient(
+      to right,
+      rgb(0 0 0 / 0.52) 0%,
+      rgb(0 0 0 / 0.18) 12%,
+      rgb(0 0 0 / 0) 24%,
+      rgb(0 0 0 / 0) 76%,
+      rgb(0 0 0 / 0.18) 88%,
+      rgb(0 0 0 / 0.52) 100%
+    );
+}
+
+/* ─── The device screen carries the narrative; the page only shows the hidden word mirror ─── */
+/* Poster and reduced motion: the words the screen carries in the animated hero, printed in order. */
+.screen-word-list {
+  list-style: none;
+  margin: 0;
+  padding-inline: 0;
+  display: grid;
+  gap: 12px;
+  font-family: var(--font-mono);
+  font-size: 15px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-050);
+}
+.screen-word-list li {
+  border-block-end: 1px solid var(--color-page-hairline);
+  padding-block-end: 12px;
+}
+
+/* Scroll is held while the day rises (Lenis is stopped too). */
+html.hero-dawn-hold {
+  overflow: hidden;
+}
+.hero-night {
+  background: var(--color-space-deep);
+  opacity: 0;
+}
+/*
+ * What is left of the old CSS star field: the backdrop it used to carry, and nothing else.
+ *
+ * The stars themselves moved into the canvas (src/scene/StarField.tsx). They had to: the gravitational lens is
+ * a displacement of the scene's render target, and a DOM layer under the canvas never goes through it, so the
+ * one part of the frame where the bending should be unmistakable was the one part that stayed rigid. Moving
+ * them also took three infinite CSS animations off the page — the budget breach declared in pass 21 — and the
+ * SASS `random()` and `unquote()` that Dart Sass 3 will drop.
+ *
+ * This rule stays because the layer is also the darkness the stars sat on, faded in by the player on its own
+ * schedule; the canvas above it still clears transparent, so the sunset gradient shows through during act one.
+ */
+.hero-stars {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background: var(--color-canvas-night);
+  opacity: 0;
+}
+/*
+ * The reworked space background, behind `?bg=stars`, NOT the default yet.
+ *
+ * The flat blue becomes a radial that is warm where the dusk just was and black overhead, which is the pen's
+ * structure (an ellipse anchored at the bottom) read in our own ramp. It is also what keeps the passage from
+ * the sunset progressive: the night does not arrive as a different sky, it arrives as the same one going out.
+ * Not one hue of blue in it.
+ */
+#hero[data-bg='stars'] .hero-night {
+  background: radial-gradient(
+    ellipse 128% 66% at 50% 104% in oklab,
+    color-mix(in oklab, var(--color-sky-ember) 34%, var(--color-canvas-night)) 0%,
+    color-mix(in oklab, var(--color-regolith-deep) 52%, var(--color-canvas-night)) 30%,
+    color-mix(in oklab, var(--color-regolith-deep) 16%, var(--color-canvas-night)) 58%,
+    var(--color-canvas-night) 88%
+  );
+}
+#hero[data-bg='stars'] .hero-night-solid {
+  background: color-mix(in oklab, var(--color-regolith-deep) 22%, var(--color-canvas-night));
+}
+
+/* Reduced motion: everything visible, nothing continuous. */
+@media (prefers-reduced-motion: reduce) {
+  html.has-motion [data-reveal] {
+    visibility: visible;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+a,
+button,
+summary,
+[role='button'] {
+  touch-action: manipulation;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ─── The notes that hang off the words on the key's screen ───────────────────────────────────────────── */
+/*
+ * Geometry comes from the scene, as percentages of the hero rewritten every frame from useFrame:
+ *   --n0-x / --n0-y   the bottom centre of the device, where the first note's elbow starts
+ *   --n1-x / --n1-y   the device's top-left corner, where the second note's diagonal starts
+ *   --n1-len/--n1-rot the length and bearing of that diagonal, computed by the scene because CSS has no atan2
+ * Everything below is positioned off those, so the hairlines and the text follow the key as it drifts with
+ * no per-frame JavaScript of their own.
+ *
+ * NO local --n0-x etc. here: a declaration on this layer would shadow the inherited value for the layer AND
+ * all its children, pinning the hairline to the middle of the frame for ever. Fallbacks sit at each use site.
+ */
+.screen-note-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  /*
+   * A note belongs to ONE stop: it arrives with that stop's word and leaves with it.
+   *
+   * `visibility`, not just `opacity`. There are two hotspots in the document at all times, and an invisible
+   * button is still a tab stop: without this, one Tab at the second stop would land on the first note's
+   * control, which the reader cannot see and which belongs to a step they have already passed. Hiding it
+   * takes it out of the tab order and out of hit-testing. The delay keeps it visible through its own fade.
+   */
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 320ms ease, visibility 0s linear 320ms;
+  --n-run: 84px;
+  --n0-note-top: 74%;
+}
+/*
+ * Only the armed stop's note is visible and reachable. CSS cannot compare two attributes to each other, so
+ * the pairing is spelled out; it is written past the number of stops that exist, because a new note that is
+ * invisible for want of one line here is a silent failure and this pass already hit it once.
+ */
+#hero[data-note-armed='0'] .screen-note-layer[data-note-stop='0'],
+#hero[data-note-armed='1'] .screen-note-layer[data-note-stop='1'],
+#hero[data-note-armed='2'] .screen-note-layer[data-note-stop='2'],
+#hero[data-note-armed='3'] .screen-note-layer[data-note-stop='3'],
+#hero[data-note-armed='4'] .screen-note-layer[data-note-stop='4'],
+#hero[data-note-armed='5'] .screen-note-layer[data-note-stop='5'] {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 320ms ease, visibility 0s;
+}
+#hero[data-note-armed='0'] .screen-note-layer[data-note-stop='0'] .screen-note__hotspot,
+#hero[data-note-armed='1'] .screen-note-layer[data-note-stop='1'] .screen-note__hotspot,
+#hero[data-note-armed='2'] .screen-note-layer[data-note-stop='2'] .screen-note__hotspot,
+#hero[data-note-armed='3'] .screen-note-layer[data-note-stop='3'] .screen-note__hotspot,
+#hero[data-note-armed='4'] .screen-note-layer[data-note-stop='4'] .screen-note__hotspot,
+#hero[data-note-armed='5'] .screen-note-layer[data-note-stop='5'] .screen-note__hotspot {
+  pointer-events: auto;
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .screen-note-layer {
+    transition: none;
+  }
+}
+
+/* The hotspot: a real button over the word. Hover, tap, focus and the tab order all come from that choice. */
+.screen-note__hotspot {
+  position: absolute;
+  left: var(--n-hot-x, 50%);
+  top: var(--n-hot-y, 50%);
+  width: var(--n-hot-w, 180px);
+  height: var(--n-hot-h, 54px);
+  transform: translate(-50%, -50%);
+  background: none;
+  border: 0;
+  padding: 0;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  /* A tap here is a tap, not a candidate double-tap-to-zoom, and the flash is ours rather than the browser's. */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  pointer-events: none;
+  opacity: 0;
+}
+.screen-note__hotspot:focus-visible {
+  outline: 2px solid var(--color-sky-orange);
+  outline-offset: 4px;
+}
+
+/* The hairlines. Drawn with a transform, so nothing ever leaves the compositor. */
+.screen-note__line,
+.screen-note__run,
+.screen-note__tick {
+  position: absolute;
+  background: var(--color-sky-orange);
+  opacity: 0;
+  pointer-events: none;
+}
+[data-shown='true'] .screen-note__line,
+[data-shown='true'] .screen-note__run {
+  opacity: 1;
+}
+.screen-note__tick {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+}
+
+/* ── under the key: straight down, then a short run sideways ── */
+[data-placement='under-key'] .screen-note__line {
+  left: var(--n0-x, 50%);
+  top: var(--n0-y, 50%);
+  width: 1px;
+  height: calc(var(--n0-note-top) - var(--n0-y, 50%));
+  transform-origin: top center;
+  transform: scaleY(var(--n-draw, 0));
+}
+[data-placement='under-key'] .screen-note__run {
+  left: var(--n0-x, 50%);
+  top: calc(var(--n0-note-top) - 1px);
+  width: var(--n-run);
+  height: 1px;
+  transform-origin: left center;
+  transform: scaleX(var(--n-draw-run, 0));
+}
+[data-placement='under-key'] .screen-note__tick--start {
+  left: var(--n0-x, 50%);
+  top: var(--n0-y, 50%);
+  transform: translate(-50%, -50%);
+}
+[data-placement='under-key'] .screen-note__tick--end {
+  left: calc(var(--n0-x, 50%) + var(--n-run));
+  top: var(--n0-note-top);
+  transform: translate(-50%, -50%);
+}
+[data-placement='under-key'] .screen-note__text {
+  left: calc(var(--n0-x, 50%) + var(--n-run) + 12px);
+  top: var(--n0-note-top);
+  transform: translateY(-50%);
+}
+
+/* ── top left: the same grammar as the first note, up from the device then sideways ── */
+/*
+ * Right angles only, and the two legs draw in sequence. The vertical one leaves the device's TOPMOST corner,
+ * which is the one point on the body from which a vertical run cannot re-enter it whatever the pose; the
+ * horizontal one then travels above the device entirely. Both legs are given in pixels by the scene, so
+ * neither can collapse from a percentage resolved against the wrong box.
+ */
+[data-placement='top-left'] .screen-note__line {
+  left: var(--n1-x, 40%);
+  top: var(--n1-end-y, 22%);
+  width: 1px;
+  height: var(--n1-rise, 0px);
+  transform-origin: bottom center;
+  transform: scaleY(var(--n-draw, 0));
+}
+[data-placement='top-left'] .screen-note__run {
+  left: var(--n1-end-x, 14%);
+  top: var(--n1-end-y, 22%);
+  width: var(--n1-run, 0px);
+  height: 1px;
+  transform-origin: right center;
+  transform: scaleX(var(--n-draw-run, 0));
+}
+[data-placement='top-left'] .screen-note__tick--start {
+  left: var(--n1-x, 40%);
+  top: var(--n1-y, 40%);
+  transform: translate(-50%, -50%);
+}
+[data-placement='top-left'] .screen-note__tick--end {
+  left: var(--n1-end-x, 14%);
+  top: var(--n1-end-y, 22%);
+  transform: translate(-50%, -50%);
+}
+[data-placement='top-left'] .screen-note__text {
+  left: var(--n1-end-x, 14%);
+  bottom: calc(100% - var(--n1-end-y, 22%) + 14px);
+  max-width: 34ch;
+}
+
+/* ── right: down from the BOTTOM CENTRE of the device, then out to the block of text ── */
+/*
+ * Same elbow as `under-key`, mirrored to the right: the vertical leg leaves the centre of the device's lower
+ * end, the horizontal leg runs out below the body. Every note now starts at the top or the bottom centre of
+ * the Ledger and nowhere else, so the three of them read as one rule rather than three special cases.
+ */
+[data-placement='right'] .screen-note__line {
+  left: var(--n2-x, 60%);
+  top: var(--n2-y, 45%);
+  width: 1px;
+  height: var(--n2-drop, 0px);
+  transform-origin: top center;
+  transform: scaleY(var(--n-draw, 0));
+}
+[data-placement='right'] .screen-note__run {
+  left: var(--n2-x, 60%);
+  top: calc(var(--n2-end-y, 74%) - 1px);
+  width: var(--n2-run, 0px);
+  height: 1px;
+  transform-origin: left center;
+  transform: scaleX(var(--n-draw-run, 0));
+}
+[data-placement='right'] .screen-note__tick--start {
+  left: var(--n2-x, 60%);
+  top: var(--n2-y, 45%);
+  transform: translate(-50%, -50%);
+}
+[data-placement='right'] .screen-note__tick--end {
+  left: var(--n2-end-x, 88%);
+  top: var(--n2-end-y, 74%);
+  transform: translate(-50%, -50%);
+}
+[data-placement='right'] .screen-note__text {
+  right: 4%;
+  top: calc(var(--n2-end-y, 74%) + 16px);
+  max-width: 30ch;
+}
+
+.screen-note__text {
+  position: absolute;
+  margin: 0;
+  max-width: 46ch;
+  font-family: var(--font-note);
+  font-size: clamp(17px, 1.32vw, 22px);
+  font-weight: 400;
+  line-height: 1.55;
+  letter-spacing: 0.005em;
+  color: var(--color-text-050);
+  text-wrap: pretty;
+  opacity: 0;
+  pointer-events: none;
+}
+[data-shown='true'] .screen-note__text {
+  pointer-events: auto;
+}
+
+/*
+ * The highlights. ONE register: the sunset orange DESIGN.md names as the single chromatic accent of the
+ * system. The three descriptions answer each other, so they answer in the same colour. Digits are tabular so
+ * a rolling figure cannot shift the line sideways.
+ */
+.screen-note__mark {
+  white-space: nowrap;
+  font-weight: 500;
+  color: var(--color-sky-orange);
+}
+.screen-note__value {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Under 768px the hero is a poster, so a note is ordinary text rather than something pinned to a 3D object. */
+@media (max-width: 767px) {
+  .screen-note-layer {
+    display: none;
+  }
+}
+
+/* The sentences on the poster, where there is no pointer to reveal them with. */
+.poster-note {
+  margin: 8px 0 0;
+  font-family: var(--font-note);
+  font-size: 16px;
+  line-height: 1.6;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--color-page-text-mute);
+  text-wrap: pretty;
+}
