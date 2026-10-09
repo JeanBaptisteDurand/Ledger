@@ -62,9 +62,10 @@ ENTER_EXC_SIG = (
 )
 
 BASE_RPC = os.environ.get("BASE_RPC_URL") or next(
-    (l.split("=", 1)[1].strip() for l in (TARE / ".env").read_text().splitlines() if l.startswith("BASE_RPC_URL=")),
+    (l.split("=", 1)[1].strip() for l in ((TARE / ".env").read_text().splitlines() if (TARE / ".env").exists() else [])
+     if l.startswith("BASE_RPC_URL=")),
     "",
-)
+)  # absent : le banc demarre quand meme, et l'ouverture de session dit « BASE_RPC_URL introuvable »
 
 # ------------------------------------------------------------------ l'état : le banc, et un état par compte
 
