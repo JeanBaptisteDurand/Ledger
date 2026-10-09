@@ -306,5 +306,5 @@ read this year. Speculos plus the official app builder means a team with no hard
 something real. And the Python client, chainId bug aside, does the hard part: it signs the filters, so
 we never had to reimplement your format.
 
-*Contact: the team behind [TARE](../ETH_Online_2026) — ETHOnline 2026 finalist, Uniswap Foundation
+*Contact: the team behind [TARE](https://github.com/JeanBaptisteDurand/ETH_Online_2026) — ETHOnline 2026 finalist, Uniswap Foundation
 "Best Uniswap Stack Contribution".*

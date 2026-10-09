@@ -32,7 +32,7 @@ respecte tout — et il peut quand même prendre une position **dont il ne sorti
 Sur Uniswap v4, le *hook* d'un pool décide qui a le droit de vendre. Les 16 et 17 septembre 2026, le
 registre officiel des hooks Uniswap a fusionné trois hooks dont son propre robot écrit
 *« HONEYPOT WARNING … enabling a rug/honeypot after users have already bought »* — et les a classés
-`vanillaSwap: true`. Dans les 125 072 mesures de [TARE](../ETH_Online_2026), **six pools laissent entrer
+`vanillaSwap: true`. Dans les 125 072 mesures de [TARE](https://github.com/JeanBaptisteDurand/ETH_Online_2026), **six pools laissent entrer
 pour 0 bps et prennent 9 990 à 9 999 bps à la sortie**.
 
 - `amountOutMinimum` ne le voit pas : il borne **cet** achat, pas la revente, qui n'existe pas encore.
@@ -292,7 +292,7 @@ comme dans un client MCP. Il ne peut rien faire d'autre que lire : c'est la gara
 | **0** | le coffre naîtra à une adresse connue d'avance — c'est le `verifyingContract` que l'appareil verra |
 | **1** | un Ledger **Flex** émulé (Speculos) sert l'app Ethereum 1.22.4 compilée avec les clés de test |
 | **2** | le porteur lit et **signe le mandat sur l'appareil**, avec **nos** filtres EIP-712 — sans `originToken`, sans partenariat, **aucun serveur Ledger contacté** |
-| **3** | sur le fork : l'agent achète seul un pool sain (sortie 198 bps, accepté) ; il lit une page piégée et vise un pool one-way (sortie 9 990 bps) → **refus**, budget inchangé |
+| **3** | sur le fork : l'agent achète seul un pool sain (sortie 198 bps, accepté) ; il lit une page piégée et vise un jeton qu'on ne peut même pas revendre (sortie 10 000 bps, jeton non transférable) → **refus**, budget inchangé |
 
 Sortie réelle du dernier passage :
 
@@ -306,8 +306,8 @@ Sortie réelle du dernier passage :
    pool sain  : ACHAT ACCEPTE, 895071256029443945504 jetons recus, sortie 198 bps
 
 === 3. Injection : une page piegee dit a l'agent d'acheter ce jeton ===
-   la sonde regarde la sortie : 9990 bps (revente refusee : false)
-   pool piege : ACHAT REFUSE - on n'entre pas la d'ou on ne sort pas
+   la sonde regarde la sortie : 10000 bps (sortie bloquee : true)
+   pool piege : ACHAT REFUSE (jeton non transferable) - on n'entre pas la d'ou on ne sort pas
 
 === 4. Rien n'a bouge ===
    budget consomme : 100000000000000 wei (inchange). Le Flex n'a pas clignote.
@@ -447,9 +447,13 @@ captures/                     ce que l'appareil a affiché, page par page (dmk/ 
 ### Les tests, séparément
 
 ```bash
+./scripts/demo.sh                     # signe le mandat sur l'appareil émulé -> mandate.json
 cd contracts
-forge test --fork-url "$BASE_RPC_URL" --fork-block-number 50614000 -vv
+MANDATE_FILE=../mandate.json forge test --fork-url "$BASE_RPC_URL" --fork-block-number 50614000 -vv
 ```
+
+`LedgerScene` rejoue la scène avec **la signature venue de l'appareil** : il lit le mandat que `demo.sh` vient
+d'écrire. Sans `MANDATE_FILE`, les six autres suites passent (31 tests) et `LedgerScene` dit ce qui lui manque.
 
 ```
 32 tests, 7 suites, tous verts :
@@ -471,30 +475,42 @@ Appareil déverrouillé, Ledger Wallet fermé, accepter « Allow unsafe manager 
 lance ensuite avec un avertissement « non vérifiée ». Chargé le 2 octobre sur une Flex (OS 1.6.1, MCU 6.9.2).
 
 
-- **Docker** (Speculos, `ledger-app-builder`), **Foundry**, **Python 3.12+**, un **RPC Base**
-  (`BASE_RPC_URL`, lu depuis `../ETH_Online_2026/.env` par défaut).
-- L'app Flex compilée avec les clés de test :
+- **Docker** (Speculos, `ledger-app-builder`), **Foundry**, **Python 3.12+**, **Node 20+**, le CLI **`claude`**
+  (le stratège et l'analyste), un **RPC Base** (`BASE_RPC_URL`).
+- **[TARE](https://github.com/JeanBaptisteDurand/ETH_Online_2026) cloné à côté** — il fournit trois choses : le script
+  qui compile l'app Flex de test (`scripts/ledger/build-app.sh` → `infra/speculos/apps/ethereum-flex-testkey.elf`, que
+  `ledger/speculos.sh` lance), le client Python officiel d'app-ethereum que ce build clone (`.cache/ledger-app-ethereum/client`),
+  et le RPC (`.env`, d'après `.env.example`). Ailleurs : `TARE_ROOT=<chemin>` ; le RPC seul : `BASE_RPC_URL=<url>` dans
+  l'environnement.
 
   ```bash
-  cd ../ETH_Online_2026
+  git clone https://github.com/JeanBaptisteDurand/ETH_Online_2026 ../ETH_Online_2026
+  cd ../ETH_Online_2026 && cp .env.example .env    # puis BASE_RPC_URL=<ton RPC Base>
   docker pull ghcr.io/ledgerhq/ledger-app-builder/ledger-app-builder:latest   # indispensable
   FORCE=1 TARGET=flex CAL_TEST_KEY=1 SET_PLUGIN_TEST_KEY=1 scripts/ledger/build-app.sh ethereum
+  ```
+
+- Les contrats — `forge-std` est figé en sous-module, au commit avec lequel les 32 tests tournent :
+
+  ```bash
+  (cd contracts && forge install)     # ou : git clone --recursive
   ```
 
 - L'environnement Python :
 
   ```bash
   uv venv .venv && . .venv/bin/activate
-  uv pip install -e ../ETH_Online_2026/.cache/ledger-app-ethereum/client
+  uv pip install -e ../ETH_Online_2026/.cache/ledger-app-ethereum/client -r ledger/requirements.txt
   ```
 
-- Les briques Ledger en JavaScript (**Node 20+**) — DMK, Signer Kit, transports, `wallet-cli` :
+- Les briques Ledger en JavaScript — DMK, Signer Kit, transports, `wallet-cli` :
 
   ```bash
-  (cd ledger/dmk && npm i)     # versions épinglées dans ledger/dmk/package.json
+  (cd ledger/dmk && npm ci)     # versions épinglées dans ledger/dmk/package-lock.json
   ```
 
   Sans elles, tout tourne encore par le client Python (`--signer python`) ; le banc le dit.
+
 
 ## Ce que ça n'attrape pas — dit avant qu'on nous le demande
 
@@ -563,4 +579,4 @@ lance ensuite avec un avertissement « non vérifiée ». Chargé le 2 octobre s
 ---
 
 Fait pour le hackathon **Ledger N3XT** (6-13 octobre 2026). Le moteur de mesure qui a trouvé les six
-pools est [TARE](../ETH_Online_2026) — finaliste ETHOnline 2026, prix Uniswap Foundation.
+pools est [TARE](https://github.com/JeanBaptisteDurand/ETH_Online_2026) — finaliste ETHOnline 2026, prix Uniswap Foundation.
