@@ -216,3 +216,67 @@ Our workaround: a SIWE message without `statement`, seconds-precision `Issued At
 
 ---
 
+## 8. Two clients on one app: one stray poll during a pending command, and the app answers `0x6901` to everything
+
+**What happened.** Our own page, left open in a forgotten tab (a browser kept alive by a previous tool
+session), was logged into the same account as the page under test. When the server put a signature in
+waiting, both tabs started the same Signer Kit flow — two DMK sessions on one emulated Flex. The trace, taken
+at the proxy between the browser and Speculos (app-ethereum 1.22.4, API level 26):
+
+```
+06:56:04.645  e006000000  -> 020116049000            GET_APP_CONFIGURATION (tab A)
+06:56:04.650  e032010000  ...                        Transaction Check opt-in prompt, waits for the user (tab A)
+06:56:04.77   B0010000    ...                        transport connect() from tab B, while the prompt is on screen
+06:56:05.423  e032010000  -> 6901   (0.78 s)         the PENDING command is refused: SWO_COMMAND_NOT_ACCEPTED
+06:56:05.424  B0010000    -> 6901
+06:56:05.439  e002…, b001000000, e020…, e01a…  -> 6901, 6901, 6901, 6901 …   every APDU, until Speculos was restarted
+```
+
+Reproduced three times. `b001000000` (`GET_APP_AND_VERSION`) is answered by the OS layer, not the app, and it
+was refused too: nothing was accepted again without a relaunch.
+
+**Where.** `status_words.h`: `SWO_COMMAND_NOT_ACCEPTED 0x6901`. `io_legacy/src/os_io_legacy.c` (~l. 397):
+*"TOCTOU: reject a new command while a previous one still awaits its reply"* — a latch `io_reply_pending`,
+armed when a command is accepted, released in `io_legacy_apdu_tx` when the app replies. Refusing the newcomer
+is the right call. What we observed is that the *pending* command was refused as well and the latch never
+released — consistent with the reply going out through a path that does not clear it. Not verified on
+hardware (we have no Flex): emulator only.
+
+**Speculos makes it worse before the app has a say.** `speculos/api/apdu.py` builds one `APDUBridge` per
+HTTP request (flask-restful instantiates a `Resource` per request), so its `endpoint_lock` serializes nothing,
+and every bridge appends itself to `seph.apdu_callbacks` for the life of the process: two concurrent `/apdu`
+POSTs are both written to the app, and each response is handed to every waiting request. We watched a
+`B0010000` receive the address answer of an `e002…`.
+
+**Why it is easy to be the second client.** The DMK session refresher sends `b001000000` every second
+(`DEVICE_SESSION_REFRESHER_POLLING_INTERVAL = 1e3`, `PINGER_TIMEOUT = 800`). Any second DMK instance — a
+second tab, a second app, a wallet polling in the background — is that client, and a human reading a screen
+for ten seconds is the window.
+
+**What we changed on our side.** Signing sessions are opened with
+`sessionRefresherOptions: { isRefresherDisabled: true }` (one heartbeat fewer while a human reads), and a
+pending signature is bound to the tab that asked for it (a token per request, a background tab never signs).
+With that, the same flows pass with a signer who takes 20 s per screen, opt-in prompt included.
+
+**The second client can be your own second tab.** A tab of the same account that never asked for the
+signature must not adopt it either: our first rule ("no token and the tab has focus") let a tab opened
+*before* the request start the same flow — in the trace, a `B0010000` lands at 21:14:52.076 in the middle
+of the EIP-712 filters, the pending `e00c` is refused with `6901` 1.2 s later, and the device still shows
+the review and gets signed by a holder whose signature no longer has anywhere to go. The rule that holds:
+a tab without a token adopts only a request *older than itself* (the asking tab was reloaded), never one
+born while it was already open. Tested: refusal on the device, two tabs of the same account, bench
+restarted under the page — all three pass (`ledger/FRONTEND_FLO/scripts/tests-appareil.mjs`).
+
+**One unexplained run out of six.** Once, on a freshly started Speculos and with a slow holder, the first
+EIP-712 signature after the Transaction Check opt-in came back as "This transaction cannot be clear-signed"
+(the kit's blind fallback), the app having gone to its home screen right after « Maybe later ». Fresh
+Speculos plus slow holder was replayed twice afterwards and passed both times, as did three other runs.
+We note it; we could not reproduce it.
+
+**Two concrete suggestions.** In the SDK, when a newcomer is refused with `0x6901`, leave the pending command
+and its latch untouched — one stray poll should cost the poller, not the signer. In Speculos, make
+`APDUBridge` a singleton per `SeProxyHal` (and unregister callbacks when an exchange ends), so concurrent
+exchanges are serialized instead of mixed.
+
+---
+
