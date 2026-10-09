@@ -397,6 +397,71 @@ navigateur).
 
 ![le parcours SaaS : connecté avec sa Ledger, mandat signé dans la page](captures/front-saas.png)
 
+## Ce qui tourne
+
+```
+contracts/
+  src/ExitVault.sol           le mandat et la derogation (EIP-712), les deux sondes, l'achat
+  test/ExitVault.t.sol        8 tests sur fork : 6 pièges détectés, témoins acceptés, mandat borné
+  test/Vault4626.t.sol        6 tests : dix coffres ERC-4626 réels (Morpho), la porte mesurée, entrée, sortie, dérogation
+  test/LedgerScene.t.sol      la scène complète, avec la signature VENUE DE L'APPAREIL
+  test/Escalation.t.sol       6 tests : ce qu'une dérogation permet, et tout ce qu'elle ne permet pas
+  test/MultiAgent.t.sol       5 tests : plusieurs agents, plusieurs mandats, un seul coffre
+  test/Exit.t.sol             5 tests : vendre, retirer, et la sonde confrontee a l'execution
+  test/GasProbe.t.sol         1 test  : le cout reel d'un take(), qui calibre la borne
+ledger/
+  speculos.sh                 lance/arrête le Flex émulé
+  sign_mandate.py             mandat ET dérogation : structures EIP-712, filtres, chemin APDU, pilote Speculos
+  compile_descriptor.py       compile et signe NOS descripteurs de clear signing (clé de test cal.pem)
+  signers.py                  un point d'entrée, deux chemins : dmk (Signer Kit) / python (client officiel)
+  walletcli.py                le wallet-cli de l'Agent Stack : earn yields, Key Ring (statut, déchiffrement)
+  dmk/sign_typed_data.cjs     DMK 1.9.1 + Signer Kit ETH 1.18.1 + transport Speculos/USB + notre context module
+  dmk/src/ledger-web.js       le meme Signer Kit dans le NAVIGATEUR du porteur (WebHID, ou l'emulateur par proxy) -> web/dist/
+  dmk/repro_signmessage_bug.cjs  la reproduction du bug signMessage > 229 octets (FEEDBACK § 7)
+accounts/<adresse>/           un compte = une adresse prouvée : profile, mandate, journal, notifications, events, bots.json
+agent/
+  agent.py                    la stratégie DCA (pools v4), le journal du pourquoi
+  vaults.py                   l'agent de rendement (coffres ERC-4626 réels, Morpho) — il prend Moonwell en premier
+  analyst.py                  LE VRAI AGENT : répond par les outils du MCP (claude -p, --strict-mcp-config), jamais de mémoire
+  counterfactual.py           le contrefactuel de TARE, remesuré en direct
+  watch.py                    resonde les positions détenues (pools ET coffres), et sort si la porte se ferme
+FEEDBACK.md                   le retour d'expérience développeur, pour Ledger Dev Rel
+  journal.jsonl               une ligne par décision, avec toutes les données d'analyse
+mcp/
+  pds_mcp.py                  MCP lecture seule, dix outils (dont `bots`) ; clé maître (Key Ring si scellée, sinon fichier), clé par compte dérivée
+web/
+  server.py · index.html      le banc, un état par compte : connexion (SIWE ou appareil), mon compte, chat, mandat, mes bots (ordonnanceur, un tour à la fois), escalade nommée, analyste du compte, 3 chemins de signature
+  accounts.py                 les comptes : dossier par adresse, clé MCP dérivée (HMAC), profil, événements, sessions
+  schema.html                 qui fait quoi : les agents, les outils, les trois briques (/schema.html)
+  dist/ledger-web.js          le bundle navigateur (esbuild), servi par le banc ; proxy /speculos/* meme origine
+  strategist.py               une phrase en français -> des bornes, par le CLI `claude`
+scripts/demo.sh               la version ligne de commande, en une commande (SIGNER=dmk|python)
+scripts/parcours.mjs          le parcours complet dans un vrai navigateur (Chromium headless), de la connexion à la reconnexion
+scripts/porteur.py            le porteur automatique du banc (Speculos) — optionnellement lent, jamais contre un vrai appareil
+scripts/ring-seal.sh          scelle la clé du MCP dans le Ledger Key Ring (ring CLI ; un Flex en USB, une fois)
+SKILL.md · AGENTS.md          le projet au format des skills de Ledger, pour un agent de code
+FRONT.md                      le cahier des charges du front, écran par écran, routes et modèle de données (pour qui refait l'interface)
+captures/                     ce que l'appareil a affiché, page par page (dmk/ : par le Signer Kit)
+```
+
+### Les tests, séparément
+
+```bash
+cd contracts
+forge test --fork-url "$BASE_RPC_URL" --fork-block-number 50614000 -vv
+```
+
+```
+32 tests, 7 suites, tous verts :
+  ExitVault      8   les six pièges détectés, les témoins acceptés, le mandat borné
+  Vault4626      6   dix coffres réels : Moonwell refusé (porte 2 693 bps), cinq pleins, entrée/sortie/dérogation
+  Escalation     6   ce qu'une dérogation permet, et tout ce qu'elle ne permet pas
+  MultiAgent     5   plusieurs agents, budgets séparés, révocation à la pièce
+  Exit           5   acheter, vendre, retirer — et la sonde confirmée par l'exécution réelle
+  GasProbe       1   le take() reel coute 35 377 gaz, la borne est a 400 000
+  LedgerScene    1   la scène complète, avec la signature venue de l'appareil
+```
+
 ## Prérequis
 
 **Une vraie Ledger Flex** (en plus de l'émulateur) : `ledger/build/build-flex.sh` compile app-ethereum 1.22.4 avec la
