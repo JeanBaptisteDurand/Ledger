@@ -650,6 +650,36 @@ Everything here is a departure from the library direction that is **in the code 
 - **The vignette is fenced to the scene.** Proposed as a page-level layer, mocked up, and refused on the evidence: it turns the white sign button into a gradient and eats half the width of a 390 px screen.
 - **The three inheritance principles were approved** and are written in `## Below the hero`.
 
+### Product pages (added with the bench integration, 4 October)
+
+The hero, its scene, its player and its timings are untouched. What was added sits under `src/app/` and
+`src/styles/app.css`, and takes every value from the frontmatter.
+
+- **Four pages, no routing library.** `/` is the hero and the pitch; `/app` the dashboard; `/compte`, `/appareil`,
+  `/schema`. A History-API hook (`src/app/router.ts`); the nav links became real paths.
+- **The nav is solid on product pages.** Over the hero it stays the transparent overlay; on a product page it sits on
+  `canvas-night` with a hairline, because content scrolls under it. No blur. The active page is underlined in `accent`,
+  the one accent element of the chrome.
+- **The specified tiers were built**: `body-sm`, `mono-data`, `mono-data-lg`, and `note` as an HTML class.
+- **`card-panel`, `device-screen-mirror`, `data-table`, `badge-state`, `text-input`, `cost-breakdown-row`,
+  `button-sign-on-device` and `anchored-note` exist as classes.** The anchored note is two CSS borders and two dots,
+  drawn once: no canvas, no timeline. Below 768 px it becomes a paragraph, as specified.
+- **A quiet ghost was added** (`btn-ghost--quiet`, `--small`): `hairline-strong` border, muted text. "One ghost per
+  band" holds for a pitch band; a data band has row actions (stop a bot, relaunch it, refuse a request) and they must
+  not compete with the band's one action. The filled button stays unique per flow: sign the mandate, sign an exception.
+- **Blinking arrives in CSS steps** (`.blink-in`, `.blink-ack`), with the hero's two pulse tables. Nothing fades.
+- **One drawing: the overview map on `/schema`** (`src/app/SchemaMap.tsx`). Inline SVG in the hero's grammar — panels
+  on `page-panel`, mono labels, connectors in the one accent with a dot at each end and a single right angle. The three
+  roles are told by the panel's border only: `accent` for what the holder signs, `state-success` for what reads without
+  acting, `state-info` for the secret. Colours are tokens, nothing is hex, no diagram library. It scrolls sideways in a
+  `data-scroll` below 900 px.
+- **No continuous animation was added.** Data is polled every 1.4 s and redrawn in place; the one moving thing is a
+  countdown in seconds on a live bot, in tabular figures.
+- **The black hole does not follow onto product pages yet.** They sit on flat `canvas-night` (level 0). Re-parenting the
+  canvas behind them is the author's call.
+- **Copy**: the three narrative notes and the first band now tell the project's own story (an exit rule signed once on
+  the Ledger); the device keeps its MONOLITH wordmark.
+
 ### Still open
 
 - **Grain and twinkle do not exist** and are not documented as if they did. The only "grain" in the project is a sand normal map on the ground; the star field has no twinkle at all. Set aside for now by the author.
