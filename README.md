@@ -441,7 +441,7 @@ scripts/porteur.py            le porteur automatique du banc (Speculos) — opti
 scripts/ring-seal.sh          scelle la clé du MCP dans le Ledger Key Ring (ring CLI ; un Flex en USB, une fois)
 SKILL.md · AGENTS.md          le projet au format des skills de Ledger, pour un agent de code
 FRONT.md                      le cahier des charges du front, écran par écran, routes et modèle de données (pour qui refait l'interface)
-captures/                     ce que l'appareil a affiché, page par page (dmk/ : par le Signer Kit)
+captures/                     ce que l'appareil a affiché, page par page (dmk/ : par le Signer Kit ; app-officielle/ : l'app de série, en brut)
 ```
 
 ### Les tests, séparément
@@ -540,7 +540,9 @@ lance ensuite avec un avertissement « non vérifiée ». Chargé le 2 octobre s
   qu'accepter à tort.
 - **La démo tourne sur un fork**, avec un Ledger émulé. Sur un Flex physique, l'app de série affiche
   déjà le mandat champ par champ (valeurs brutes) ; l'app compilée avec les clés de test, chargée par
-  `ledgerctl`, l'affiche formaté comme ici.
+  `ledgerctl`, l'affiche formaté comme ici. L'app de série, vue sur le Flex émulé (app-ethereum 1.22.4
+  officielle, « Blind signing » et « Raw messages » activés) : six pages, tous les champs, puis *Message
+  signed* — [`captures/app-officielle/`](captures/app-officielle/).
 
 ## Cinq trouvailles amont, en construisant ceci
 
