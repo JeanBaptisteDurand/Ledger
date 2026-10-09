@@ -1,6 +1,5 @@
 .DS_Store
 contracts/cache/
-contracts/lib/
 contracts/out/
 .venv/
 __pycache__/
