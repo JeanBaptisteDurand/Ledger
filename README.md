@@ -441,7 +441,14 @@ scripts/porteur.py            le porteur automatique du banc (Speculos) — opti
 scripts/ring-seal.sh          scelle la clé du MCP dans le Ledger Key Ring (ring CLI ; un Flex en USB, une fois)
 SKILL.md · AGENTS.md          le projet au format des skills de Ledger, pour un agent de code
 FRONT.md                      le cahier des charges du front, écran par écran, routes et modèle de données (pour qui refait l'interface)
+MAINNET.md                    du fork au réseau réel : ce qui change, dans quel ordre, avec la Ledger
 captures/                     ce que l'appareil a affiché, page par page (dmk/ : par le Signer Kit ; app-officielle/ : l'app de série, en brut)
+front/                        le site (Vite + React) : le héros de Florent et le pitch, puis l'espace du compte — front/APP.md
+  src/app/                    un SaaS : avant le compte /, /schema, /connexion ; dans le compte /app, /app/agents (agents de
+                              trading), /app/analyste (agent d'analyse), /compte, /appareil ; le client du banc, la Ledger dans la page
+  scripts/parcours-app.mjs    le parcours complet par les pages du front (Chromium headless)
+  scripts/tests-appareil.mjs  refus sur l'appareil, deux onglets du même compte, redémarrage du banc
+  scripts/fetch-models.sh     les deux modèles 3D du héros (assets officiels de Ledger, non commités)
 ```
 
 ### Les tests, séparément
@@ -511,6 +518,11 @@ lance ensuite avec un avertissement « non vérifiée ». Chargé le 2 octobre s
 
   Sans elles, tout tourne encore par le client Python (`--signer python`) ; le banc le dit.
 
+- Le site (le héros de Florent et les pages produit) — détail dans [`front/APP.md`](front/APP.md) :
+
+  ```bash
+  (cd front && npm ci && scripts/fetch-models.sh && npm run dev)     # -> http://127.0.0.1:5173, proxy vers le banc :8099
+  ```
 
 ## Ce que ça n'attrape pas — dit avant qu'on nous le demande
 
@@ -543,6 +555,7 @@ lance ensuite avec un avertissement « non vérifiée ». Chargé le 2 octobre s
   `ledgerctl`, l'affiche formaté comme ici. L'app de série, vue sur le Flex émulé (app-ethereum 1.22.4
   officielle, « Blind signing » et « Raw messages » activés) : six pages, tous les champs, puis *Message
   signed* — [`captures/app-officielle/`](captures/app-officielle/).
+  Ce qui change sur le réseau réel, et les gestes à faire avec sa Ledger : [`MAINNET.md`](MAINNET.md).
 
 ## Cinq trouvailles amont, en construisant ceci
 
