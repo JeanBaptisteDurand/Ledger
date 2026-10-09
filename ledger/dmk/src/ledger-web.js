@@ -1,0 +1,143 @@
+/**
+ * La Ledger du porteur, dans SON navigateur — le chemin d'un client chez lui.
+ *
+ * Le même Signer Kit Ethereum que côté serveur (DMK + device-signer-kit-ethereum), avec le transport
+ * WebHID pour une vraie Ledger branchée à l'ordinateur du porteur, ou le transport Speculos (à travers
+ * le proxy du banc, même origine) pour l'appareil émulé. Notre context module sert nos descripteurs
+ * compilés (servis par le banc) ; rien ne part vers un serveur de Ledger.
+ *
+ * Trois gestes, et rien d'autre :
+ *   connect(transport)         -> l'adresse du porteur (aucune signature)
+ *   signMessage(message)       -> la connexion « Sign-In with Ethereum » (EIP-4361, signature EIP-191)
+ *   signTypedData(typed, desc) -> le mandat, ou une dérogation (EIP-712, clear-signé)
+ *
+ * Bundle : `npm run build:web` dans ledger/dmk (esbuild) -> web/dist/ledger-web.js
+ */
+
+import { DeviceManagementKitBuilder, DeviceActionStatus, DeviceModelId, ConsoleLogger, LogLevel } from "@ledgerhq/device-management-kit";
+import { webHidTransportFactory } from "@ledgerhq/device-transport-kit-web-hid";
+import { speculosTransportFactory } from "@ledgerhq/device-transport-kit-speculos";
+import { SignerEthBuilder } from "@ledgerhq/device-signer-kit-ethereum";
+import { firstValueFrom } from "rxjs";
+import * as nobleSha from "@noble/hashes/sha256";
+
+const PATH = "44'/60'/0'/0/0";
+let state = { dmk: null, sessionId: null, signer: null, address: null, transport: null };
+
+async function sha224Hex(text) {
+  // sha224 n'est pas dans WebCrypto : on le prend au kit (il est déjà dans le bundle via @noble/hashes)
+  const { sha224 } = nobleSha;
+  const bytes = sha224(new TextEncoder().encode(text));
+  return Array.from(bytes, b => b.toString(16).padStart(2, "0")).join("");
+}
+
+/** Le hash de schéma tel que le Signer Kit le calcule (getSchemaHash), pour vérifier qu'on parle du même. */
+async function schemaHashKit(schema) {
+  const sorted = Object.fromEntries(Object.entries(schema).sort(([x], [y]) => x.localeCompare(y))
+    .map(([tn, fields]) => [tn, fields.map(f => ({ name: f.name, type: f.type }))]));
+  return sha224Hex(JSON.stringify(sorted));
+}
+
+/** Un ContextModule minimal : aucune requête réseau, un seul descripteur, le rapport gardé pour nous. */
+function makeContextModule(descriptor, sink) {
+  return {
+    async getContexts() { return []; },
+    async getFieldContext() { return { type: "error", error: new Error("porte-de-sortie : pas de contexte de champ") }; },
+    async getTypedDataFilters(ctx) {
+      if (!descriptor) return { type: "error", error: new Error("aucun descripteur") };
+      const want = descriptor.verifyingContract.toLowerCase();
+      const got = (ctx.verifyingContract || "").toLowerCase();
+      const hash = await schemaHashKit(ctx.schema);
+      if (got !== want || Number(ctx.chainId) !== Number(descriptor.chainId) || hash !== descriptor.schemaHashKit) {
+        return { type: "error", error: new Error(`descripteur ${want}@${descriptor.chainId}, demandé ${got}@${ctx.chainId}`) };
+      }
+      return {
+        type: "success",
+        messageInfo: descriptor.kit.messageInfo,
+        filters: descriptor.kit.filters,
+        trustedNamesAddresses: {},
+        tokens: Object.fromEntries(Object.entries(descriptor.kit.tokens).map(([k, v]) => [Number(k), v])),
+        calldatas: {},
+      };
+    },
+    async report(params) { sink.report = params; },     // partirait chez Ledger ; ici il reste
+    async signReport() {},
+  };
+}
+
+function lastState(observable, onStep) {
+  return new Promise((resolve, reject) => observable.subscribe({
+    next: st => {
+      if (st.status === DeviceActionStatus.Pending && st.intermediateValue && onStep) onStep(st.intermediateValue);
+      if (st.status === DeviceActionStatus.Completed || st.status === DeviceActionStatus.Error
+          || st.status === DeviceActionStatus.Stopped) resolve(st);
+    },
+    error: reject,
+  }));
+}
+
+function describe(st) {
+  const e = st.error || {};
+  return `${e._tag || e.name || st.status} ${e.errorCode || ""} ${e.message || ""}`.trim();
+}
+
+function toSig({ r, s, v }) {
+  const vv = Number(v) < 27 ? Number(v) + 27 : Number(v);
+  return "0x" + r.replace(/^0x/, "").padStart(64, "0") + s.replace(/^0x/, "").padStart(64, "0") + vv.toString(16).padStart(2, "0");
+}
+
+/** Se connecter à la Ledger : 'webhid' (une vraie, branchée ici) ou 'speculos' (l'émulateur, via le proxy du banc). */
+async function connect(transport = "webhid", speculosUrl = location.origin + "/speculos") {
+  await disconnect();
+  const factory = transport === "webhid" ? webHidTransportFactory : speculosTransportFactory(speculosUrl, false, DeviceModelId.FLEX);
+  let b = new DeviceManagementKitBuilder().addTransport(factory);
+  try { if (localStorage.getItem('pdsDebug') === '1') b = b.addLogger(new ConsoleLogger(LogLevel.Debug)); } catch { /* pas de stockage */ }
+  const dmk = b.build();
+  const device = await firstValueFrom(dmk.startDiscovering({}));   // WebHID : ouvre le sélecteur d'appareil du navigateur
+  // sans le rafraîchisseur du DMK : il envoie b001000000 toutes les secondes avec un délai de 800 ms — pendant que le
+  // porteur lit l'écran (10 s, 30 s…), ce battement expire, le transport Speculos coupe la session et la signature meurt
+  const sessionId = await dmk.connect({ device, sessionRefresherOptions: { isRefresherDisabled: true } });
+  state = { dmk, sessionId, transport, address: null, signer: null };
+  return getAddress();
+}
+
+async function getAddress() {
+  const signer = new SignerEthBuilder({ dmk: state.dmk, sessionId: state.sessionId }).withContextModule(makeContextModule(null, {})).build();
+  const st = await lastState(signer.getAddress(PATH, { checkOnDevice: false, returnChainCode: false }).observable);
+  if (st.status !== DeviceActionStatus.Completed) throw new Error("getAddress : " + describe(st));
+  state.address = st.output.address;
+  return state.address;
+}
+
+/** Sign-In with Ethereum : un message texte (EIP-4361), signé en personal_sign (EIP-191) sur l'appareil. */
+async function signMessage(message, onStep) {
+  if (!state.dmk) throw new Error("pas de Ledger connectée");
+  const signer = new SignerEthBuilder({ dmk: state.dmk, sessionId: state.sessionId }).withContextModule(makeContextModule(null, {})).build();
+  const st = await lastState(signer.signMessage(PATH, message).observable, onStep);
+  if (st.status !== DeviceActionStatus.Completed) throw new Error("signMessage : " + describe(st));
+  return { signature: toSig(st.output), address: state.address };
+}
+
+/** Le mandat ou une dérogation : EIP-712 clear-signé avec NOS descripteurs. */
+async function signTypedData(typedData, descriptor, onStep) {
+  if (!state.dmk) throw new Error("pas de Ledger connectée");
+  const sink = {};
+  const signer = new SignerEthBuilder({ dmk: state.dmk, sessionId: state.sessionId }).withContextModule(makeContextModule(descriptor, sink)).build();
+  const st = await lastState(signer.signTypedData(PATH, typedData).observable, onStep);
+  if (st.status !== DeviceActionStatus.Completed) throw new Error("signTypedData : " + describe(st));
+  return { signature: toSig(st.output), address: state.address, report: sink.report || null };
+}
+
+async function disconnect() {
+  if (state.dmk) {
+    try { await state.dmk.disconnect({ sessionId: state.sessionId }); } catch { /* Speculos : rien à fermer */ }
+    try { state.dmk.close(); } catch { /* idem */ }
+  }
+  state = { dmk: null, sessionId: null, signer: null, address: null, transport: null };
+}
+
+window.LedgerWeb = {
+  connect, getAddress, signMessage, signTypedData, disconnect,
+  address: () => state.address, transport: () => state.transport,
+  webHidSupported: () => typeof navigator !== "undefined" && !!navigator.hid,
+};
