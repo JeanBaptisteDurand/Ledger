@@ -1,6 +1,6 @@
 import { linkProps } from '../app/router'
 
-/** First product band after the pin releases: the pitch in one sentence, and the door to the dashboard. */
+/** First product band after the pin releases: the pitch in one sentence, and the door to the account. */
 export function Intro() {
   return (
     <section id="ordre" className="hairline-top relative bg-canvas-night">
@@ -14,8 +14,8 @@ export function Intro() {
           avec le nombre.
         </p>
         <div data-reveal="fade" data-reveal-delay="0.1" className="mt-12 flex flex-wrap items-center gap-4">
-          <a {...linkProps('/app')} className="btn-ghost t-button-cap">
-            Ouvrir le tableau de bord
+          <a {...linkProps('/connexion')} className="btn-ghost t-button-cap">
+            Se connecter avec ma Ledger
           </a>
           <a {...linkProps('/schema')} className="t-button-cap nav-link">
             Qui fait quoi

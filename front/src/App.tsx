@@ -3,6 +3,7 @@ import { useGSAP } from '@gsap/react'
 import { Nav } from './components/Nav'
 import { Hero } from './components/Hero'
 import { Intro } from './components/Intro'
+import { HowItWorks } from './components/HowItWorks'
 import { Footer } from './components/Footer'
 import { initSmoothScroll, setPageLocked } from './motion/scroll'
 import { initReveals } from './motion/reveal'
@@ -15,7 +16,7 @@ export default function App() {
   return route === '/' ? <Landing /> : <Product route={route} />
 }
 
-/** The hero and the pitch: the scene, the player, the reveals. */
+/** Before an account: the hero and the pitch, how it works, the door. The scene, the player, the reveals. */
 function Landing() {
   const root = useRef<HTMLDivElement>(null)
   const [sceneMode, setSceneMode] = useState(() => motionEnabled() && hasWebGL())
@@ -37,6 +38,7 @@ function Landing() {
       <main>
         <Hero />
         <Intro />
+        <HowItWorks />
       </main>
       <Footer />
     </div>
