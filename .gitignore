@@ -18,3 +18,9 @@ agent/notifications.jsonl
 captures/parcours/journey.log
 ledger/build/app-ethereum/
 ledger/build/logs/
+front/node_modules/
+front/dist/
+front/.playwright-cli/
+front/design-shots/
+front/public/*.fbx
+front/tsconfig.tsbuildinfo
