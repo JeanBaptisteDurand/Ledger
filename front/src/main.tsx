@@ -10,6 +10,12 @@ import { prefersReducedMotion } from './motion/flags'
 registerGsap()
 if (!prefersReducedMotion()) document.documentElement.classList.add('has-motion')
 
+if (import.meta.env.DEV && new URLSearchParams(location.search).get('export') === 'stax') {
+  import('./dev/fbx-export').then(async (m) => {
+    ;(window as unknown as { __glb?: string }).__glb = await m.exportStax()
+    console.info('[export] stax glb ready')
+  })
+}
 if (import.meta.env.DEV && new URLSearchParams(location.search).get('fbx') === '1') {
   import('./dev/fbx-probe').then(async (m) => {
     const r = await m.probeFbx()

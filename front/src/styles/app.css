@@ -97,23 +97,23 @@
   }
 
   /* ─── device-screen-mirror: exactly the fields the device shows, one per line ─── */
-  .mirror {
+  .app-mirror {
     background: var(--color-device-screen-off);
     color: var(--color-device-screen-on);
     border: 1px solid var(--color-page-hairline-strong);
     border-radius: var(--radius-device-flex);
     padding: 20px 24px;
   }
-  .mirror__line {
+  .app-mirror__line {
     display: flex;
     gap: 14px;
     align-items: baseline;
   }
-  .mirror__label {
+  .app-mirror__label {
     color: var(--color-page-text-faint);
     flex: none;
   }
-  .mirror--pending {
+  .app-mirror--pending {
     border-left-color: var(--color-accent);
   }
   /* the live screen of the emulated device: a picture, framed like the mirror */
@@ -218,7 +218,7 @@
   }
 
   /* ─── badge-state: text in the state colour, 1px border at 40 %, no fill ─── */
-  .badge {
+  .app-badge {
     display: inline-block;
     font-family: var(--font-body);
     font-size: 12px;

@@ -1,8 +1,10 @@
 /**
- * The author's own FBX models, loaded as they are from `public/`, not rebuilt.
+ * The author's own models, loaded from `public/`, not rebuilt.
  *
- *   public/Ledger_Nano_X.fbx   9 meshes, 150k triangles, 5.4 MB
- *   public/Ledger_Stax.fbx     1273 meshes, 399k triangles, 39.0 MB
+ *   public/Ledger_Nano_X.fbx   9 meshes, 150k triangles, 5.4 MB — the FBX, as exported
+ *   public/Ledger_Stax.glb     1 mesh, 399k triangles, 0.87 MB — the FBX's 1273 meshes merged (src/dev/fbx-export.ts)
+ *                              and Draco-compressed; the 39 MB FBX itself is kept in models-src/ and is not served.
+ *                              Cloudflare Pages refuses files over 25 MB, which is why (2026-09-27).
  *
  * Both export in millimetres with the device's length along +Y and its screen facing +Z, which is the frame the
  * scene already expects, so the only normalisation needed is: hide the parts the brief excludes, recentre on the
@@ -12,21 +14,27 @@
  * relation to this scene's light. Everything but the screen gets the blackened brushed steel already defined for
  * the devices; the screen face gets the emissive OLED / matte E Ink material so the narrative word renders on it.
  *
- * The Stax is loaded lazily, at the first stop rather than at page load: 39 MB is far past any hero budget and
- * it is not on screen until the morph. Its 1273 meshes are merged by material, which changes no geometry, only
- * the number of draw calls.
+ * The Stax is loaded lazily, at the first stop rather than at page load: it is not on screen until the morph.
+ * It arrives already merged into one mesh, so the build below only has one geometry to take; the merge code is
+ * kept because it is what the export ran, and it still runs unchanged on a multi-mesh source.
  */
 import { useEffect, useMemo } from 'react'
 import * as THREE from 'three'
 import { useLoader } from '@react-three/fiber'
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js'
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import type { DeviceMaterials } from './devices'
 import type { SceneColors } from './tokens'
 import { NANO, FLEX } from './devices'
 
 export const NANO_FBX = '/Ledger_Nano_X.fbx'
-export const STAX_FBX = '/Ledger_Stax.fbx'
+export const STAX_GLB = '/Ledger_Stax.glb'
+/** The Draco decoder, copied from three/examples/jsm/libs/draco/gltf into public/draco/. */
+const DRACO_PATH = '/draco/'
+const draco = new DRACOLoader().setDecoderPath(DRACO_PATH)
+const withDraco = (loader: GLTFLoader) => loader.setDRACOLoader(draco)
 
 /** Millimetres to world units: the real Nano X is 72 mm long and the scene draws it 2.2 units long. */
 export const MM = 2.2 / 72
@@ -291,7 +299,8 @@ export function NanoXModel({ colors, oledTexture, onMaterials }: { colors: Scene
 }
 
 export function StaxModel({ colors, labelTexture, onMaterials }: { colors: SceneColors; labelTexture: THREE.Texture; onMaterials: (m: DeviceMaterials) => void }) {
-  const source = useLoader(FBXLoader, STAX_FBX)
+  const gltf = useLoader(GLTFLoader, STAX_GLB, withDraco)
+  const source = gltf.scene
   const built = useMemo(() => {
     const b = buildStax(source as THREE.Group, colors, labelTexture)
     const n = normaliseVisible(b.object, FLEX.h)

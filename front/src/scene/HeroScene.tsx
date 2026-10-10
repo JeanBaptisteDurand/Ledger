@@ -12,9 +12,9 @@ import { makeSand, Sand } from './Sand'
 import { NANO, FLEX, type DeviceMaterials } from './devices'
 import { NanoXModel, StaxModel } from './fbx-devices'
 import { HeatPost } from './HeatPost'
-import { StarField } from './StarField'
+import { StarField, type StarMotion } from './StarField'
 import { TitleBillboard } from './TitleBillboard'
-import type { HeroProgress } from '../motion/hero'
+import { DESCENT, type HeroProgress } from '../motion/hero'
 import type { Dawn } from '../motion/dawn'
 import { HERO_CAM, heroPhase, flyingSegment, launchEase, layEase, PHASE, STOPS, screenWordAt, segmentAt, segmentEase, settleAt } from '../motion/hero-math'
 import { ACTIVE_BLINK, ACTIVE_BLINK_END, LANDED_WORD, REST_WORD, WORD_BLINK, WORD_BLINK_END, WORD_BLINK_OUT, WORD_BLINK_OUT_END } from '../motion/screen-words'
@@ -25,6 +25,20 @@ import { arcRadiusPx, EINSTEIN_K, HOLE_FALL_LIFT } from './black-hole-frame'
 
 const CAM_Z = HERO_CAM.z
 const LAND_DISTANCE = HERO_CAM.landDistance
+/** Where the dolly stops, in units in front of the screen: past this the near plane would cut the glass. */
+const SCREEN_STOP = 0.42
+/** The star field's share on the home, behind the glass. */
+const HOME_STARS = 0.55
+/** How far the nearest stars travel over the whole sequence, css px: a flight is a sweep, a stop a hold. */
+const STAR_SCENE_SWEEP = 2600
+/** How much of the home's scroll the nearest stars follow (the far ones a seventh of that). */
+const STAR_SCROLL_SHARE = 0.35
+/** How fast the travel speed the streaks read settles, per second. */
+const STAR_SPEED_DAMP = 7
+/** The hole's radius on the home, as a share of the short side; the same figure BlackHole uses to draw it. */
+const HOME_RADIUS_FRAC = 0.34
+/** The emergence: slow out of the black, then decisive. */
+const emergeEase = (x: number) => x * x * (3 - 2 * x)
 /** Act 1: the Nano X is planted in the sand (base sunk a little), slightly left of centre. */
 const SINK = 0.12
 const ACT1_POS = { x: -0.6, y: NANO.h / 2 - SINK, z: 2.2 }
@@ -346,6 +360,11 @@ export function HeroScene({ progress, dawn, title, projectName, notes, showBlack
   const blackHoleAmount = useRef({ value: 0 })
   /** How far the ring has caught, left edge to right edge. Its own beat, after the fall. */
   const blackHoleBurn = useRef({ value: 0 })
+  /** The home's framing of the hole, and how far it has come out of the screen (BlackHole: `centred`, `emerge`). */
+  const blackHoleCentred = useRef({ value: 0 })
+  const blackHoleEmerge = useRef({ value: 1 })
+  /** Everything the home strikes: ground, title, sand, nebula. One group, one write. */
+  const world = useRef<THREE.Group>(null)
   /**
    * The hole as the star field bends around it. It is written HERE and not by the hole, because the bending
    * is established from the first frame the stars exist and the hole is a chunk that arrives near the end.
@@ -354,6 +373,13 @@ export function HeroScene({ progress, dawn, title, projectName, notes, showBlack
   const lens = useRef({ x: 0.5, y: 0.5, radius: 0, amount: 0, strength: EINSTEIN_K })
   /** How present the star field is, 0 to 1. Same shape as the two above, for the same reason. */
   const starAmount = useRef({ value: 0 })
+  /*
+   * What the reader does, for the star field: a travel in css px and a speed in px/s. On the scene it is the
+   * sequence's own progress (a flight sweeps the sky, a stop holds it); on the home it is the page's scroll.
+   * The speed is damped so a wheel notch reads as a gust, not a jolt.
+   */
+  const starMotion = useRef<StarMotion>({ travel: 0, speed: 0 })
+  const starPrev = useRef({ p: -1, scrollY: -1 })
   /**
    * The light the hole's rim casts on the scene. The hole is a lazily-loaded chunk, but its LIGHT is declared
    * here and mounted from the first frame at zero intensity, because adding a light to a scene invalidates
@@ -481,6 +507,16 @@ export function HeroScene({ progress, dawn, title, projectName, notes, showBlack
     const p = progress.p
     const { t3, morph, camY, rotX } = heroPhase(p)
     const cam = camera as THREE.PerspectiveCamera
+    /*
+     * ── The descent ──────────────────────────────────────────────────────
+     * Read like `p`, on the player's clock. `inScreen` is the frame the Flex's screen has the whole frame: from
+     * there the world is not drawn at all, and what the reader sees come out of the black is the hole, centred
+     * and whole, over the darkness the home keeps. The switch happens on a black frame, which is why it cannot
+     * be seen.
+     */
+    const dz = progress.descent
+    const inScreen = dz >= DESCENT.black
+    if (world.current) world.current.visible = !inScreen
 
     /*
      * Warm-up, inside the dawn. Both devices are shown for a few frames with their flight materials so every
@@ -521,6 +557,12 @@ export function HeroScene({ progress, dawn, title, projectName, notes, showBlack
     // Camera: low, like the film frame; we rise with the device and the ground leaves by the bottom.
     camera.position.set(0, camY, camZ)
     camera.rotation.set(rotX, 0, 0)
+    /*
+     * The dolly, at the end of the frame's maths (below), goes toward the screen from where the camera is
+     * here; the device is placed relative to THIS position, so the move reads as the camera going in and not
+     * as the Flex coming out.
+     */
+    const dolly = smoothstep(DESCENT.dollyFrom, DESCENT.dollyTo, dz)
 
     const { pos, anchor, fwd, offset0, roll, yaw, quat, boxMat4, screen, spinQ, tiltQ, driftQ, tiltTarget, tiltNow, euler, tumbleQ, shakeQ, ctxA, cornerX, cornerY, cssCache } = scratch
 
@@ -728,6 +770,7 @@ export function HeroScene({ progress, dawn, title, projectName, notes, showBlack
     const fall = smoothstep(PHASE.holeFall[0], PHASE.holeFall[1], p)
     blackHoleAmount.current.value = fall
     blackHoleBurn.current.value = smoothstep(PHASE.holeBurn[0], PHASE.holeBurn[1], p)
+    if (group.current) group.current.visible = !inScreen
     if (nanoGroup.current) {
       nanoGroup.current.visible = fade < 1
       nanoGroup.current.scale.set(lerp(1, FLEX.w / NANO.w, morph), lerp(1, FLEX.h / NANO.h, morph), lerp(1, FLEX.d / NANO.d, morph))
@@ -996,12 +1039,22 @@ export function HeroScene({ progress, dawn, title, projectName, notes, showBlack
     }
     if (flexMats.current) {
       for (const f of flexMats.current.all) f.material.opacity = f.opacity * fade
-      // The wordmark comes up on the black panel at landing; the panel itself arrived with the device.
-      flexMats.current.screen.opacity = fade * smoothstep(PHASE.screenOn[0], PHASE.screenOn[1], p)
+      /*
+       * The wordmark comes up on the black panel at landing; the panel itself arrived with the device. And it
+       * goes out the way every word on a Ledger screen goes out here: two survivals, one last flicker, dark —
+       * the device's own pattern (WORD_BLINK_OUT), run on the descent's clock.
+       */
+      let alive = 1
+      if (dz > 0) {
+        const out = dz * DESCENT.s
+        alive = out < WORD_BLINK_OUT_END && WORD_BLINK_OUT.some(([a, b]) => out >= a && out < b) ? 1 : 0
+      }
+      flexMats.current.screen.opacity = fade * smoothstep(PHASE.screenOn[0], PHASE.screenOn[1], p) * alive
     }
 
     // Atmosphere: dusk lingers through the first turn, then night; stars brightest-first; nebula last.
-    if (nebulaMat.current) nebulaMat.current.opacity = 0.45 * smoothstep(PHASE.nebula[0], PHASE.nebula[1], p)
+    // 0.2, not 0.45: the compositing pass no longer squares alpha, and 0.45² is what was seen and kept.
+    if (nebulaMat.current) nebulaMat.current.opacity = inScreen ? 0 : 0.2 * smoothstep(PHASE.nebula[0], PHASE.nebula[1], p)
     // Fog follows the dawn exposure too: unlit far dunes must stay black while the day is still down.
     if (fog.current) fog.current.color.lerpColors(colors.amber, colors.spaceDeep, smoothstep(PHASE.night[0], PHASE.night[1], p)).multiplyScalar(smoothstep(0.15, 0.65, d))
 
@@ -1039,7 +1092,28 @@ export function HeroScene({ progress, dawn, title, projectName, notes, showBlack
      * the night transition). It is in the canvas now, which is the whole point: the lens in the post pass can
      * only bend what went through the render target.
      */
-    starAmount.current.value = smoothstep(PHASE.stars[0], PHASE.stars[1], p)
+    /*
+     * On the home the field stays, dimmer: it is what the lens bends, and a lens with nothing behind it is
+     * nothing. It comes back with the emergence, out of the same black the screen left, so no star pops on
+     * the frame after the switch; its own black is the home's darkness, which is why it is not in `world`.
+     */
+    starAmount.current.value = smoothstep(PHASE.stars[0], PHASE.stars[1], p) * (inScreen ? HOME_STARS * blackHoleEmerge.current.value : 1)
+    {
+      const sm = starMotion.current
+      const sp = starPrev.current
+      let stepPx = 0
+      if (progress.mode === 'background') {
+        const y = window.scrollY
+        if (sp.scrollY >= 0) stepPx = -(y - sp.scrollY) * STAR_SCROLL_SHARE
+        sp.scrollY = y
+      } else {
+        if (sp.p >= 0) stepPx = (p - sp.p) * STAR_SCENE_SWEEP
+        sp.p = p
+      }
+      sm.travel += stepPx
+      const target = delta > 0 ? stepPx / delta : 0
+      sm.speed += (target - sm.speed) * Math.min(1, delta * STAR_SPEED_DAMP)
+    }
     /*
      * The lens, on the field's own schedule. Its centre is one arc radius above the middle of the screen, so
      * the circle passes through both top corners and its lowest point lands mid-screen; the ring the hole
@@ -1048,10 +1122,20 @@ export function HeroScene({ progress, dawn, title, projectName, notes, showBlack
      */
     const arcPx = arcRadiusPx(size.width, size.height)
     lens.current.x = 0.5
-    /* The centre rides down with the fall, so the bending arrives with the mass rather than before it. */
-    lens.current.y = 0.5 + (arcPx / size.height) * (1 + HOLE_FALL_LIFT * (1 - fall))
-    lens.current.radius = arcPx / size.height
-    lens.current.amount = fall
+    if (inScreen) {
+      // The home: the ring is whole and centred, and the lens sits on it, growing with it.
+      const em = blackHoleEmerge.current.value
+      lens.current.y = 0.5
+      lens.current.radius = (Math.min(size.width, size.height) * HOME_RADIUS_FRAC * (0.22 + 0.78 * em)) / size.height
+      lens.current.amount = fall * em
+    } else {
+      /* The centre rides down with the fall, so the bending arrives with the mass rather than before it. */
+      lens.current.y = 0.5 + (arcPx / size.height) * (1 + HOLE_FALL_LIFT * (1 - fall))
+      lens.current.radius = arcPx / size.height
+      lens.current.amount = fall
+    }
+    blackHoleCentred.current.value = inScreen ? 1 : 0
+    blackHoleEmerge.current.value = inScreen ? emergeEase(smoothstep(DESCENT.emergeFrom, 1, dz)) : 1
 
     /*
      * The hole's rim, as a light. Position, aim and intensity are computed by the hole itself, from its own
@@ -1064,6 +1148,16 @@ export function HeroScene({ progress, dawn, title, projectName, notes, showBlack
       rimTarget.position.set(r.tx, r.ty, r.tz)
       rimTarget.updateMatrixWorld()
     }
+
+    /*
+     * ── Into the screen ───────────────────────────────────────────────────
+     * Last, once everything has been placed from the camera's own position: the camera goes forward along its
+     * axis, toward the Flex's screen, until the black panel is all there is in the frame. The eased distance
+     * is nearly the whole landing distance; the last hand's breadth is left so the near plane never cuts the
+     * glass. The word went out first; what the camera enters is a dark screen, and a dark screen is where the
+     * hole is waiting.
+     */
+    if (dolly > 0) camera.position.addScaledVector(fwd, (LAND_DISTANCE - SCREEN_STOP) * dolly)
   })
 
   // R3F sets the shadow frustum props but does not refresh the projection matrix.
@@ -1110,23 +1204,39 @@ export function HeroScene({ progress, dawn, title, projectName, notes, showBlack
       <directionalLight ref={rimLight} target={rimTarget} intensity={0} color={colors.peach} />
       <primitive object={rimTarget} />
 
-      <Ground colors={colors} uniforms={groundUniforms} />
-      <TitleBillboard text={title} colors={colors} dawn={dawn} />
-      <Sand sand={sand} />
+      {/*
+        The world: everything the home does not keep. It is one group so it can be struck in one write on the
+        black frame of the descent; the stars (the home's darkness), the nebula (faded), the hole and its rim
+        light stay, and are the home's background.
+      */}
+      <group ref={world}>
+        <Ground colors={colors} uniforms={groundUniforms} />
+        <TitleBillboard text={title} colors={colors} dawn={dawn} />
+        <Sand sand={sand} />
+      </group>
 
       {/*
         The star field. Back in the canvas, where the lens can reach it (src/scene/StarField.tsx); the CSS layer
         underneath is now the night backdrop and nothing else.
       */}
-      <StarField amount={starAmount.current} frozen={reducedMotion.current} lens={lens.current} />
-      <mesh position={[8, 74, -120]} rotation={[0.42, 0.05, 0]}>
+      <StarField amount={starAmount.current} frozen={reducedMotion.current} lens={lens.current} motion={starMotion.current} />
+      {/* Under the hole's core (BlackHole renderOrder -2): the shadow is black, not nebula-red. */}
+      <mesh position={[8, 74, -120]} rotation={[0.42, 0.05, 0]} renderOrder={-2500}>
         <planeGeometry args={[260, 130]} />
         <meshBasicMaterial ref={nebulaMat} map={nebulaTex} transparent opacity={0} depthWrite={false} fog={false} blending={THREE.AdditiveBlending} />
       </mesh>
 
       {showBlackHole && (
         <Suspense fallback={null}>
-          <BlackHole colors={colors} amount={blackHoleAmount.current} burn={blackHoleBurn.current} rim={rim.current} frozen={reducedMotion.current} />
+          <BlackHole
+            colors={colors}
+            amount={blackHoleAmount.current}
+            burn={blackHoleBurn.current}
+            rim={rim.current}
+            frozen={reducedMotion.current}
+            centred={blackHoleCentred.current}
+            emerge={blackHoleEmerge.current}
+          />
         </Suspense>
       )}
 

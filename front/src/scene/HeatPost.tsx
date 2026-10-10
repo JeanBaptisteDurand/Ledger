@@ -23,6 +23,8 @@ import { cssColor, SKY_STOPS } from './tokens'
 import type { HeroProgress } from '../motion/hero'
 import type { Dawn } from '../motion/dawn'
 import { nightLinear, skyShift } from '../motion/hero-math'
+import { GLASS_APPLY_GLSL, GLASS_UNIFORMS_GLSL, GlassSheets, makeGlassPass, makeGlassUniforms, STAR_LAYER } from './glass'
+import { LIQUID_APPLY_GLSL, LIQUID_UNIFORMS_GLSL, LiquidFigures, makeLiquidUniforms } from './liquid'
 
 /** World point the shimmer band is anchored to: the title's ground line, far behind the key. */
 const BAND_ANCHOR = new THREE.Vector3(0, 0.55, -40)
@@ -65,6 +67,8 @@ const FRAG = /* glsl */ `
   uniform float uPos[${STOP_COUNT}];
   uniform vec3 uNightColor;
   varying vec2 vUv;
+  ${GLASS_UNIFORMS_GLSL}
+  ${LIQUID_UNIFORMS_GLSL}
 
   float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
   float vnoise(vec2 p) {
@@ -108,8 +112,21 @@ const FRAG = /* glsl */ `
     float s = (1.0 - uv2.y) - uSkyShift;
     vec3 sky = mix(skyAt(s), uNightColor, uNight) * uDawnBright;
     float skyA = band * (1.0 - sc.a) * (nearHere ? 0.0 : 1.0) * uDawnA;
-    vec3 col = sc.rgb * sc.a + sky * skyA; // premultiplied
+    /*
+     * The target is ALREADY premultiplied: three's blending over a cleared, transparent target leaves
+     * colour × alpha in it (normal and additive alike). This line used to multiply by alpha a second time,
+     * which no one saw while everything drawn over the sky was opaque or at alpha 1 — and which erased any
+     * soft, translucent thing over the transparent sky: a star at half alpha came out at a quarter, one at a
+     * tenth at nothing. Found on 2026-09-29 by reading the target's pixels (the stars were in it) against the
+     * frame (they were not). The hole and the nebula were tuned against the old line; they square their own
+     * alpha now, so their approved look is unchanged.
+     */
+    vec3 col = sc.rgb + sky * skyA; // premultiplied
     float a = sc.a + skyA;
+    // The home: the glass sheets, on the ring (src/scene/glass.ts).
+    ${GLASS_APPLY_GLSL}
+    // The liquid figures, over the glass (src/scene/liquid.ts).
+    ${LIQUID_APPLY_GLSL}
     gl_FragColor = vec4(col, a);
     #include <colorspace_fragment>
   }
@@ -129,6 +146,9 @@ export function HeatPost({ progress, dawn, amplitude = 0.016 }: Props) {
     return new THREE.WebGLRenderTarget(1, 1, { depthBuffer: true, stencilBuffer: false, depthTexture, samples: MSAA_SAMPLES })
   }, [])
   const anchor = useMemo(() => new THREE.Vector3(), [])
+  const glass = useMemo(() => makeGlassPass(), [])
+  const sheets = useMemo(() => new GlassSheets(), [])
+  const figures = useMemo(() => new LiquidFigures(), [])
   const post = useMemo(() => {
     const stops = SKY_STOPS.map(([token]) => cssColor(token))
     const pos = SKY_STOPS.map(([, p]) => p)
@@ -151,6 +171,8 @@ export function HeatPost({ progress, dawn, amplitude = 0.016 }: Props) {
         uStops: { value: stops },
         uPos: { value: pos },
         uNightColor: { value: cssColor('--color-space-deep') },
+        ...makeGlassUniforms(glass.rtB.texture),
+        ...makeLiquidUniforms(figures.slots),
       },
       transparent: true,
       premultipliedAlpha: true,
@@ -164,24 +186,31 @@ export function HeatPost({ progress, dawn, amplitude = 0.016 }: Props) {
     scene.add(quad)
     const cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1)
     return { material, quad, scene, camera: cam }
-  }, [rt, amplitude, camera.near, camera.far])
+  }, [rt, glass, figures, amplitude, camera.near, camera.far])
 
   useEffect(() => {
     rt.setSize(Math.floor(size.width * dpr), Math.floor(size.height * dpr))
-  }, [rt, size, dpr])
+    glass.setSize(Math.floor(size.width * dpr), Math.floor(size.height * dpr))
+  }, [rt, glass, size, dpr])
+  // The star field lives on its own layer (StarField.tsx), so the frosted copy can be rendered without it.
+  useEffect(() => {
+    camera.layers.enable(STAR_LAYER)
+  }, [camera])
 
   useEffect(
     () => () => {
       rt.depthTexture?.dispose()
       rt.dispose()
+      glass.dispose()
+      figures.dispose()
       post.material.dispose()
       post.quad.geometry.dispose()
     },
-    [rt, post],
+    [rt, glass, figures, post],
   )
 
   // Priority 1: we own the render. Scene → target (colour + depth), then the shimmer quad → canvas.
-  useFrame(({ gl: renderer, scene, camera: cam, clock }) => {
+  useFrame(({ gl: renderer, scene, camera: cam, clock }, delta) => {
     const p = progress.p
     const u = post.material.uniforms
     u.uTime.value = clock.elapsedTime
@@ -201,6 +230,19 @@ export function HeatPost({ progress, dawn, amplitude = 0.016 }: Props) {
     renderer.clear()
     renderer.render(scene, cam)
     renderer.setRenderTarget(null)
+    /*
+     * The home: the sheets are read off the DOM and the frosted copy is made, both only while the hole is the
+     * background. The scene pays nothing for the glass until then.
+     */
+    if (progress.mode === 'background') {
+      const n = sheets.write(u, size.width, size.height)
+      ;(u.uGlassLight.value as THREE.Vector2).set(size.width / 2, size.height / 2)
+      if (n > 0) glass.run(renderer, scene, cam)
+      figures.write(u, size.width, size.height, dpr, delta, clock.elapsedTime)
+    } else {
+      u.uGlassN.value = 0
+      u.uFigN.value = 0
+    }
     renderer.render(post.scene, post.camera)
   }, 1)
 

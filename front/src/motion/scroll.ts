@@ -28,6 +28,11 @@ export function setPageLocked(value: boolean): void {
 export const isPageLocked = () => locked
 
 export function registerGsap(): void {
+  // Dev / capture: `?slow=4` runs every GSAP timeline at a quarter speed, so a capture can catch a reveal mid-flight.
+  if (import.meta.env.DEV) {
+    const slow = Number(new URLSearchParams(window.location.search).get('slow'))
+    if (slow > 1) gsap.globalTimeline.timeScale(1 / slow)
+  }
   if (registered) return
   gsap.registerPlugin(ScrollTrigger, SplitText, useGSAP)
   gsap.defaults({ ease: 'power3.out', duration: 0.85 })

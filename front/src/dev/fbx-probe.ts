@@ -6,7 +6,8 @@
 import * as THREE from 'three'
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js'
 
-export const FBX_PATHS = ['/Ledger_Nano_X.fbx', '/Ledger_Stax.fbx'] as const
+/** The Stax FBX is no longer served (models-src/); put it back in public/ to probe it. */
+export const FBX_PATHS = ['/Ledger_Nano_X.fbx'] as const
 
 type MeshInfo = { name: string; tris: number; size: [number, number, number]; center: [number, number, number]; material: string | string[] }
 type ModelInfo = { path: string; ok: boolean; error?: string; ms?: number; meshes?: MeshInfo[]; totalTris?: number; bbox?: { size: [number, number, number]; min: [number, number, number]; max: [number, number, number] } }

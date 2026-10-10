@@ -1,10 +1,10 @@
 ---
 name: monolith-ledger-design
-version: 2
-generated_by: design-generator/design → rewritten from the built hero
-date: 2026-09-25
+version: 4
+generated_by: design-generator/design → rewritten from the built hero, re-aimed at the real product, then given the descent and the home
+date: 2026-09-26
 sources:
-  # The hero AS BUILT is the reference. Every value below was read out of these files, not out of a library.
+  # The hero AS BUILT is the reference for FORM. Every token below was read out of these files.
   - src/styles/tokens.css            # colours, type families and scale, sky ramp, vignette, note hairlines
   - src/scene/HeroScene.tsx          # lighting rig, shadows, screen lift, note anchors, hotspot geometry
   - src/scene/fbx-devices.tsx        # brushed steel, screen glass, OLED and wordmark materials, render order
@@ -17,15 +17,23 @@ sources:
   - src/motion/hero.ts               # the stop-and-go player
   - src/motion/context-note.ts       # note timings
   - src/components/ScreenNotes.tsx   # the four doors, the connector, the counters
+  - src/motion/hero.ts               # DESCENT: the landed → descending → done path (v4)
+  - src/scene/BlackHole.tsx          # centred / emerge: the home's framing of the hole (v4)
+  - src/motion/landing.ts            # the three title treatments, the glass sheets' reveals, the sideways proof (v4)
+  - src/components/home/             # HomeHero (the name and the thesis), HomePoster (no-canvas home) (v4)
+content_sources:
+  # UPDATE.md and FRONT_UPDATE.md are the reference for CONTENT. Both at the repository root.
+  - UPDATE.md                        # the product, the proofs, every figure quoted in this file
+  - FRONT_UPDATE.md                  # the screens, the server contract, the routes, the states
 ancestry: references/awesome-design-md/design-md/spacex/DESIGN.md (plus mistral.ai for four sky hexes) — the library direction this hero grew out of and has now superseded.
 taste_profile: applied
-project: Plateforme d'achat d'actions tokenisées gardées sur Ledger, où chaque ordre se lit et se signe sur l'appareil ; hero cinématique 3D "la Ledger est le monolithe de 2001", écrans produit calmes et denses en dessous.
+project: Porte de sortie — un agent ne peut pas entrer dans une position dont il ne sait pas sortir. Le porteur signe une fois sur sa Ledger les bornes d'un agent (budget, perte de sortie tolérée, échéance) ; un contrat les applique à chaque position en mesurant la sortie dans la transaction même, et ce qui déborde revient sur l'appareil avec le nombre. Deux surfaces : une landing cinématique 3D, et une application de lecture et de signature sans canvas.
 
 colors:
   # ─── Canvas ───
   canvas-night: "#000000"          # page canvas, hero space, footer
   canvas-night-soft: "#0a0705"     # sections that need a lift from pure black
-  canvas-panel: "#14100c"          # cards, order ticket, tables — warm-tinted
+  canvas-panel: "#14100c"          # cards, panels, tables — warm-tinted
   canvas-panel-raised: "#1c1712"   # nested surfaces, table header, device-screen frame
   hairline-on-dark: "#3a2e22"      # 1px borders
   hairline-strong: "#55432f"       # focused / active borders
@@ -41,17 +49,17 @@ colors:
   sky-peach: "#ffb83e"             # Mistral sunshine-500 — brightest horizon stop
   sky-rose: "#c9667a"              # dusty rose: the crossing between violet and red
   sky-violet: "#2f1b45"            # the band a real dusk puts between night blue and warm horizon
-  sky-night: "#050308"             # one step warmer than pure black
+  sky-night: "#050308"             # one step warmer than pure black; also the background scrim
   # ─── Regolith ground ───
   regolith-deep: "#2e1c11"
   regolith: "#6b4529"
   regolith-light: "#a8784a"
   # ─── Accent (one, Radix-style discipline) ───
-  accent-incandescent: "#ffca6e"   # the narrative's announcement values
+  accent-incandescent: "#ffca6e"   # the one announced figure
   # ─── Narrative ramp: every text colour comes from here and nowhere else ───
   # Sampled off the base scene, ordered by luminance: horizon glow → ochres → reds → roses → black.
   text-050: "#fff1d4"              # the horizon's brightest glow: body copy
-  text-100: "#ffca6e"              # incandescent orange: announcement values, positive highlights
+  text-100: "#ffca6e"              # incandescent orange: announced figures, positive highlights
   text-200: "#ffb83e"              # = sky-peach: the resume cue
   text-300: "#ff8105"              # = sky-amber: a highlight carried by colour alone
   text-400: "#c9667a"              # = sky-rose: the variance note
@@ -76,10 +84,11 @@ colors:
   accent-soft: "#ffb83e"           # hover / secondary emphasis on accent
   on-accent: "#000000"
   # ─── State ───
-  state-success: "#7fb069"         # gain, order filled, signature accepted
-  state-warning: "#ffb83e"         # hook cost above threshold, price impact > 50 bps, expiry near
-  state-error: "#e0483a"           # loss, rejected on device, wrong chain
-  state-info: "#a0b4c8"            # attestation / fingerprint notices
+  # FRONT_UPDATE § 8 fixes three meanings the bench already uses; they map onto these tokens.
+  state-success: "#7fb069"         # entered, bought, a bot running
+  state-warning: "#ffb83e"         # gold: what asks the bearer — a mandate, an out of bounds request
+  state-error: "#e0483a"           # refused by the contract, rejected on the device, wrong chain
+  state-info: "#a0b4c8"            # the MCP key, the Signer Kit report, informational notices
   # ─── Ledger device ───
   device-body: "#0b0b0b"           # matte black slab
   device-edge: "#1f1f1f"           # bevel highlight
@@ -187,7 +196,7 @@ typography:
     letterSpacing: "0.16em"
     textTransform: uppercase
     note: "What the DEVICE writes. Drawn into a 480x600 canvas texture with corner brackets; Inter stands in for Ledger's unlicensable brand faces."
-  # SPECIFIED, NOT YET BUILT — the tiers the data screens under the hero will need.
+  # SPECIFIED, NOT YET BUILT — the tiers the app needs.
   body-sm:
     fontFamily: "Barlow, Arial, Verdana, sans-serif"
     fontSize: 14px
@@ -242,6 +251,32 @@ motion:
   active-damp: 9
   pointer: { tiltDeg: 11, shift: 0.17, damp: 6 }
 
+sound:
+  # LANDING ONLY. Two of the author's files in public/; the home and the app are silent. src/motion/sound.ts
+  wind: { file: wind-desert.mp3, level: 0.32, in: "2.5 s with the dawn", out: "3.2 s over the launch", loop: true }
+  music: { file: zarathustra.mp3, level: 0.85, start: "18.5 s, just before the first trumpet call, on the launch", play: "once, continuously, to the end of the file (107 s); the scroll never cuts or moves it", timing: "the scene is timed on the music by its own pace: the calls fall about the flights and the stops, the fortissimo at 65.5 s (47 s after the launch) arrives on the final vision at a reading pace", descent: "the music goes on and fades over 3.4 + 4.5 s, then stops; the home is silent after that" }
+  gate: "the browser's: no sound before a click, a key or a touch (a wheel is not one). The context is tried at the dawn and on the first gesture; the toggle (components/SoundToggle.tsx, bottom-left of the scene) asks for that gesture and remembers the choice in localStorage 'monolith-sound'."
+  rights: "Strauss (1896) is public domain; the RECORDING's rights are the author's to clear before the jury. The wind file is labelled no-copyright by its source."
+
+background:
+  # HOME ONLY (`/home`). The app has no canvas, so none of this applies there.
+  descent: { seconds: 3.4, dollyFrom: 0.1, dollyTo: 0.64, black: 0.64, emergeFrom: 0.68 }   # src/motion/hero.ts DESCENT
+  descentNote: "One scroll from the landed scene. The name blinks out on WORD_BLINK_OUT, the camera dollies into the Flex's screen, the frame is black at 0.64, the world is struck on that black frame, the hole grows out of the centre from 0.68 with the star field coming back under it. The page unlocks at the end and the path becomes /home."
+  holeRadius: 0.34                   # of the short side, centred; the scene's arc framing is arcRadiusPx
+  glass: { model: realglass, ior: 1.52, dome: "rim 0.42 of the half size, min 70px, power 1.8, soft corners 48px", disp: 30px, aberration: 0.5, highlight: "text-050 at 0.06, shininess 90, from the ring's centre", tint: 0, absorb: 0.5, frost: "eighth-res without the stars, 5-tap ×6", textShadow: "0 1px 1px canvas-night 55%, not on figures", hairline: "text-050 10%", focus: "accent-incandescent border 70% + 1px ring 45% + 32px sky-orange 18% while the sheet crosses the middle 36% of the viewport" }   # src/scene/glass.ts, tokens.css .glass[data-focus]
+  emphasis: { takeaway: "mono 13px accent-incandescent + ember dot, first in every sheet", hotFragment: "one part of each title stays accent-incandescent, warmth 14px sky-orange 30%", hotValue: "mirrorHot / Stats tone hot", call: "btn-ghost--hot" }   # content.ts HotTitle, primitives Hot/Takeaway
+  glassNote: "Drawn in the compositing pass, on the live ring. Clear: no tint, no hairline, no coloured light — the only opacity is the blur (the author, 2026-09-27). The surface is a pillow, not a plate with a bevel: the tilt rises as a power from deep inside on a soft-cornered field, so there is no inner edge and no facet. The frosted copy is the scene rendered without its star layer, so a star never becomes a grey pavé under the glass. Fallback without a canvas (posters): the CSS sheet, canvas-night 42% over blur(26px)."
+  figures: { model: "glass of lava", spring: "k 42, c 7.5", ripples: "1-D damped wave, 48 samples, c 90, damping 2.2", swell: "0.6% at rest, 3% pouring", body: "warped noise + channel bleed (three.js webgl_shader_lava, MIT): sky-orange with veins of accent-incandescent, brighter toward the surface — the titles' ignition palette, nothing darker", meniscus: "text-050, 3px", halo: none }   # src/scene/liquid.ts — only the ink fills; nothing is drawn outside the number
+  figuresNote: "Drawn in the compositing pass inside the glyphs of the DOM number (its text rendered to a canvas with its own font, uploaded as a mask). The level is the count through a damped spring, so it lags, overshoots and settles; a fast scroll raises ripples that travel and die. The DOM number keeps its place and its text and is transparent in WebGL mode. Fallback without a canvas (posters): the CSS liquid (mask + wave tile), full under reduced motion."
+  frieze: { pxPerSecond: 26, playhead: 0.36, ticks: "1 s minor, 10 s labelled", link: "the seconds written on the axis over each span; the live card outlined, its stem lit; untimed steps dashed, no span" }   # components/landing/Frieze.tsx
+  stars: 0.55                        # the field stays, dimmer: it is what the lens bends
+  starField: { count: 4800, depth: "z 1 → 7, speed · size · light ∝ 1/z", driftNear: "44 px/s down", sizeNear: 4.4px, lens: "per star, closed-form thin lens, tangential stretch capped at 14, light ∝ 1/stretch, gone at the ring", scroll: "the scene's progress (2 600 px over the sequence) and 35 % of the home's scroll move every star over its depth; the speed streaks it", light: "hot core over white, halo, spikes on the near bright ones, twinkle on the near ones, white / text-050 / space-azure-soft" }   # src/scene/StarField.tsx (2026-09-29)
+  hole: { core: "black disc, soft edge, 0.975 of the horizon", ring: "photon ring + prominences", corona: "exp falloff, faint drifting rays, cut at 2.4 radii on the home / 1.6 on the arc", diamond: "on the beamed side, text-050 core, 7 rays, flicker" }   # src/scene/BlackHole.tsx (2026-09-29), reference public/blackhole.avif
+  pauseWhenHidden: true
+  pauseNote: "On visibilitychange hidden → frameloop 'never'; the hole runs its own accumulated clock (BlackHole holeTime), so it resumes where it was instead of jumping by the hidden duration."
+  dpr: "[1, 1.5]"                    # the same as the scene: the author kept the resolution behind the glass (2026-09-26)
+  titles: ignition                   # the letters catch left to right, incandescent, and cool to cream; motion/landing.ts
+
 components:
   button-ghost-on-dark:
     backgroundColor: transparent
@@ -256,7 +291,7 @@ components:
     typography: "{typography.button-cap}"
     rounded: "{rounded.pill}"
     padding: 18px 24px
-    note: "The ONLY filled button. Appears once per flow, when the order is ready to be sent to the device."
+    note: "The ONLY filled button. It appears where the bearer is asked to read something on the Ledger and hold to sign."
   nav-bar-overlay:
     backgroundColor: transparent
     textColor: "{colors.on-primary}"
@@ -277,18 +312,28 @@ components:
     typography: "{typography.body-md}"
     rounded: "{rounded.sm}"
     padding: 24px
-  order-ticket:
+  mandate-card:
     backgroundColor: "{colors.page-panel}"
     borderColor: "{colors.page-hairline}"
     rounded: "{rounded.sm}"
     padding: 24px
-    layout: "ticker + side (BUY/SELL) at top; qty + limit inputs; cost-breakdown rows; one button-sign-on-device"
-  cost-breakdown-row:
+    layout: "the proposed bounds as cards (budget, max round trip loss, expiry, slice, ticks, risk), then the line saying which three of them travel to the device, then one button-sign-on-device"
+    note: "Replaces order-ticket. FRONT_UPDATE § 3.3. Only budget, exit loss and expiry go to the Ledger; the rest guides the bots without binding them, and the card must say so."
+  journal-row:
     typography: "{typography.mono-data}"
     labelColor: "{colors.page-text-mute}"
     valueColor: "{colors.page-text}"
     rowBorder: "{colors.page-hairline}"
     padding: 12px 0
+    leftRule: "2px, state-success when EXECUTED, state-error when refused, state-warning under an exception"
+    note: "Replaces cost-breakdown-row. One decision per row: tick, bot, position, entry or displayed yield, exit or door, decision. FRONT_UPDATE § 3.4."
+  signer-report:
+    backgroundColor: "{colors.page-panel-raised}"
+    textColor: "{colors.state-info}"
+    typography: "{typography.mono-data}"
+    rounded: "{rounded.xs}"
+    padding: 8px 12px
+    note: "Replaces attestation-fingerprint. Shows state.last_report from the Signer Kit, e.g. isBlindSign=false · eip7730. It is the proof the device read fields and not a blob."
   device-screen-mirror:
     backgroundColor: "{colors.device-screen-off}"
     textColor: "{colors.device-screen-on}"
@@ -297,12 +342,6 @@ components:
     rounded: "{rounded.device-flex}"
     padding: 20px 24px
     note: "Shows EXACTLY the fields the device shows, in the device order. One field per line. Nothing decorative."
-  attestation-fingerprint:
-    backgroundColor: "{colors.page-panel-raised}"
-    textColor: "{colors.state-info}"
-    typography: "{typography.mono-data}"
-    rounded: "{rounded.xs}"
-    padding: 8px 12px
   data-table:
     headerBackground: "{colors.page-panel-raised}"
     headerTypography: "{typography.micro-cap}"
@@ -329,13 +368,56 @@ components:
     textColor: "{colors.page-text-mute}"
     typography: "{typography.caption}"
     padding: 32px 24px
+  # ─── NEW in version 3. Each one is here because nothing above does its job. ───
+  exit-pair:
+    status: new
+    surface: landing and app
+    layout: "two figures on one baseline, the entry left and the exit right, separated by a 1px accent rule; the exit carries the weight"
+    typography: "{typography.numeral-hero} for the exit, {typography.mono-data-lg} for the entry"
+    note: "THE figure of this project: 0 bps to enter, 9 990 to leave. No existing component shows two opposed numbers as one statement."
+  timeline-run:
+    status: new
+    surface: landing
+    layout: "a vertical 1px page-hairline with a 5px accent dot per step; each step is a label, a duration and an outcome"
+    typography: "{typography.mono-data} for durations, {typography.body-md} for labels"
+    note: "The A to Z run as evidence. A data-table flattens a sequence into rows and loses the order."
+  device-screen-live:
+    status: new
+    surface: app
+    layout: "the emulator PNG from GET /api/screen at about 2 Hz, in the same frame as device-screen-mirror, plus the finger legend"
+    note: "Distinct from device-screen-mirror, which is HTML text. This one is a live image and takes POST /api/finger clicks. FRONT_UPDATE § 3.8."
+  escalation-card:
+    status: new
+    surface: app
+    backgroundColor: "{colors.page-panel}"
+    borderColor: "{colors.state-warning}"
+    note: "Gold, per FRONT_UPDATE § 8: gold is what asks the bearer. Carries the bot, the question, seen_exit_bps against mandate_allows_bps, the queue count, and the TWO outcomes — read and sign, or leave refused. FRONT_UPDATE § 3.5."
+  chat-thread:
+    status: new
+    surface: app
+    layout: "alternating turns, a text-input at the foot, suggestions above it; under each answer a tool trace in micro-cap"
+    note: "Used twice with different content: the strategist (§ 3.3) and the analyst (§ 3.7). The tool trace is what makes the analyst honest — it cites the tool under the number."
+  bot-card:
+    status: new
+    surface: app
+    layout: "name, universe, rhythm, then the counters as a row: rounds, bought, refused, exceptions, positions, spent"
+    note: "FRONT_UPDATE § 3.4. Active and stopped share the shape; stopped adds the date range and the stop_reason."
+  toast:
+    status: new
+    surface: app
+    note: "Every POST answers {ok, msg}; an ok:false is a message to show, not an exception. FRONT_UPDATE § 2 and § 6.6."
+  key-reveal:
+    status: new
+    surface: app
+    typography: "{typography.mono-data}"
+    note: "The MCP key masked by default, a reveal toggle, and a copy for the Claude config block. FRONT_UPDATE § 3.2."
 ---
 
 ## Visual Theme & Atmosphere
 
 The discipline came from SpaceX: pure black canvas, white uppercase condensed display type, one full-bleed thing per band, one ghost pill, nothing else. This project kept the negation and swapped the medium — **the photograph became a real-time 3D scene**, and the rocket became a Ledger.
 
-The concept is the opening of *2001: A Space Odyssey*. A black slab stands on ochre rock under a Martian dusk; three scrolls shake it loose and it launches; mid-flight it stops three times to say a word; it becomes a Ledger Flex and lands in front of a black hole. The Ledger is the monolith. The metaphor is the pitch: **the Ledger stops being a stamp at the end of the flow and becomes the dashboard**.
+The concept is the opening of *2001: A Space Odyssey*. A black slab stands on ochre rock under a Martian dusk; three scrolls shake it loose and it launches; mid-flight it stops three times to say a word; it becomes a Ledger Flex and lands in front of a black hole. The Ledger is the monolith, and the metaphor is the subject itself: **a mass you cannot get out of**. The product is the way out.
 
 Kubrick's austerity is the rule. Few elements, raking light, visual silence. No glow, no neon, no mesh gradient. Light in the scene comes from the horizon and, from the first stop onward, from the device's own screen. Everything under the hero is a calm, dense, legible product surface.
 
@@ -345,7 +427,7 @@ Kubrick's austerity is the rule. Few elements, raking light, visual silence. No 
 - A single accent, `{colors.accent}` `#fa520f`, used the way SpaceX uses white: focus rings, the connector hairlines, the active tab, one key figure.
 - The sky ramp lives **only in the hero canvas** and its shader twin. It never becomes a UI gradient.
 - Numbers and device fields are monospace, tabular. The mono face is the voice of the Ledger screen.
-- No shadows, no glassmorphism. Depth is hairlines, the vignette inside the scene, and the 3D itself. One blur exists — the page background under the sections — and it never reaches a component.
+- No shadows, no glassmorphism. Depth is hairlines, the vignette inside the scene, and the 3D itself. One blur exists — the landing's background — and it never reaches a component.
 - **Violet is in the sky now.** The original direction banned it; a real dusk puts a violet band between the night blue and the warm horizon, and without it the sky ran black-to-red in one hue and read as a single orange wash.
 
 ## Hero: the stop-and-go sequence
@@ -357,26 +439,97 @@ Not a pin and not a scrub. A player (`src/motion/hero.ts`) with five states — 
 | **Dawn** | Scroll locked. A radial mask centred on the horizon grows from nothing and the exposure follows it. | 3.2 s, `power2.inOut` |
 | **Three scrolls** | The key is driven into the ground like a marker and resists. Two refusals shake it (`0.42`, then `1`), damped `exp(−5.6t)·sin(40t)` over 0.75 s. The third tears it free. | window 220 ms per intent |
 | **Takeoff** | The key leaves the sand within 20 vh and the launch carries it to the camera axis, nothing on screen. | 5 s nominal |
-| **Three stops** | `CONTEXT` (roll, flat) → `THE ISSUE` (yaw, standing 18°) → `OUR SOLUTION` (pitch, settling to 9°). Each segment is one whole turn about one axis, 1.9 s, device filling 0.72 of frame height. Between them the playhead never freezes: it creeps at 7.5 % of nominal so the sky keeps evolving. | deceleration 1.0 s, drift 1 s |
-| **Finale, four beats** | Nano X morphs to Flex → the black hole descends behind her → its horizon catches from left to right → she lands. | 1.2 · 1.5 · 1.2 · 1 s |
+| **Three stops** | `SPENDING` (roll, flat) → `THE EXIT` (yaw, standing 18°) → `THE RULE` (pitch, settling to 9°). Each segment is one whole turn about one axis, 1.9 s, device filling 0.72 of frame height. Between them the playhead never freezes: it creeps at 7.5 % of nominal so the sky keeps evolving. | deceleration 1.0 s, drift 1 s |
+| **Finale, four beats** | Nano X morphs to Flex → the black hole descends behind her → its horizon catches from left to right → she lands, wordmark `MONOLITH`. | 1.2 · 1.5 · 1.2 · 1 s |
 
 The word lights up **0.69 s before** the stop, so the key is still turning into its readable pose when the screen wakes. Order is strict: slow motion first, word second, pose last.
 
+### The narrative, one word per stop
+
+The arc is context, problem, response. Every figure below is quoted from `UPDATE.md` by section; **no other figure may be invented**. Highlights go on the values, highlighted fragments are non-breaking, and no content carries a dash.
+
+| Stop | Word | Description | Figures |
+|---|---|---|---|
+| 1 | **`SPENDING`** | Agent Policies bound what an agent may **spend**. Ledger's own Earn returns the provider, the token, the yield and a deposit link, and **zero** fields on the way out. | § 1 and § 5 for the axis; § 3 and § 4 for the missing exit field |
+| 2 | **`THE EXIT`** | Six real pools on Base charge **0 bps** to enter and **9 990** to leave. The same hook sets both, and the agent only ever sees the first. | § 4 for 6 pools, 0.00 bps, 9 990 bps and "the same hook"; § 8 D for Base |
+| 3 | **`THE RULE`** | You sign your limits **once**, on the device. A contract measures the way out inside every transaction, and anything past your limit comes back to you **with the number**. | § 0, in full |
+
+**The counter belongs to stop 2 and rolls `0 → 9 990`, unit `bps`.** It used to announce a date and a version number, which demonstrated nothing. The odometer now performs the argument: it starts at the entry price and stops at the exit price. This is the one animated figure on the landing.
+
+**All three words are measured to render at the same size.** The panel fits each word independently from 26 px downward, so length decides size. `SPENDING` 92.2 px, `THE EXIT` 83.0 px, `THE RULE` 88.3 px, all of 112 px available, all at **26 px**. The previous set did not satisfy this: `OUR SOLUTION` fell to 21 px. Any replacement word must be measured before it is adopted.
+
 Poster: below 768 px and under `prefers-reduced-motion`, a static image with the word sequence printed in order. No canvas, no player.
 
-**The sequence ends; the scene does not.** When the player releases the page, everything is struck except the black hole, which stays as the background of every section below — see `## Depth & Elevation › Page background after the hero`.
+**The sequence ends; the scene does not.** When the player releases the page, everything is struck except the black hole, which stays as the background of the landing — see `## Depth & Elevation › Page background after the hero`.
+
+## Page structure
+
+Two surfaces, and the split is the reason the background can exist at all. The first surface has two paths: the scene is the **landing** and the sections are the **home**, and the descent is what joins them.
+
+| | Landing | Home | Application |
+|---|---|---|---|
+| Route | `/` | `/home` | `/app/*` |
+| Canvas | the scene, locked | the hole alone, fixed under the sections | **none** |
+| three.js | ~255 kB gzip | same context, no second download | **never downloaded** |
+| Served by | static build | static build (`/home` must rewrite to `index.html`) | **`web/server.py`, port 8099** |
+| Read by | someone deciding whether to care | someone who wants the argument | someone who already decided |
+
+**The descent** (`src/motion/hero.ts` `DESCENT`, `src/scene/HeroScene.tsx`): the landed scene stays locked. The next scroll is not the page, it is the descent — the name on the Flex blinks out on the device's own going-out pattern, the camera goes into the black screen until the screen is the frame, and on that black frame the world is struck and the hole grows out of the centre, whole, with the star field coming back under it. Then the name and the thesis (`HomeHero`), then the sections. The page unlocks at the end and the path becomes `/home` (`history.replaceState`, same document). A direct load of `/home` is the finished state. Without a canvas (phones, reduced motion) `/home` is `HomePoster`: a still of the hole, fixed under the same sheets.
+
+**One codebase, one build, two origins.** The app cannot be a static deploy: the session cookie `pds_session` is HttpOnly, the emulator proxy `/speculos/*` must be **same origin**, and `dist/ledger-web.js` is served by the Python server (`FRONT_UPDATE` § 2). So the app's built assets are served by `web/server.py`, with a Vite dev proxy to 8099 during development. Only the landing may go to a static host.
+
+**No link to the app opens a new tab.** `UPDATE.md` § 4 and `FRONT_UPDATE` § 6.2: a second client on the device during a signature refuses the pending command with `0x6901` and the app answers nothing else until it is restarted. A `target="_blank"` on the call to action is therefore a defect, not a preference.
+
+### Landing, section by section
+
+The order makes the thesis evident to a newcomer. It is not the order of `UPDATE.md`.
+
+| # | Section | Role | Source | Figure | Components | Motif | Missing |
+|---|---|---|---|---|---|---|---|
+| 1 | **The scene** | The story in three stops on the device's own screen | § 0 § 1 § 4 § 5 | **0 → 9 990** bps | the scene, `anchored-note` | 1 · 2 · 3 · 4 | — |
+| 2 | **The claim** | The angle, one full-width line | § 5 | — | `display-xxl` | 1 | — |
+| 3 | **The trap, two instances** | The entry lies about the exit, on pools **and** on vaults | § 4 b1 and b3 | 6 pools · 0 / 9 990 · Moonwell **2 693** · previewRedeem 522.57 against maxWithdraw **381.82** · five vaults full | `data-table`, `badge-state` | 2 | `exit-pair` |
+| 4 | **And the agent goes in anyway** | The yield agent takes Moonwell first, on displayed yield; Ledger's own Earn has no exit field | § 4 b4 and b8, § 3 | **zero** exit fields | `device-screen-mirror`, showing the `earn yields` output with the line that is not there | 3 | — |
+| 5 | **One signature** | The mandate: budget, exit loss, expiry, read on the device | § 0, § 5 bis step 5, § 8 A | 0.5 WETH · **150** bps | `device-screen-mirror`, `button-sign-on-device` | 3 | — |
+| 6 | **When it overflows** | The exception comes back to the device with the number, and may be refused | § 0, § 2, § 5 bis step 7 | **2 693** bps | `device-screen-mirror`, `badge-state` | 3 · 4 | — |
+| 7 | **Measured, end to end** | The A to Z run as evidence rather than promise | § 4, the 25 Sept run | **124 s** · 2 bought / **8 refused** · analyst **35 s** | `data-table` | 2 | `timeline-run` |
+| 8 | **What we found in their stack** | The depth, stated plainly | § 3, § 4 | `signMessage` **229 bytes pass, 272 fail** · chainId ≥ 256 · the blind sign report withheld · `0x6901` | `data-table`, `badge-state` | 2 | — |
+| 9 | **Three bricks, three roles** | Signer approves, Agent Stack reads, Ring keeps a secret; the one that acts has no LLM | § 7 bis, § 8 B | 1.18.1 · 1.9.1 · 2.1.0 | `card-panel` ×3 | 4 | — |
+| 10 | **The call** | "Your Ledger stays with you. We only hold a mandate." → `/app` | § 5 | — | `button-ghost-on-dark` | 1 | — |
+
+### Application, screen by screen
+
+A **persistent shell** carries the account header, `device-screen-live`, the `escalation-card` banner and the signing lock. It is imposed by `FRONT_UPDATE` § 6 rules 1, 2 and 5: an out of bounds request and a pending signature are account-wide, so they cannot live inside one panel. The panels change beneath it.
+
+| Route | Role | Source | Figure | Components | Motif | States to draw |
+|---|---|---|---|---|---|---|
+| `/app` | Connect with the Ledger (SIWE); pick the signer path and transport | § 3.1, § 2.3 | — | `button-sign-on-device`, `badge-state` | 3 | connecting · read the message then sign · error toast · connected · **WebHID absent** on Firefox and Safari, offer the emulator |
+| `/app/mandat` | One sentence → proposed bounds → one signature | § 3.3 | budget · **150** bps · expiry | `chat-thread`, `mandate-card`, `button-sign-on-device`, `signer-report` | 3 | no session · strategist thinking, 10 to 30 s · proposal · **signing, everything locked** · signed, with the report |
+| `/app/bots` | Create, run, stop; the history with its balance; the decision journal | § 3.4 | bought / **refused** · spent | `bot-card`, `data-table`, `journal-row` | 2 | **locked without a mandate** · no bot · round running · next round in N s · stopped with its `stop_reason` |
+| `/app/demandes` | The out of bounds queue: read the number and sign, or **leave refused** | § 3.5 | `seen_exit_bps` against `mandate_allows_bps` | `escalation-card`, `button-sign-on-device` | 3 · 4 | none · current request · **N waiting** · signing · refusal kept |
+| `/app/positions` | What is held, and the exit watch | § 3.6 | at buy → now, and the gap | `data-table`, `badge-state`, `exit-pair` | 2 | none · flagged under exception · probing · **BLOCKED** · sold or sale refused |
+| `/app/analyste` | The real agent, read only, citing its tools | § 3.7 | — | `chat-thread` | 4 | empty · querying the MCP, 20 to 40 s · answer with its tool trace · one question at a time |
+| `/app/compte` | Address, MCP key, Claude config, the history of gestures | § 3.2 | logins · sixteen kinds of event | `key-reveal`, `data-table`, `badge-state` | 4 | guest · key masked or revealed · copied · **reset**, confirmation required |
+| `/app/appareil` | The live screen, the finger, the installed bricks | § 3.8 | versions | `device-screen-live`, `signer-report` | 3 | powered · not powered · **waiting for you** |
+| `/schema` | Who does what | § 3.9, § 2 | — | `card-panel` | 2 | — |
+
+**Cross-cutting states**, `FRONT_UPDATE` § 6.6, translated for the bearer rather than shown as codes: `0x6985` refused on the device · `0x6980` the app is stuck after an abandoned message, quit and reopen it · `0x6901` **another client is talking to the device**, close the other tabs.
+
+**Vocabulary is fixed by the product, not by this file** (`FRONT_UPDATE` § 1): *mandat, bornes, coffre, bot, tour, tranche, demande hors bornes, dérogation, porte, sortie, resonder, le porteur*. The interface uses those words and no synonyms.
 
 ## Color Palette & Roles
 
 ### Canvas & Surfaces
 - `{colors.canvas-night}` `#000000`: the page. Hero space, footer, everything between panels.
 - `{colors.page-surface-lift}` `#0a0705`: bands that need a lift.
-- `{colors.page-panel}` `#14100c`: cards, order ticket, tables. Warm-tinted so it never reads as slate.
+- `{colors.page-panel}` `#14100c`: cards, panels, tables. Warm-tinted so it never reads as slate.
 - `{colors.page-panel-raised}` `#1c1712`: table headers, nested surfaces, the device-screen frame.
 - `{colors.page-hairline}` `#3a2e22` / `{colors.page-hairline-strong}` `#55432f`: the only borders.
 
 ### Text
 Every text colour comes from the narrative ramp and nowhere else. `{colors.text-050}` `#fff1d4` for copy, `{colors.page-text-mute}` `#d6c2a4` for labels, `{colors.page-text-faint}` `#94806a` for captions and table headers.
+
+**`page-text-faint` may not sit on the landing's background.** Measured against the scrim it reaches 2.46:1, below AA. It needs a panel under it. `text-050` (8.3:1) and `page-text-mute` (5.4:1) are cleared.
 
 ### Sky ramp (hero canvas only)
 Twelve stops, black at both ends, the dusk in the middle:
@@ -391,7 +544,7 @@ The ramp exists in three copies that must agree: the hero-height CSS gradient, t
 `{colors.accent}` `#fa520f` is the single chromatic accent, Radix-style: one hue, everything else neutral. Uses: focus ring (2px), the anchored-note hairlines and dots, the active tab underline, the one key figure per screen. Never on buttons, never on backgrounds, never as glow.
 
 ### State
-`state-success` gains and accepted signatures · `state-warning` hook take above threshold, impact > 50 bps, expiry < 60 s · `state-error` losses, device rejection, wrong chain · `state-info` attestation notices. Always as text and 1px borders, never as filled backgrounds.
+The bench already fixed three meanings and the interface keeps them (`FRONT_UPDATE` § 8): **gold** is what asks the bearer, **green** is entered or active, **red** is refused. They map to `state-warning`, `state-success`, `state-error`. `state-info` carries the MCP key and the Signer Kit report. Always as text and 1px borders, never as filled backgrounds.
 
 ## Typography Rules
 
@@ -412,28 +565,30 @@ The ramp exists in three copies that must agree: the hero-height CSS gradient, t
 | `display-xxl` | 80px (60/48/40 responsive) | 700 | 0.95 | 1.6px | Section opener under the hero | ✓ |
 | `display-xl` | 60px | 700 | 1.2 | 1.2px | Sub-section | ✓ |
 | `display-lg` | 48px | 700 | 1.25 | 0.96px | Panel title | ✓ |
-| `numeral-hero` | clamp(96px, 12vw, 160px) | 600 | 1 | −0.01em | The one oversized figure per data screen | ✓ |
+| `numeral-hero` | clamp(96px, 12vw, 160px) | 600 | 1 | −0.01em | The exit figure in `exit-pair`; one key figure per screen | ✓ |
 | `note` | clamp(17px, 1.32vw, 22px) Cabin | 400 | 1.55 | 0.005em | Anchored description, max 46ch | ✓ |
 | `body-lg` | 18px | 400 | 1.7 | 0.2px | Pitch lead | ✓ |
 | `body-md` | 16px | 400 | 1.5 | 0.2px | Default | ✓ |
 | `button-cap` | 13px | 700 | 0.94 | 1.17px | Buttons, nav (uppercase) | ✓ |
-| `micro-cap` | 12px | 400 | 2.0 | 0.96px | Eyebrows, table headers (uppercase) | ✓ |
+| `micro-cap` | 12px | 400 | 2.0 | 0.96px | Eyebrows, table headers, tool traces (uppercase) | ✓ |
 | `caption` | 13px | 400 | 1.5 | 0 | Helper, footer | ✓ |
 | `mono-device` | 15px | 500 | 1.6 | 0.04em | Device-screen mirror lines | ✓ |
 | `device-wordmark` | fitted to 74 % of the panel | 600 | — | 0.16em | MONOLITH on the Flex, Inter, corner brackets | ✓ |
 | `body-sm` | 14px | 400 | 1.5 | 0.2px | Secondary | — |
-| `mono-data` | 14px | 400 | 1.5 | 0 | Table cells, breakdown values | — |
-| `mono-data-lg` | 22px | 500 | 1.2 | −0.01em | Totals, inputs | — |
+| `mono-data` | 14px | 400 | 1.5 | 0 | Journal rows, table cells, addresses, keys | — |
+| `mono-data-lg` | 22px | 500 | 1.2 | −0.01em | Inputs, the entry figure in `exit-pair` | — |
 
 ### Principles
-- Display is always uppercase; the mono is uppercase only where the device is (`BUY`, `NVDA`, `LIMIT`).
+- Display is always uppercase; the mono is uppercase only where the device is (`BUDGET`, `EXIT COST`, `EXPIRES`).
 - Every number is `tabular-nums`, right-aligned in tables — including a counter mid-roll, so a rolling figure cannot shift its line sideways.
+- Addresses are always shown as the server returns them, in checksum form, truncated in the middle only (`0xDad7…D8D`).
+- Amounts come as wei strings: show WETH with 4 decimals above 0.001, wei below. Exit costs are bps, integers.
 - The anchored note is the one place a humanist face appears; it carries `text-wrap: pretty` and a 46ch measure.
 - No sixth family. No serif.
 
 ## Interaction grammar
 
-Four motifs the hero established. **They are the site's vocabulary, not hero details** — every section below the hero uses the same four, in HTML, without a canvas.
+Four motifs the hero established. **They are the site's vocabulary, not hero details** — every section of the landing and every screen of the app uses the same four, in HTML, without a canvas.
 
 ### 1. Blinking is how things arrive and leave
 
@@ -453,18 +608,40 @@ When a description belongs to an object, it is **attached** to it rather than pl
 
 - **Right angles only.** No diagonals, no curves, no elbows with more than one turn.
 - **Two legs, drawn in sequence**: the leg leaving the object first (0.62 of 0.55 s, `power2.inOut`), then the run toward the text (0.38, `power2.out`). The dots fade in staggered behind the first leg. The text arrives at 0.8 of the draw.
-- **The anchor is a real edge of the object**, computed, not guessed: the lowest or highest crossing of its middle column, so the line never starts inside the shape whatever its pose.
+- **The anchor is a real edge of the object**, computed, not guessed: the lowest or highest crossing of its middle column, so the line never starts inside the shape whatever its pose. Mocked up floating in a gutter, it read as an ornament rather than an attachment.
 - **Drawn with transforms** (`scaleY` then `scaleX`), so nothing ever leaves the compositor.
+- Below 1280 px, where columns stack, the note degrades to an ordinary paragraph with a left accent rule and no hairline.
 
-Off the hero this is how a figure is annotated, how a table row explains itself, how a diagram labels a node.
+Off the hero this is how a figure is annotated, how a refusal explains itself, how a journal row says why.
 
 ### 3. The device screen carries the instruction
 
-The Ledger's own screen is where the site tells the reader what to do. It reads `SCROLL UP` at rest, a single word of narrative at each stop, and `SCROLL UP` again once a description has been read — and that return is what unblocks the next beat. The instruction lives on the object, not in the chrome.
+The Ledger's own screen is where the site tells the reader what to do. In the hero it reads `SCROLL UP` at rest, one word of narrative at each stop, and `SCROLL UP` again once a description has been read — and that return is what unblocks the next beat. The instruction lives on the object, not in the chrome.
 
 The panel is one bit: 128×64, `NearestFilter`, thresholded to pure black and white, no antialiasing at any distance. Emphasis is brightness only — the word goes from a median 173 to **pure white 255** when it is the one being read. There is no underline, no bold, no halo: raising the emissive is the whole vocabulary, and it works because the glass front is drawn *under* the lit panel rather than over it.
 
-Below the hero, the same idea: the `device-screen-mirror` shows exactly the fields the device shows, in the device order, one per line, nothing decorative.
+In the app this is literal rather than metaphorical. `device-screen-mirror` shows exactly the fields the device shows, in the device order, one per line, nothing decorative:
+
+```
+Exit mandate
+Network        Base
+Agent          0x7099…79C8
+Budget         0.5 WETH
+Max round trip loss (bps)   150
+Expires        2026-10-02 18:00 UTC
+```
+
+and, when it overflows:
+
+```
+Exit exception
+Position       Moonwell Flagship ETH
+Amount         0.05 WETH
+EXIT COST (bps)             2693
+Valid until    2026-09-25 19:12 UTC
+```
+
+`device-screen-live` sits beside it with the emulator's actual pixels. **The mirror is the promise, the live screen is the proof, and they must never disagree.**
 
 ### 4. Hover is what reveals content, and it is never the only door
 
@@ -485,31 +662,32 @@ The hotspot is a real `<button>`: hoverable, tappable, focusable and in the tab 
 
 **`button-ghost-on-dark`** — the universal CTA. Transparent, 1px white border, uppercase `button-cap`, 18×24 padding, pill. One per band.
 
-**`button-sign-on-device`** — the single filled button in the system. White fill, black text. Label: "SIGNER SUR LEDGER". Once per flow, only when the order is valid.
+**`button-sign-on-device`** — the single filled button in the system. White fill, black text. Label: "LIRE ET SIGNER SUR LEDGER". It appears exactly where the bearer must look at the device: the mandate, and each out of bounds request.
 
 **`anchored-note`** — the hero's connector, generalised. 1px `{colors.accent}` line, one right angle, 5px dots at both ends, `{typography.note}` text, highlights at weight 500 in the accent. Three placements exist in the hero (under, top-left, right); pick the one whose run does not cross the object.
 
-**`order-ticket`** — `card-panel` chrome. Ticker in `display-lg` + BUY/SELL as two `micro-cap` segments, active underlined in `accent`. Inputs in `mono-data-lg`. Then the breakdown, then the sign button.
+**`mandate-card`** — the proposed bounds, as cards. It must say plainly that **only budget, exit loss and expiry travel to the device**; the slice, the tick count and the risk profile guide the bots without binding them. Then one `button-sign-on-device`. After signature, `signer-report` underneath.
 
-**`device-screen-mirror`** — the honest twin of the Ledger screen. One field per line, in device order:
-```
-BUY 0.5 NVDA
-LIMIT 182.40 USDC
-FEE 7 BPS
-EXPIRES 14:32:10 UTC
-CHAIN 84532
-```
+**`exit-pair`** — the entry and the exit on one baseline, separated by a 1px accent rule, the exit carrying `numeral-hero` and the entry `mono-data-lg`. It is the project's figure and it appears at most once per section.
 
-**`data-table`** — header `page-panel-raised` with `micro-cap` labels; body `mono-data`; numeric right-aligned; P&L coloured as text only. No zebra, no hover fill; hover = 1px `page-hairline-strong` left border.
+**`escalation-card`** — gold border, because gold is what asks the bearer. The bot, the question in the bench's own words, `seen_exit_bps` against `mandate_allows_bps`, the queue count, and **both** outcomes with equal weight: read and sign, or leave refused. Leaving refused is not a cancel; it keeps the refusal, and no bot asks for that position again.
 
-**`badge-state`** · **`text-input`** · **`nav-bar-overlay`** · **`footer-dark`** — as in the frontmatter.
+**`device-screen-mirror`** — the honest twin of the Ledger screen; examples in `## Interaction grammar › 3`.
+
+**`data-table`** — header `page-panel-raised` with `micro-cap` labels; body `mono-data`; numeric right-aligned; state coloured as text only. No zebra, no hover fill; hover = 1px `page-hairline-strong` left border.
+
+**`journal-row`** — one decision per row, with a 2px left rule in the state colour. Under the table, the reading: *N bought, M refused*, and the two sentences that explain the columns.
+
+**`chat-thread`** — used by the strategist and by the analyst. Under every analyst answer, the tool trace in `micro-cap`: `MCP → operations() · vault_openness(vault=Moonwell) · decision(tick=1)`. The trace is not decoration; it is what makes the answer checkable.
+
+**`bot-card`** · **`device-screen-live`** · **`key-reveal`** · **`toast`** · **`signer-report`** · **`badge-state`** · **`text-input`** · **`nav-bar-overlay`** · **`footer-dark`** — as in the frontmatter.
 
 ## Layout Principles
 
 - Base unit 8px; tokens `xxs 4 · xs 8 · sm 12 · md 16 · lg 18 · xl 24 · xxl 32 · huge 48 · section 96`.
 - Hero: full-viewport, no container, length set by the player rather than a scroll distance.
-- Product content: 1200px reading column. Two-column at ≥ 1280px: order ticket left (5/12), device mirror right (7/12), so the site field and the device field sit on the same horizontal line.
-- Sections separated by `section` 96px and a 1px hairline, never by a background change.
+- Landing content: 1200px reading column. Sections separated by `section` 96px and a 1px hairline, never by a background change.
+- App: the persistent shell holds the account header, the live device and the escalation banner; panels below it in the same 1200px column. Two-column at ≥ 1280px wherever a site field and a device field must sit on the same horizontal line — the mandate and each exception.
 - One idea per panel.
 
 ## Depth & Elevation
@@ -517,13 +695,13 @@ CHAIN 84532
 | Level | Treatment | Use |
 |---|---|---|
 | 0 | Flat `canvas-night` | Default |
-| 1 | `page-panel` + 1px `page-hairline` | Cards, ticket, table |
+| 1 | `page-panel` + 1px `page-hairline` | Cards, panels, tables |
 | 2 | `page-panel-raised` | Table header, device frame, nested rows |
-| 3 | The 3D scene | Hero only — depth is spatial, not CSS |
+| 3 | The 3D scene | Landing only — depth is spatial, not CSS |
 
 No box-shadow, no glow. The emissive device screen is the only "light" effect on the page and it lives inside the WebGL canvas.
 
-**One blur exists, and only one.** The rule used to read "no backdrop blur" and the author has set it aside for a single case: the page's own background, once the hero releases. It is a page-level treatment applied once, never a chrome on a panel. **No component carries a blur, a frosted fill or a translucent surface** — the moment a card does, this is glassmorphism and the exception has been abused. See **Page background after the hero** below.
+**The blur is on the sheets.** Two rules preceded this one — "no backdrop blur", then "one page-level blur and none on a component" — and the author set both aside on 2026-09-26: the hole must be *perceived behind the components*, so each section stands on one **glass sheet** (`.glass`: `canvas-night` at 42 %, `backdrop-filter: blur(26px) saturate(1.25)`, a 9 % hairline, `rounded.lg`) and the bands under it are transparent. It is still not glassmorphism as a chrome: one sheet per section, never a blur inside a blur — a panel inside a sheet carries only its fill — and the sideways proof's cards are their own sheets because they leave the sheet. See **Page background after the hero** below.
 
 **The vignette belongs to the scene and stops there.** An ellipse `76% × 70%` at centre, transparent to 42 % of the radius and reaching `rgb(0 0 0 / 0.82)` at the corners, **plus** a lateral gradient (`.52 → .18 → 0 … 0 → .18 → .52`) because a single ellipse on a frame much wider than it is tall leaves the left and right edges lighter than the corners. The centre is never darkened.
 
@@ -531,126 +709,230 @@ It was mocked up as a page-level layer and refused. Over the sections it darkens
 
 ### Page background after the hero
 
-Once the player releases the page, **the scene does not go away and it does not stay either.** Everything is struck except the black hole, which becomes the background of every section below, seen through a light blur and a slight glass deformation that keep the content readable.
+**Landing only.** The app has no canvas, so nothing in this section applies to `/app/*`.
+
+Once the player releases the page, **the scene does not go away and it does not stay either.** Everything is struck except the black hole, which becomes the background of every landing section below, seen through a light blur and a slight glass deformation that keep the content readable.
 
 | | Rule |
 |---|---|
-| **What is left** | The ring and its lensed sky. Ground, devices, title, star field and heat shimmer are all gone — "only the black hole" is literal. |
-| **One canvas, still** | The same WebGL context, re-parented to a fixed layer behind the content. **Never a second context**, never a second scene. |
-| **Where the blur lives** | In the fullscreen quad that already composites the scene — the same pass that carries the heat shimmer. **Not `backdrop-filter`**, not a CSS layer per panel: one existing pass gains a term, so the page pays for no new layer, no new stacking context and no per-panel compositing. |
-| **The deformation** | Slight, slow, and on the background only. It is refraction through a sheet, not a lava lamp. It never touches a glyph. |
-| **The legibility floor** | The blur is not what makes text readable; the scrim under it is. Body text over the background must clear WCAG AA against the **brightest** frame the background can produce — measured on the render, not assumed, and re-measured whenever the hole's exposure changes. |
-| **Cost** | `frameloop` stays `'always'` for the whole page, so the budget below is spent continuously. Paid for by striking the rest of the scene: the ring is the cheap half. `dpr` drops to `[1, 1]` in this phase; the hero keeps `[1, 1.5]`. |
-| **Mobile < 768 px** | No WebGL. A still frame of the hole, same scrim and blur in CSS, no deformation. |
-| **`prefers-reduced-motion`** | The ring stops turning and the deformation is off. The still background and the scrim stay. |
+| **What is left** | The ring, whole and centred (radius 0.34 of the short side), its rim light, and the star field at 0.55 — kept because the lens bends it and a lens with nothing behind it is nothing. Ground, devices, title, sand and nebula are struck, in one group, on the black frame of the descent. |
+| **One canvas, still** | The same WebGL context; its wrapper becomes `position: fixed` under the page (`#hero[data-mode='background'] .hero-canvas`). **Never a second context**, never a second scene. |
+| **Where the glass lives** | In the compositing quad, one term per visible sheet (`src/scene/glass.ts`), from the emergence on. It is RealGlass' optical model — refraction through 1.52 with a thickness that grows toward the rim, Cauchy dispersion, a Blinn-Phong highlight from the ring's centre, frosting from a blurred copy — re-implemented, because RealGlass itself photographs the page once with html2canvas and cannot see a ring that moves every frame. Two departures from its look, both the author's: the surface is a **dome** (a soft-cornered field, the tilt rising as a power from 42 % of the half size), not a plate with a bevel and facets; and it is **clear** — no tint, no hairline, the highlight in the page's cream at 0.06 — so the blur is the only opacity. The frosted copy is the scene rendered at an eighth **without its star layer**. The sheets' rectangles are read off the DOM each frame. `backdrop-filter` remains only for the posters. |
+| **The handover** | Invisible by construction: the world is struck on a frame that is already black (the Flex's screen is the frame), the canvas stands on `canvas-night`, and the stars come back with the ring's emergence rather than popping on the next frame. |
+| **Legibility** | Each sheet is `canvas-night` at 42 % over a 26 px blur. The ring's line is the brightest thing behind it; blurred and dimmed it stays under sRGB 111, which is the floor the previous scrim arithmetic set for body text. **To re-measure on the final treatment**, and `page-text-faint` still may not sit on the background outside a sheet. |
+| **Pause when hidden** | On `visibilitychange`, hidden → `frameloop: 'never'`. The hole accumulates its own clamped clock (`holeTime`), so it resumes where it was. Visible → `'always'` again, the fixed canvas being always in view on the home. |
+| **Cost** | `frameloop` `'always'` for the whole home, at the scene's own `dpr [1, 1.5]` — the author kept the resolution rather than halving it behind the blur. The blur is per sheet and at most two sheets are on screen at once. |
+| **Mobile < 768 px** | No WebGL. `HomePoster`: `public/poster-home-portrait.jpg`, a capture of the live home at 390 × 844 @2x, fixed under the same sheets. |
+| **`prefers-reduced-motion`** | `HomePoster` with the landscape still; the title treatments render their end state. |
 
 ## Below the hero: what is inherited
 
-Three principles, decided after mocking a section up rather than arguing about it (`design-shots/mockups/`).
+Three principles, decided after mocking a section up rather than arguing about it (`design-shots/mockups/`). They govern the landing's sections **and** the app's screens.
 
 ### 1. The light comes down, the frame does not
 
 The ramp is inherited as an **order of luminance**, never as a gradient. Surfaces from the regolith end (`#0a0705 → #14100c → #1c1712`), text from the horizon end (`#fff1d4 → #d6c2a4 → #94806a`), hairlines in between, one orange. **No section paints a gradient.** The sky ramp never leaves the canvas.
 
-The vignette does not come down (above). What does come down is the black hole itself, as the page's background.
+The vignette does not come down. The black hole does, on the landing only.
 
 ### 2. The motion comes down as vocabulary, not as means
 
-**Zero continuous animation in the content.** The one animated background on the page is the black hole, and it is the only one. What sections inherit is the grammar — the blink on entry, the anchored hairline, the state treatments — in CSS steps, not GSAP timelines.
+**Zero continuous animation in the content.** On the landing the one animated background is the black hole, and it is the only moving thing. In the app nothing moves at all except state changing. What both inherit is the grammar — the blink on entry, the anchored hairline, the state treatments — in CSS steps, not GSAP timelines.
 
-What does **not** come down: the 3D of the scene, the locked-scroll player, any scrub, the heat shimmer, the star field. Lenis stays (smooth scroll is not driven scroll) and is disabled below 768 px.
+What does **not** come down: the 3D of the scene, the locked-scroll player, any scrub, the heat shimmer, the star field. Lenis stays on the landing (smooth scroll is not driven scroll) and is disabled below 768 px and throughout the app.
 
 ### 3. Data does not move, it explains itself
 
-No animated figure in a table, no hover fill, no chart flourish. A counter rolls once, on a figure being announced, never in a row. But the hero's explanatory grammar is exactly what dense data needs: **the one-turn hairline that ties a sentence to a number**, and **the four doors** that reach it. The `device-screen-mirror` is the literal continuation of "the object carries the instruction".
+No animated figure in a table, no hover fill, no chart flourish. A counter rolls once, on a figure being announced, never in a row — and on this site there is exactly one: `0 → 9 990` at the second stop. But the hero's explanatory grammar is what dense data needs: **the one-turn hairline that ties a sentence to a number**, and **the four doors** that reach it. The `device-screen-mirror` is the literal continuation of "the object carries the instruction".
 
 ## Do's and Don'ts
 
 ### Do
 - Keep a scene to four things: ground, sky, device, title. Then remove the ground.
 - Render display uppercase in Barlow Condensed with positive tracking.
-- Put the device mirror next to the order ticket on the same baseline; every field on the site has its line on the mirror.
+- Put the mirror beside the thing it mirrors, on the same baseline; every field the bearer signs has its line on the mirror.
 - Use `accent` on at most one element per viewport, and use the anchored-note grammar whenever a sentence belongs to a thing.
 - Blink things on and off. Never fade them.
-- Keep the background one canvas. If a section wants its own scene, it does not get one.
+- Keep the background one canvas, on the landing, and none in the app.
 - Give every revealable thing four doors.
-- Draw every state: loading, empty, error, wrong chain, device rejected, attestation stale.
+- Draw every state listed in `## Page structure`, including the three device error codes in words.
+- Give "leave refused" the same weight as "sign": refusing is a decision, not a cancel.
 - Honour `prefers-reduced-motion` and the 768px poster without exception.
 
 ### Don't
-- No mesh gradient, no glow, no neon green. (Violet is now allowed **in the sky only** — never in UI.)
-- No blur, no frosted fill, no translucent surface **on a component**. The page background is the one blurred thing on the site.
-- No vignette outside the scene.
+- No mesh gradient, no glow, no neon green. (Violet is allowed **in the sky only** — never in UI.)
+- No blur inside a blur. A section stands on one glass sheet; a panel inside it carries only its fill. No glass in the app.
+- No vignette outside the scene. No canvas in the app.
 - No sky ramp on UI surfaces; it exists only inside the hero canvas and its shader twin.
 - No filled buttons except `button-sign-on-device`.
-- No animated numbers in tables; counters only on a single figure.
+- No animated numbers in tables; the counter is a single figure, once.
+- No `target="_blank"` anywhere that leads to the app.
+- No `page-text-faint` on the landing's background.
 - No shadows, no glass, no rounded-24 cards.
 - No sixth typeface; no serif.
 - No diagonal connectors; no elbow with more than one turn.
 - No content reachable by hover alone.
+- No figure that is not in `UPDATE.md`, and none without its section.
 
 ## Responsive Behavior
 
 | Name | Width | Key changes |
 |---|---|---|
-| Wide | ≥ 1500px | Full 3D hero; 1200px column; ticket + mirror side by side |
+| Wide | ≥ 1500px | Full 3D hero; 1200px column; mandate and mirror side by side |
 | Desktop | 1280–1499px | Same |
-| Laptop | 961–1279px | Ticket + mirror stack (mirror first); display 80 → 60 |
+| Laptop | 961–1279px | Two-column blocks stack, mirror first; anchored notes become paragraphs; display 80 → 60 |
 | Tablet | 768–960px | 3D hero still active; display 60 → 48 |
-| Mobile | < 768px | **Static poster** for the hero and a **still image** of the hole behind the sections; no canvas, no player, no Lenis, no deformation; display 48 → 40; anchored notes become ordinary paragraphs; table becomes stacked rows |
+| Mobile | < 768px | **Static poster** for the hero and a **still image** of the hole behind the landing; no canvas, no player, no Lenis, no deformation; display 48 → 40; table becomes stacked rows. The app is not designed for mobile yet (`FRONT_UPDATE` § 7) and says so rather than degrading silently. |
 
 Touch targets ≥ 44px — enforced in the hero by a hard floor on the hotspot box. Ghost pills hit 50px. Inputs 48px on mobile.
 
 ## Adaptations from source
 
-Everything here is a departure from the library direction that is **in the code today**. Ordered by how much it changes the system.
+Everything here is a departure that is **in the code or in the decision record today**. Ordered by how much it changes the system.
 
-### Structural
+### The descent, the home and the glass (2026-09-26)
 
-- **The pin and the scrub were replaced by a stop-and-go player.** The brief assumed a 300vh pin scrubbed by ScrollTrigger. The sequence now stops at each word and waits, so its length is the reader's. `spacing.hero-pin` has been **removed** from the frontmatter: it was no longer read by any file.
-- **Four acts became three stops and a four-beat finale.** The finale is morph → the hole descends → the ring catches left to right → landing. It used to be one beat, which read as the hole arriving halfway through the story instead of at the end of it.
-- **A black hole was added.** Not in the brief at all. It is transparent outside its ring: the ring is inferred from the way the star field bends through it, and the interior is the sky's *second image*, folded through the centre. Stated plainly: that second image is a licence, not physics — a real black hole puts its shadow where the folded sky now is.
-- **Gravitational lensing is applied at the source**, inside the star field, not as a post pass. A displacement of the composited target cannot bend sky *behind* an occluding object, and trying drew a second sheared copy of the device across the arc.
-- **The narrative moved onto the device's own screen.** The brief put the project name on the screen only at the end; the whole story is now told there, one word per stop.
+- **The freeze on `src/scene/` and `src/motion/` was lifted by the author** for this pass: "Tu peux vraiment impacter la DA". The scene is now the landing and the sections are the home, joined by the descent.
+- **The landing no longer releases the page.** The player's last stop is `landed`, still locked; the next scroll is `descending` (a 3.4 s tween on the player's clock, never the scrollbar), then `done`. The name blinks out on `WORD_BLINK_OUT`, the camera dollies along its axis to 0.42 units from the screen, the world is struck at 0.64, the hole emerges from 0.68. `?p=1&land=1` parks the landed scene for captures.
+- **The hole gained a second framing.** `BlackHole` takes `centred` (arc framing → whole and centred) and `emerge` (0 → 1 out of the screen); the lens follows the same centre and radius. The frame dragging and the arc framing of the scene are unchanged.
+- **The blur moved from the page to the components**, against the previous rule, on the author's brief: one glass sheet per section, bands transparent. On 2026-09-27 the author asked for RealGlass (github.com/Explosion-Scratch/realglass, LGPL-2.1). It is not linked: it screenshots the page once and would show a frozen ring. Its model is re-implemented in the compositing pass (`src/scene/glass.ts`) on the live ring; `backdrop-filter` is now the posters' fallback only. Contrast to re-measure on the final tint.
+- **The counters are glasses of lava** (2026-09-27, option C of the author's choice, after a comparison of an SVG wave mask, a GPU fluid simulation and this). A rolling figure (9 990 bps, the 124 s clock) is drawn in the compositing pass inside its own glyphs (`src/scene/liquid.ts`): the level is the count through a damped spring (it lags, overshoots, settles), the surface carries a slow swell and a one-dimensional damped wave the pouring excites (a fast scroll raises ripples that travel and die), the body is the lava technique of three.js' `webgl_shader_lava` done procedurally — warped noise, channels overflowing 1.0 bleeding into the others — in the titles' own ignition palette — sky-orange with veins of incandescent, brighter toward the surface, nothing darker — with a cream meniscus. Nothing is drawn outside the ink: a blurred halo was tried and removed the same day, because it read as liquid outside the font. The DOM number stays for layout and assistive tech, transparent under WebGL. The CSS liquid of the previous pass is now the posters' fallback. On WebGL2 the mask textures are disposed when the canvas grows, because three.js allocates texture storage immutably at first upload.
+- **The glass is clear and domed** (2026-09-27, the author: no colour, only the blur makes opacity; no inner rectangle, no facets). Tint 0, hairline gone in WebGL mode, highlight in cream at 0.06; the rim profile is a power curve on a soft-cornered field. The frosted copy leaves the star layer out: a downsampled star is a grey pavé.
+- **The hole has a body, and the sky has depth** (2026-09-29, the author: a render closer to `public/blackhole.avif` — a total eclipse at the diamond — with the lens and the absorption kept; a real parallax for the stars, less pattern, on the model of starfield.js; nothing of the animation, the camera or the home's framing to move). The hole: the black core is BACK (a soft-edged disc at 0.975 of the horizon), the photon ring carries prominences, a corona with faint drifting rays surrounds it (pulled in and dimmed on the scene's arc, so the space around the Flex stays black), and a diamond rides the beamed side — the page's cream at its core, seven rays, a flicker — all animated as before (orbit, in-fall, shear, beaming, burn). The trade, stated: the lens's inner, inverted images are behind the core and no longer seen; the bending shows outside the ring instead. The stars: 4 800 instanced stars with a depth each (starfield.js' model — MIT, none of its code — speed, size and light ∝ 1/z), drifting down as before; the lens is applied per star in closed form, its Jacobian stretching each into a tangential arc that dims (∝ 1/√stretch) and goes out at the ring. That dimming is the absorption the author asked to keep; a lens conserves surface brightness, so it is a licence, not physics. Research read for this: ebruneton's real-time black hole shader (beam tracing, precomputed deflection), the Kerr ray tracers on GitHub, the *Interstellar* papers on the disc seen above and below the shadow — none reused, all thin-disc-in-3D approaches that do not fit a screen-space annulus.
+- **The scene has a sound** (2026-09-29, the author: the desert wind under the planted key, going out as she launches; Strauss's Sunrise, one trumpet phrase per movement after a description is read, the climax on the Flex, the hole and the name; the music follows the reader's scroll and fades between the landing and the home). `src/motion/sound.ts`, Web Audio, two files from `public/`. Three cuts were built and heard the same day: four windows over the recording, one per segment; then one brass sound of the last occurrence per word, held by a granular freeze; then the same, unheld. The author refused all three and asked for the opposite: **the music plays once, continuously, from the first occurrence of the call (18.5 s) to the end, started by the launch and never cut or moved by the scroll; the scene is timed on it by its own pacing** — the calls fall about the flights and the stops, and the fortissimo at 65.5 s, forty-seven seconds after the launch, arrives on the final vision at a reading pace. The music goes on under the home and fades slowly (3.4 + 4.5 s) instead of being cut at the handover. The locating of the calls on pitch and loudness (numpy over ffmpeg's PCM) stays in the record as the measurement behind the start point. The browser's autoplay rule is the one departure from "no chrome": a small **Sound** toggle at the bottom-left of the scene, in the nav's link style, that asks for the tap the browser requires, shows the state with one dot, and remembers the choice. The home and the app stay silent. The recording's rights are the author's to clear.
+- **The sky answers the reader, and two old bugs came out** (2026-09-29, the author: the field must react to the scroll, it was missing on the stops, the stars were flat). The field now moves with the reader — the sequence's own progress on the scene (a flight sweeps it, a stop holds it), 35 % of the page's scroll on the home — every star over its own depth, and streaks along the travel by the speed; each star is a hot core over white, a halo, spikes on the near bright ones, a slow twinkle, and one of three temperatures. Two bugs, both older than this pass: **the compositing pass multiplied the target by alpha a second time** (three's blending already leaves colour × alpha in it), which erased anything translucent over the transparent sky — unseen while everything there was opaque or at alpha 1; fixed, with the hole and the nebula squaring their own alpha so the approved look is unchanged (plus a 1/255 dither on the hole's tails); and **the star quads were back-face culled**, their winding reversed by the y-flip from pixels to clip space — the lens's rotated axes turned half of them back at the landing, which is why the field seemed to exist there and nowhere else; `DoubleSide`. Found by reading the render target's pixels and swapping shaders live; the hunt is in `design-shots/audit.md`.
+- **Deep smoke, a focus outline, and the frieze's living link** (2026-09-28, the author: the sheets still not legible enough; the bar on the axis and its cards not understood). Compared on the same page and decided: three glasses — deep smoke (absorb 0.5, no tint), tinted smoke (0.65 + canvas-night 30 %), plate (0.7 + 55 %) — the author kept the **deep smoke**; and three ways of tying a frieze card to its span — a frame from the card down to the axis, the card standing on the axis with the width of its seconds, the card as it is with the seconds written on the axis and its outline and stem lit while live — the author kept the **living link**. In every sheet, a permanent 10 % hairline and an **incandescent outline while the sheet crosses the middle of the viewport** (an IntersectionObserver, which follows pinned sheets). Untimed steps are dashed and carry no span. The proofs and their switcher are removed.
+- **The glass is smoked, and the eye is told where to land** (2026-09-28, the author: legibility, and a technical jury must catch the point of a section at once). Smoked: what the glass shows is darkened to 72 % and takes no colour (`GLASS.absorb`), the frost widens to six passes, and every glyph on a sheet carries a one-pixel shadow — the blur alone had left the ring's glow too close to the text. Where the eye lands, three things per section, all held rather than transient, which departs from "no glow that stays": a **takeaway** line first (mono, incandescent, an ember dot; its figures UPDATE.md's, its wording the author's to check), the **hot fragment** of the title — one part that cools back to incandescent instead of cream and keeps a 14 px warmth — and the **one value** in a mirror or a table that matters (`mirrorHot`, the `hot` tone in `Stats`). The call's button is incandescent. Under reduced motion the same three are simply there.
+- **The proof is a frieze, not a carousel** (2026-09-27, the author: the passage of time was not felt). Time is the axis: one second is 26 px, a tick every second, a label every ten, a fixed playhead the whole track slides under, the clock counting the seconds, each timed step spanning its seconds on the line and filling as it is crossed. The steps UPDATE.md did not time (the rounds, the reconnect) take the run's unmeasured remainder between them **for their width only** — a layout, not a figure; no number is printed for them.
+- **The star field is kept on the home** at 0.55, against "only the black hole is literal": the lens needs something to bend.
+- **The proof reads sideways.** Section 8 (Measured) is the page's one horizontal read — the vertical scroll slides the nine steps across, the 124 s clock counts with them — because it is the one section about time. The other pinned stages are unchanged.
+- **The titles carry the ring's heat: ignition.** The letters catch left to right, incandescent, and cool to cream — SplitText, built inside `onSplit` because of `autoSplit`. Chosen by the author on 2026-09-26 over two other proofs (a heat haze by SVG displacement, a horizon sweep by `background-clip: text`), both removed; they arrived with a fade, which the grammar does not cover, and ignition is the ring's own gesture. It ends in plain cream and is not a halo that stays.
+- **Directions B and C were dropped**, and the dev switcher with them. `?slow=N` (dev) slows every GSAP timeline for captures.
+- **The resolution behind the glass is the scene's**, `[1, 1.5]`: a half-resolution ladder was built and the author asked for the initial resolution back.
+- **`/home` is a path on the same document**, written with `replaceState` at the end of the descent and read at load. A static host must rewrite `/home` to `index.html`.
+
+### The subject changed under the form
+
+- **The hero was built before the subject was settled.** It was an exercise in form, it succeeded, and it is kept. What it says has been rewritten from `UPDATE.md`: the three stop words, the three descriptions and the counter. The scene, its materials, its timings, the ramp, the typography and the four motifs are **frozen**; not one file in `src/scene/` or `src/motion/` was touched in this pass.
+- **The counter stopped announcing and started demonstrating.** It rolled `July → 2026` and `Wallet → 4.0`: a date and a version number. It now rolls `0 → 9 990` bps, the measured entry and exit of the same six pools (§ 4). The odometer performs the argument instead of describing it.
+- **The three screen words now render at one size.** `OUR SOLUTION` fell to 21 px against 26 px for the other two, because the panel fits each word independently. `SPENDING`, `THE EXIT` and `THE RULE` were measured at 92.2, 83.0 and 88.3 px of the 112 available and all render at 26 px. **Any future word must be measured before it is adopted.**
+- **`project:` was rewritten.** It described a tokenised-equity venue that no longer exists.
+- **Three components described the old product and are replaced**: `order-ticket` → `mandate-card`, `cost-breakdown-row` → `journal-row`, `attestation-fingerprint` → `signer-report`. `device-screen-mirror` survives unchanged; only its example does, from a share order to the mandate and the exception the device actually shows.
+- **`## Data display` was rewritten** around wei, bps, addresses and the decision journal. Tickers, price impact and the EIP-712 attestation digest belonged to the old product.
+
+### The architecture is two surfaces
+
+- **The landing carries the scene; the app carries none.** The measurable reason is download weight: three.js is 255.4 kB gzip and an app screen has no use for it. The app never downloads it.
+- **This resolved the persistent background rather than moving it.** The `frameloop: 'always'` cost, the scrim and the tab-pause rule are **landing-only**, and the app has no contrast floor to measure against a live image.
+- **One codebase, two origins.** The app cannot be a static deploy: the session cookie is HttpOnly, `/speculos/*` must be same origin, and `dist/ledger-web.js` is served by `web/server.py`. Only the landing may go to a static host. This corrects an earlier claim in this file that one deployment would do.
+- **Eight components are new**, each marked `status: new` in the frontmatter: `exit-pair`, `timeline-run`, `device-screen-live`, `escalation-card`, `chat-thread`, `bot-card`, `toast`, `key-reveal`. None duplicates an existing one.
+- **The server contract is fixed and this file does not negotiate with it.** Routes, the state shape and the signing protocol are `FRONT_UPDATE` §§ 2, 4 and 5. Where the bench already fixed a meaning — gold asks the bearer, green is entered, red is refused — the palette maps onto it rather than replacing it.
+
+### The two gaps the author found are filled
+
+- **The scrim had neither colour nor opacity** while the document said it carried legibility. It is now `#050308` at 0.72, **derived** from the worst case rather than chosen, with the arithmetic in the table and the consequence spelled out: `page-text-faint` fails at 2.46:1 and may not sit on the background.
+- **Nothing paused the ring when the tab was hidden.** `visibilitychange` now stops the render **and** the scene clock; stopping the render alone would let the ring jump forward by the hidden duration on return.
+
+### Structural, from earlier passes
+
+- **The pin and the scrub were replaced by a stop-and-go player.** The brief assumed a 300vh pin scrubbed by ScrollTrigger. The sequence stops at each word and waits, so its length is the reader's. `spacing.hero-pin` was removed: no file read it.
+- **Four acts became three stops and a four-beat finale.** The finale is morph → the hole descends → the ring catches left to right → landing.
+- **A black hole was added.** Not in the brief at all. It is transparent outside its ring, and the interior is the sky's *second image*, folded through the centre. Stated plainly: that second image is a licence, not physics.
+- **Gravitational lensing is applied at the source**, inside the star field, not as a post pass. A displacement of the composited target cannot bend sky *behind* an occluding object.
+- **The narrative lives on the device's own screen**, one word per stop, rather than the project name at the end only.
 
 ### Colour
 
-- **Violet entered the sky.** The brief's "no violet" is set aside for the sky ramp only: without the band a real dusk puts between night blue and warm horizon, the sky ran black-to-red in one hue and read as a single orange wash. It never appears in UI.
-- **Narrative ramp `text-050` → `text-950` added.** The narrative texts sit straight on the 3D scene, with no scrim and no glow, so their colours have to come from the scene itself or they read as pasted on. Sampled off the base frame and ordered by luminance. It is the only source of text colour, highlights included.
-- **Page roles derived from that ramp (`page-*`).** SpaceX's neutral greys are replaced by warm near-blacks and warm off-whites from the regolith and horizon ends, so the sections under the hero belong to the same world.
+- **Violet entered the sky**, for the sky ramp only. Without the band a real dusk puts between night blue and warm horizon, the sky ran black-to-red in one hue. It never appears in UI.
+- **Narrative ramp `text-050` → `text-950` added.** The narrative texts sit straight on the 3D scene with no scrim and no glow, so their colours come from the scene itself.
+- **Page roles derived from that ramp (`page-*`)**, so the sections belong to the same world as the scene.
 - **Space palette added.** The night sky is a deep blue rather than black, so the dusk → space switch reads as a complementary chord.
-- **Whites and hairlines warmed**, and warmer than first specified: the frontmatter's `#efe9e1 / #38312c / #9a8f84` had drifted from the code's `#d6c2a4 / #3a2e22 / #94806a`. The code wins; the frontmatter is now corrected to it.
-- **One accent kept** against SpaceX's black-and-white rule, because focus rings, the connectors and one key figure need a hue.
-- **State tokens added.** SpaceX has no semantic palette.
+- **Whites and hairlines warmed**, and the frontmatter corrected to the code where the two had drifted.
+- **One accent kept** against SpaceX's black-and-white rule. **State tokens added**; SpaceX has no semantic palette.
 
 ### Type
 
-- **D-DIN → Barlow Condensed / Barlow.** D-DIN is not on Google Fonts; Barlow is a DIN-derived grotesk with a condensed cut.
+- **D-DIN → Barlow Condensed / Barlow.** D-DIN is not on Google Fonts.
 - **Mono face added (JetBrains Mono)** despite SpaceX's "no mono" rule: device fields and tabular numbers are the core of the product.
 - **Two families added beyond the brief**: Cabin for the anchored note, Inter for what the device writes. Both OFL, both self-hosted.
-- **The Art Nouveau display register was abandoned.** Davison Art Nouveau has no current distributor. A dev bench (`src/motion/font-lab.ts`) carried six OFL stand-ins behind `?font=` and `?art=` — Fredoka, Rubik Mono One, Baloo 2 for the display tier, Fraunces, Yeseva One, Abril Fatface for the Art Nouveau one. Two display faces were tried on the horizon title and both were dropped; the title is back to Barlow Condensed. With the question settled the bench had no remaining purpose: it, its typography token and its six packages have been **removed**.
-- **`display-monolith` is clamp(88px, 11.5vw, 200px)**, not the specified clamp(120px, 22vw, 320px). At the specified size the title could not share the frame with the device.
-- **The horizon title is a 3D billboard**, not an HTML layer, so it leaves the frame with the ground when the camera rises. It is shifted `+0.58` in X so the device hides the `Y` of "BEGIN YOUR JOURNEY" and reveals the `O` — the reader sees "BEGIN OUR JOURNEY" first. Hiding *exactly* the Y is geometrically impossible without changing the key's pose; the shift is the best available and was chosen by sweep.
+- **The Art Nouveau display register was abandoned.** Davison Art Nouveau has no current distributor. A dev bench (`src/motion/font-lab.ts`) carried six OFL stand-ins behind `?font=` and `?art=`. Two display faces were tried on the horizon title and both were dropped. With the question settled the bench, its typography token and its six packages were **removed**.
+- **`display-monolith` is clamp(88px, 11.5vw, 200px)**, not the specified clamp(120px, 22vw, 320px): at the specified size the title could not share the frame with the device.
+- **The horizon title is a 3D billboard**, shifted `+0.58` in X so the device hides the `Y` of "BEGIN YOUR JOURNEY" and reveals the `O`. Hiding *exactly* the Y is geometrically impossible without changing the key's pose.
 
 ### Device and screen
 
-- **The E Ink sheet was removed**, then the flat plate that replaced it. The MONOLITH wordmark now sits directly on the Flex's own surface, its texture transparent everywhere but the ink, so the device shows through between the letters. `device-eink` is kept as a token but nothing reads it.
-- **The screen glass is drawn UNDER the lit panel.** Composited over it, the `#050505` sheet at 26 % multiplied the screen by ~0.74; the emissive saturated its own write at 1.0 and then lost a quarter of it, so the brightest pixel measured 223 whatever the emissive was set to. Underneath, the word reaches pure white. The cost, taken deliberately: the glass no longer reflects over the word.
-- **Ledger's brand faces cannot be used.** Brut Grotesque is a retail licence; HM ALPHA Mono and Ledger Mono are not distributed at all. Nothing was downloaded from a font-sharing site to stand in. Inter is loaded instead — the face Ledger's own interface ships.
+- **The E Ink sheet was removed**, then the flat plate that replaced it. The MONOLITH wordmark sits directly on the Flex's own surface, transparent everywhere but the ink. `device-eink` is kept as a token but nothing reads it.
+- **The screen glass is drawn UNDER the lit panel.** Composited over it, the `#050505` sheet at 26 % multiplied the screen by ~0.74 and the brightest pixel measured 223 whatever the emissive was set to. Underneath, the word reaches pure white. The cost, taken deliberately: the glass no longer reflects over the word.
+- **Ledger's brand faces cannot be used.** Brut Grotesque is a retail licence; HM ALPHA Mono and Ledger Mono are not distributed. Nothing was downloaded from a font-sharing site. Inter is loaded instead.
 
-### Corrected in this pass
+### Corrected in earlier passes
 
-- **The shimmer's sky was truncated.** `SKY_STOPS` carries twelve stops; the shader declared `uStops[8]` and looped to eight, so the sky redrawn inside the shimmer band stopped at `sky-amber 0.64` and never reached the peach, the regolith or the black. The array length is now derived from the data, so the class of drift is closed.
-- **Dead weight removed**: the typography bench and its six font packages, `source-sans-3` (installed, never imported), and the two unused device components in `src/scene/devices.tsx`, which now holds only the dimensions and the material types the scene still imports.
+- **The shimmer's sky was truncated.** `SKY_STOPS` carries twelve stops; the shader declared `uStops[8]`. The array length is now derived from the data.
+- **Dead weight removed**: the typography bench and its six font packages, `source-sans-3`, and the two unused device components in `src/scene/devices.tsx`.
+- **The vignette is fenced to the scene**, refused as a page layer on measured evidence.
+- **"No backdrop blur" is set aside, once**, for the landing's background, and fenced so no component may carry one.
 
-### Decided in this pass
+### Still open
 
-- **The scene outlives the hero.** The brief, and every version of this file until now, assumed the canvas stopped mattering once the pin released — it even dropped to `frameloop: 'demand'` when the hero scrolled out of view. At the author's decision the black hole now stays as the background of the whole page. This is the largest change to the system since the stop-and-go player: it turns a scene with an end into a room the rest of the site is read inside.
-- **"No backdrop blur" is set aside, once.** The rule in `## Depth & Elevation` was absolute. The author has taken a light blur and a slight glass deformation over that background, to keep the content readable against a live image. Recorded rather than quietly done, and fenced: it is a page-level treatment applied in the compositing pass that already exists, **never** a frosted chrome on a panel. The day a card carries a blur, this exception has been abused and the rule should be restored.
-- **The vignette is fenced to the scene.** Proposed as a page-level layer, mocked up, and refused on the evidence: it turns the white sign button into a gradient and eats half the width of a 390 px screen.
-- **The three inheritance principles were approved** and are written in `## Below the hero`.
+- **Grain and twinkle do not exist** and are not documented as if they did. Set aside by the author.
+- **`withdraw` and `revoke` have no button** (`FRONT_UPDATE` § 7): the contract allows both, but they need a signed transaction rather than an EIP-712. The interface must show them as *to come* rather than hide them — it is the most visible gap in "your Ledger stays with you".
+- **The app has no mobile design** (`FRONT_UPDATE` § 7). It says so rather than degrading silently.
+- **Polling, not SSE** (`FRONT_UPDATE` § 2): `GET /api/state` every 1.4 s. If that becomes visible jitter in a table, the fix is in the server.
+- **The signature asset (`asset/react-flow`) was never built** and `@xyflow/react` is not installed. `/schema` covers the need.
+- **Micro-freezes** reported during the build are not reproducible in headless capture.
+- **The second model is a Stax, not a Flex.** Its 39 MB FBX no longer ships: since 2026-09-27 the scene loads `public/Ledger_Stax.glb` (0.87 MB) — the FBX's 1273 meshes merged into the one mesh the scene drew anyway (`src/dev/fbx-export.ts`, `?export=stax`), Draco-compressed with `@gltf-transform/cli` (edgebreaker), decoded by `public/draco/`. Cloudflare Pages refuses files over 25 MB; the author chose the conversion over an R2 bucket. The FBX sources (Nano X 5.4 MB, Stax 39 MB) are the author's and are not tracked; the Nano X still loads as FBX.
 
-### Product pages (added with the bench integration, 4 October)
+## Data display
+
+- **Amounts**: the server returns wei as strings. Show WETH with 4 decimals above 0.001, wei below. Never round a wei value into a lie.
+- **Exit costs are bps**, integers, no decimals. 100 bps = 1 %. The pair entry/exit belongs in `exit-pair`.
+- **Addresses** in checksum form as the server returns them, truncated in the middle only (`0xDad7…D8D`), never re-cased.
+- **Thousands separator is a thin space** (`9 990`). All numbers `tabular-nums`, right-aligned in tables.
+- **The decision journal**: one row per decision, in order — tick or *déro.*, bot, position, hook in and out for a pool, entry or displayed yield, exit or door, decision. A 2px left rule carries the state colour. Under the table, *N bought, M refused* and the two sentences that explain the columns.
+- **Site ↔ device correspondence**: every field the bearer signs has its line on `device-screen-mirror`, in device order. A field the device does not show is marked *not shown on the device* rather than omitted.
+- **The Signer Kit report** is shown, not hidden: `isBlindSign=false · eip7730` is the proof the device read fields and not a blob.
+- **Counters** roll once, `0.9 s`, `power3.out`, on a figure being announced — never in a table. There is one on the site.
+- **States**: loading = hairline skeleton rows, no shimmer; empty = a sentence plus one ghost action; error = `state-error` text line and a retry ghost; **signing = everything that signs is disabled, and the reason is written**; device rejected = the words, not the code; queue = the count, always visible.
+
+## Spectacle
+
+ambition: spectaculaire — **spent on the landing, with one thing left running behind it, and nothing in the app.**
+
+background: **one** WebGL canvas (R3F 9 + drei 10 + three 0.186), a shared `progress` ref, zero `setState` in `useFrame`, no second render context — for the hero **and** for the landing sections under it. The scene is rendered into one MSAA ×4 target and composited by a single fullscreen quad.
+
+While the hero runs: ground, sky, two devices (an FBX and a Draco GLB), an instanced star field with depth carrying its own gravitational lens per star, a black hole with a core, a ring, a corona and a diamond, and a heat-shimmer pass with a depth mask.
+
+After the descent: **the hole, whole and centred, and the dim star field it bends**, the canvas fixed under the home, every section on its own glass sheet. Everything else is struck on the black frame of the descent. `HomePoster` (a still of the hole) below 768 px and under `prefers-reduced-motion`.
+
+**In the app: none of it.** No canvas, no three.js, no Lenis, no background.
+
+reveal-system: the blink tables, not a clip-path wipe. Things survive or they do not.
+
+motion-system: Lenis synced to the GSAP ticker on the landing; the reveal data-attribute API for its sections; disabled below 768 px and in the app entirely.
+
+signature-asset: `/schema` — who does what, from `UPDATE.md` § 2. The node-graph version was specified and never built; `@xyflow/react` is not installed.
+
+color-drama: one accent (`sky-orange #fa520f`), states on text and hairlines only, and the bench's three fixed meanings kept (gold asks, green entered, red refused). The narrative ramp is the chromatic system of both surfaces through the `page-*` roles; the sky ramp stays confined to the hero canvas.
+
+typography-spectacle: the oversized numeral is the exit figure in `exit-pair`. On the device it is the MONOLITH wordmark, drawn into a canvas texture with corner brackets rather than set in HTML.
+
+motion-budget (measured, `design-shots/audit.md`): 2 continuous animations in the space phase — the star drift and the ring rotation — against a budget of 2. One WebGL canvas, none on mobile, nothing continuous under `prefers-reduced-motion`. CLS 0. Zero console errors. Hero JS excluding three.js **147.8 kB gzip** against a budget of 300, plus 3.56 kB deferred for the black hole. Tables static.
+
+**The persistent background changes what that budget means and the audit has to say so.** On the landing below the hero the page carries exactly **one** continuous animation — the ring — against a budget of 2, and the content carries none. It is spent for a whole reading session rather than for the length of a scene, so the audit must report: the frame cost with the hole alone against the hero's, the `dpr` in force in each phase, the measured contrast of body text against the brightest frame, and that the ring stops when the tab is hidden. A budget that was true for eight seconds of hero is not automatically true for four minutes of reading. **The app's budget is zero and must measure as zero.**
+
+## Agent Prompt Guide
+
+1. Read the frontmatter tokens first; every colour and font in code is a CSS variable from it. `src/styles/tokens.css` is the **only** file allowed to hold a hex literal.
+2. `UPDATE.md` is the source of truth for CONTENT, `FRONT_UPDATE.md` for the screens and the server contract, this file for FORM. A figure with no section reference does not go on the page.
+3. The hero is finished and is the reference. Do not rebuild it; read it. `src/scene/` and `src/motion/` were reopened once, for the descent and the home (v4), and are closed again.
+4. Landing and app are two surfaces. The app has no canvas, no three.js, no Lenis, and is served by `web/server.py` for the cookie and the emulator proxy.
+5. On the home, inherit four things — the ramp, the type scale, the interaction grammar, and the black hole as background behind glass sheets — and inherit **none** of the rest of the 3D, the locked scroll, the heavy passes or the vignette. Data screens stay calm.
+6. One accent element per viewport, one filled button per flow, no continuous animation outside the landing's background.
+7. Blink things on and off; never fade them. Tie a sentence to a thing with a one-turn orange hairline. Give every revealable thing four doors. Give "leave refused" the same weight as "sign".
+8. Screenshots to check: dusk at rest, a stop with its description open, the landing over the persistent background, mobile poster, reduced-motion poster, the mandate beside the mirror, an out of bounds request with a queue behind it, the journal with a refusal.
+9. Any deviation from this file is written in `## Adaptations from source` before it is coded.
+
+### Product pages (added with the bench integration, 4 October; Florent's home, scene and sound of 26–29 September brought in on 10 October)
 
 The hero, its scene, its player and its timings are untouched. What was added sits under `src/app/` and
 `src/styles/app.css`, and takes every value from the frontmatter.
@@ -690,44 +972,3 @@ The hero, its scene, its player and its timings are untouched. What was added si
 
 ## Data display
 
-- **Number formatting**: quantities up to 4 decimals, trimmed; prices 2 decimals with the quote unit as `micro-cap` suffix (`182.40 USDC`); fees in bps as integers (`7 BPS`) with the absolute amount in the expanded row; P&L signed with a real minus (`−12.40`), coloured as text only; percentages 2 decimals. Thousands separator is a thin space. All numbers `tabular-nums`, right-aligned.
-- **Tickers** uppercase Barlow Condensed in tables, `display-lg` in the ticket header.
-- **Cost breakdown**: four rows plus a total, always in the same order (pool price → pool fee → hook take → price impact → total). Any row above threshold gets a `state-warning` badge and a one-line reason. The total is the one place `accent` may appear on the ticket.
-- **Site ↔ device correspondence**: each ticket field has an `id`; the mirror renders lines from the same order object. A field the device cannot display is marked "non affiché sur l'appareil".
-- **Attestation**: portfolio values come from an EIP-712 message the server signs; the UI shows the digest, the timestamp, and a "Recalculer" action. Stale (> 60 s) → `state-warning`.
-- **Counters** roll once, `0.9 s`, `power3.out`, and only on a figure that is being announced — never in a table.
-- **States**: loading = hairline skeleton rows, no shimmer; empty = a sentence plus one ghost action; error = `state-error` text line and a retry ghost; wrong chain = badge with expected vs actual id; device rejected = the mirror shows `REJECTED`, ticket stays editable; device pending = the mirror shows the fields with a 1px `accent` left border, no spinner.
-
-## Spectacle
-
-ambition: spectaculaire — **spent in the hero, with one thing left running behind the rest of the page.**
-
-background: **one** WebGL canvas (R3F 9 + drei 10 + three 0.186), a shared `progress` ref, zero `setState` in `useFrame`, no second render context — for the hero **and** for everything under it. The scene is rendered into one MSAA ×4 target and composited by a single fullscreen quad.
-
-While the hero runs: ground, sky, two FBX devices, a procedural star field carrying its own gravitational lens, a black hole, and a heat-shimmer pass with a depth mask.
-
-After the player releases: **the hole alone**, re-parented to a fixed layer behind the content, with the blur and the slight glass deformation added as a term in the quad that is already there. Everything else is struck. Poster below 768 px and under `prefers-reduced-motion`; a still image of the hole under the sections on mobile.
-
-reveal-system: the blink tables, not a clip-path wipe. Things survive or they do not.
-
-motion-system: Lenis synced to the GSAP ticker; the reveal data-attribute API for the sections under the hero; disabled below 768 px.
-
-signature-asset: **not built.** The order-path node graph was specified and never made; `@xyflow/react` is not installed.
-
-color-drama: one accent (`sky-orange #fa520f`), states on text and hairlines only. The narrative ramp is the chromatic system of the whole page through the `page-*` roles; the sky ramp stays confined to the hero canvas.
-
-typography-spectacle: the oversized numeral survives as one key figure per data screen. On the device it is the MONOLITH wordmark, drawn into a canvas texture with corner brackets rather than set in HTML.
-
-motion-budget (measured, `design-shots/audit.md`): 2 continuous animations in the space phase — the star drift and the ring rotation — against a budget of 2. One WebGL canvas, none on mobile, nothing continuous under `prefers-reduced-motion`. CLS 0. Zero console errors. Hero JS excluding three.js **147.8 kB gzip** against a budget of 300, plus 3.56 kB deferred for the black hole. Tables static.
-
-**The persistent background changes what that budget means and the audit has to say so.** Below the hero the page carries exactly **one** continuous animation — the ring — against a budget of 2, and the content itself carries none. It is spent for the whole reading session rather than for the length of a scene, so the audit must from now on report: the frame cost with the hole alone against the hero's, the `dpr` actually in force in each phase, and the measured contrast of body text against the brightest frame the background produces. A budget that was true for eight seconds of hero is not automatically true for four minutes of reading.
-
-## Agent Prompt Guide
-
-1. Read the frontmatter tokens first; every colour and font in code is a CSS variable from it. `src/styles/tokens.css` is the **only** file allowed to hold a hex literal.
-2. The hero is finished and is the reference. Do not rebuild it; read it.
-3. Below the hero, inherit four things — the ramp, the type scale, the interaction grammar, and the black hole as the page's background — and inherit **none** of the rest of the 3D, the locked scroll, the heavy passes or the vignette. Data screens stay calm.
-4. One accent element per viewport, one filled button per flow, no continuous animation outside the hero.
-5. Blink things on and off; never fade them. Tie a sentence to a thing with a one-turn orange hairline. Give every revealable thing four doors.
-6. Screenshots to check: dusk at rest, a stop with its description open, the landing, mobile poster, reduced-motion poster, order ticket + mirror side by side, positions table with a warning badge.
-7. Any deviation from this file is written in `## Adaptations from source` before it is coded.

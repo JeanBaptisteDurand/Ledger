@@ -20,13 +20,16 @@
  * acted on the finished frame, because a lens magnifies the shadow it casts. The lens now acts on the star
  * field alone (src/scene/StarField.tsx), so the arc is drawn where it is framed and nothing moves it.
  *
- * NOTHING IS OPAQUE ANY MORE. There was a black disc filling everything inside the arc, which is what a
- * shadow is and what the previous passes drew. It is gone at the author's request: what is wanted is to see
- * the sky THROUGH the hole, bent, rather than to see a hole punched in the sky. So the only thing drawn is
- * the ring, and the darkness inside it is no longer painted — it is what the lens leaves. Close to the
- * centre the magnification is enormous, so a large patch of screen shows a tiny patch of sky: the field
- * empties and stretches on its own, and the eye reads an absence that is made of the same stars as the rest
- * of the frame rather than of paint.
+ * THE CORE IS BACK (2026-09-29). It had been taken out so the sky would be seen THROUGH the hole, bent. The
+ * author then gave a reference — a total eclipse at the diamond: a black disc with body, a wide soft corona,
+ * one blinding point on the limb with rays, a thin line of prominences — and asked for that. So a black disc
+ * fills the horizon again, with a soft edge, and the lens now shows its work OUTSIDE the ring: stars drawn
+ * into arcs that lengthen and go out as they reach it (src/scene/StarField.tsx). The inner, inverted images
+ * the lens still computes are behind the core and no longer seen; that is the trade, and it is stated.
+ *
+ * WHAT MOVES IS UNCHANGED: the orbit, the in-fall, the shear, the beaming's sway, the ring's shimmer, the
+ * ignition front. What is added moves too: the corona's rays drift, the diamond rides the bright side of the
+ * ring and flickers. None of it touches the geometry, the framing or the rim light.
  *
  * THE EINSTEIN RADIUS IS THE DRAWN RADIUS, which is what makes the effect legible on the one arc that is in
  * frame. It used to be a third of it, and the region where the bending shows sat inside the ring, which on
@@ -46,8 +49,10 @@ import { arcRadiusPx, HOLE_FALL_LIFT } from './black-hole-frame'
 
 /** How far behind the landed device the hole sits. The device rests about 4.6 from the camera. */
 const DISTANCE = 16
-/** The horizon, as a fraction of the disc quad's half-extent: the ring reaches 1.14 horizon radii. */
-const INNER_FRAC = 0.88
+/** The horizon, as a fraction of the disc quad's half-extent: the corona reaches 2.4 horizon radii. */
+const INNER_FRAC = 0.42
+/** The black core, as a fraction of the horizon radius; the photon ring sits on its edge. */
+const CORE_FRAC = 0.975
 /*
  * The arrival is a brightening and no longer a descent.
  *
@@ -73,8 +78,7 @@ const FRAG = /* glsl */ `
   uniform float uBeam;
   /**
    * How much of the disc's motion is applied, 0 to 1. It is 1 in the product and exists so the change can be
-   * MEASURED: at 0 the shader is exactly what it was before this pass, so the same instrument reads the disc
-   * with and without the orbit, the in-fall and the beaming and the difference is a number rather than a claim.
+   * MEASURED: at 0 the pattern holds still and the same instrument reads the disc with and without the orbit.
    */
   uniform float uMotion;
   /**
@@ -83,82 +87,110 @@ const FRAG = /* glsl */ `
    * what is wanted is something catching.
    */
   uniform float uBurn;
+  /**
+   * The framing, 0 for the scene's arc (a radius of hundreds of pixels, only the bottom in frame) to 1 for
+   * the home's whole ring. The corona and the diamond's halo are drawn in horizon radii, so on the arc they
+   * would be hundreds of pixels wide and wash the scene; they are pulled in and dimmed there.
+   */
+  uniform float uCentred;
 
   /*
-   * Radians a second the whole pattern turns about the horizon.
-   *
-   * The ANGLE is down from 0.85 and the SPEED is not. On a ring of 139 px, 0.85 rad/s was 139 px/s along it;
-   * on an arc six times bigger the same angle would be six times the travel, which on a curve this shallow
-   * would read as a smear rather than a rotation. 0.175 rad/s keeps the travel at about 140 px/s — the figure
-   * that was measured and accepted at the small size — on a radius of 800. If a faster sweep is wanted, this
-   * is the one number to change.
+   * Radians a second the whole pattern turns about the horizon. 0.175 rad/s keeps the travel at about
+   * 140 px/s on a radius of 800, the figure that was measured and accepted at the small size.
    */
   #define ORBIT_RATE 0.175
   /** How soft the ignition front is, and how wide its bright lip, in quad units. */
   #define BURN_SOFT 0.16
   #define BURN_LIP 0.055
+  #define PI 3.14159265
   uniform vec3 uInnerColor;
   uniform vec3 uMidColor;
   uniform vec3 uOuterColor;
+  uniform vec3 uHotColor;
   varying vec2 vUv;
+
+  float wrapAngle(float x) { return mod(x + PI, 2.0 * PI) - PI; }
 
   void main() {
     vec2 d = (vUv - 0.5) * 2.0;
     float r = length(d);
-    // Nothing beyond the disc, and nothing inside the horizon: the core is drawn by its own opaque mesh.
-    if (r > 1.0 || r < uInner * 0.995) discard;
-
-    // The disc falls off outward from the horizon, steeply.
-    float disc = smoothstep(1.0, uInner, r);
-    disc = pow(disc, 2.3);
+    /* In horizon radii: 1 is the photon ring; the core mesh is under everything inside it. */
+    float rho = r / uInner;
+    if (r > 1.0 || rho < 0.96) discard;
+    float a0 = atan(d.y, d.x);
 
     /*
-     * ── What moves ───────────────────────────────────────────────────────
-     * Three things, none of them the geometry: the arc has to keep meeting the two top corners, so its size and
-     * its place are fixed and only its light is allowed to change.
-     *
-     * 1. ORBIT. The whole pattern turns about the horizon. The visible sliver spans about 130 degrees of the
-     *    circle, so a slow angular rate still reads as a real sideways travel of tens of pixels a second.
-     * 2. IN-FALL. The radial phase drifts outward, which makes the features themselves crawl INWARD, toward
-     *    the horizon. Matter on an accretion disc is losing angular momentum; this is what that looks like.
-     * 3. SHEAR. The inner edge turns faster than the outer one, so the streaks stretch and tear as they go
-     *    instead of holding their shape like a printed texture being rotated.
+     * ── The disc body (1 → 1.45 radii): what moved before, unchanged ─────
+     * ORBIT: the pattern turns. IN-FALL: features crawl toward the horizon. SHEAR: the inner edge turns faster.
      */
-    float a = atan(d.y, d.x) + uTime * ORBIT_RATE * uMotion;
-    float shear = mix(1.7, 0.45, smoothstep(uInner, 1.0, r));
+    float disc = pow(smoothstep(1.45, 1.0, rho), 1.8);
+    float a = a0 + uTime * ORBIT_RATE * uMotion;
+    float shear = mix(1.7, 0.45, smoothstep(1.0, 1.45, rho));
     float infall = uTime * 1.15 * uMotion;
     float swirl = 0.58
-      + 0.30 * sin(a * 7.0 + uTime * 0.62 * shear + r * 9.0 + infall)
-      + 0.16 * sin(a * 13.0 - uTime * 0.37 * shear + r * 17.0 + infall * 1.7);
+      + 0.30 * sin(a * 7.0 + uTime * 0.62 * shear + rho * 9.0 + infall)
+      + 0.16 * sin(a * 13.0 - uTime * 0.37 * shear + rho * 17.0 + infall * 1.7);
 
-    /*
-     * DOPPLER BEAMING. One side of the disc comes toward the eye and is brighter and bluer; the other recedes.
-     * We keep the ramp and drop the blue, so it is brightness alone. The bright side sways slowly rather than
-     * sitting still, which is the difference between a lit object and a photograph of one.
-     */
-    float beam = mix(1.0, 0.60 + 0.55 * cos(a - uBeam), uMotion);
-
-    // The photon ring: a thin bright line hugging the horizon, itself unquiet.
-    float ringW = uInner * (0.014 + 0.0028 * sin(uTime * 0.83) * uMotion);
-    float ring = exp(-pow((r - uInner) / ringW, 2.0));
-    ring *= mix(1.0, 0.82 + 0.18 * sin(a * 3.0 - uTime * 0.9), uMotion);
-
-    vec3 col = mix(uOuterColor, uMidColor, pow(disc, 0.55));
-    col = mix(col, uInnerColor, ring);
-    /*
-     * The body of the disc is pulled well down and the photon ring left at full strength. What is wanted is a
-     * thin line of fire around an absence, not a lit sphere: the mass is supposed to be inferred from what it
-     * does to the star field, and a glowing body is exactly what stops the eye looking for that.
-     */
-    /*
-     * The beaming is carried by the RING as well as by the body, and softly: matter on the near side of the
-     * orbit is coming toward the eye, and the photon ring is made of the same matter. Before, the ring was
-     * beamed nowhere and the body carried it at a third of the opacity, so the only thing on the hole that
-     * actually turned was almost invisible — measured, the ring's travel came out at zero. Softly, because a
-     * ring that went out on its far side would read as a broken circle rather than a lit one.
-     */
+    /* DOPPLER BEAMING: one side comes toward the eye and is brighter; the bright side sways slowly. */
+    float beam = mix(1.0, 0.60 + 0.55 * cos(a0 - uBeam), uMotion);
     float beamN = clamp(beam / 1.15, 0.0, 1.0);
-    float alpha = (disc * max(swirl, 0.0) * beam * 0.34 + ring * (0.45 + 0.55 * beamN)) * uOpacity;
+
+    /*
+     * ── The photon ring ─────────────────────────────────────────────────
+     * A thin bright line on the horizon, itself unquiet, with PROMINENCES: small bright licks along the limb
+     * that turn with the disc. The reference's limb is not a clean circle, it is a line of fire.
+     */
+    float ringW = 0.016 + 0.003 * sin(uTime * 0.83) * uMotion;
+    float ring = exp(-pow((rho - 1.0) / ringW, 2.0));
+    float prom = 0.5 + 0.5 * sin(a * 19.0 - uTime * 0.7) * sin(a * 31.0 + uTime * 0.45);
+    ring *= mix(1.0, 0.72 + 0.5 * prom, uMotion);
+    /* The licks reach a little past the ring, unevenly. */
+    float licks = exp(-max(rho - 1.0, 0.0) / (0.03 + 0.05 * prom)) * smoothstep(0.96, 1.0, rho) * (0.4 + 0.6 * prom);
+
+    /*
+     * ── The corona (1 → 2.4 radii) ──────────────────────────────────────
+     * The wide soft light around the shadow, with faint RAYS that drift: a slow angular noise, so the glow is
+     * not a flat gradient. It is what gives the reference its body; the disc alone was a line around a hole.
+     */
+    /* On the arc the corona is pulled in and cut sooner: the space around the Flex stays black. */
+    float corW = mix(0.13, 0.30, uCentred);
+    float cor = exp(-max(rho - 1.0, 0.0) / corW) * (1.0 - smoothstep(mix(1.25, 2.05, uCentred), mix(1.6, 2.38, uCentred), rho));
+    float rays = 0.82 + 0.18 * (0.5 + 0.5 * sin(a0 * 23.0 + uTime * 0.21 * uMotion)) * (0.5 + 0.5 * sin(a0 * 41.0 - uTime * 0.13 * uMotion));
+    cor *= rays;
+
+    /*
+     * ── The diamond ─────────────────────────────────────────────────────
+     * One blinding point on the limb, where the beaming says matter comes at us fastest; it rides the bright
+     * side as it sways, and it flickers. From it, a handful of narrow rays and a broad halo. This is the one
+     * thing on the hole that is allowed to approach white, and it is the cream of the page, not white.
+     */
+    float da = wrapAngle(a0 - uBeam);
+    float flicker = mix(1.0, 0.86 + 0.14 * sin(uTime * 3.1) * sin(uTime * 1.7 + 0.4), uMotion);
+    float hot = exp(-pow(da / 0.11, 2.0)) * exp(-max(rho - 1.0, 0.0) / 0.16) * smoothstep(0.96, 1.0, rho);
+    float halo = exp(-pow(da / 0.55, 2.0)) * exp(-max(rho - 1.0, 0.0) / mix(0.28, 0.55, uCentred));
+    float raysD = 0.0;
+    for (int k = 0; k < 7; k++) {
+      float fk = float(k);
+      float ang = uBeam + (fk - 3.0) * 0.62 + 0.18 * sin(uTime * 0.09 * uMotion + fk * 1.7);
+      float w = 0.018 + 0.012 * fract(fk * 0.618);
+      float len = (0.7 + 0.5 * fract(fk * 0.382)) * mix(0.3, 1.0, uCentred);
+      raysD += exp(-pow(wrapAngle(a0 - ang) / w, 2.0)) * exp(-max(rho - 1.0, 0.0) / len);
+    }
+    raysD *= exp(-pow(da / 0.9, 2.0)) * flicker;
+
+    /* ── Colours, from the ramp ───────────────────────────────────────── */
+    vec3 bodyCol = mix(uOuterColor, uMidColor, pow(disc, 0.55));
+    vec3 corCol = mix(uOuterColor, uMidColor, 0.45);
+    vec3 diamondCol = mix(uInnerColor, uHotColor, clamp(hot * 1.4, 0.0, 1.0));
+
+    /* ── Terms, additive: each with its light and its colour ──────────── */
+    float tBody = disc * max(swirl, 0.0) * beam * 0.34;
+    float tRing = ring * (0.45 + 0.55 * beamN) + licks * 0.35 * beamN;
+    float tCor = cor * mix(0.08, 0.24, uCentred) * (0.6 + 0.4 * beamN);
+    float tDia = (hot * 1.8 + raysD * 0.55 * mix(0.6, 1.0, uCentred) + halo * mix(0.22, 0.38, uCentred)) * flicker;
+    float alpha = tBody + tRing + tCor + tDia;
+    vec3 col = (bodyCol * tBody + uInnerColor * tRing + corCol * tCor + diamondCol * tDia) / max(alpha, 1e-4);
+    alpha *= uOpacity;
 
     /* The ignition front, in quad coordinates: -1 is the left edge, +1 the right. */
     float front = mix(-1.08, 1.08, uBurn);
@@ -167,8 +199,27 @@ const FRAG = /* glsl */ `
     float lip = exp(-pow((d.x - front) / BURN_LIP, 2.0)) * uBurn * (1.0 - uBurn) * 4.0;
     col = mix(col, uInnerColor, clamp(lip, 0.0, 1.0));
     alpha *= clamp(lit + lip, 0.0, 1.0);
-    if (alpha < 0.004) discard;
-    gl_FragColor = vec4(col * (0.85 + ring * 0.9), alpha);
+    if (alpha < 0.003) discard;
+    /*
+     * Squared: the compositing pass used to multiply by alpha a second time and this look was approved under
+     * it (2026-09-29). The pass is fixed; the square keeps the ring, the corona and the diamond as they were.
+     */
+    alpha *= clamp(alpha, 0.0, 1.0);
+    // A 1/255 dither on the faint tails: squared and written to eight bits they banded.
+    alpha += (fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453) - 0.5) / 255.0;
+    gl_FragColor = vec4(col * (0.85 + ring * 0.9 + hot * 1.1), alpha);
+  }
+`
+
+/** The black core: the shadow, with a soft edge, under the ring. */
+const CORE_FRAG = /* glsl */ `
+  uniform float uOpacity;
+  varying vec2 vUv;
+  void main() {
+    float r = length((vUv - 0.5) * 2.0);
+    float a = uOpacity * smoothstep(1.0, 0.93, r);
+    if (a < 0.003) discard;
+    gl_FragColor = vec4(0.0, 0.0, 0.0, a);
   }
 `
 
@@ -193,12 +244,20 @@ const RIM_TARGET_DISTANCE = 4.6
  */
 export type RimState = { x: number; y: number; z: number; tx: number; ty: number; tz: number; intensity: number }
 
+/**
+ * The hole's radius on the home, as a share of the viewport's short side. The arc framing puts the centre
+ * above the frame; the home puts it in the middle, whole, behind the glass.
+ */
+const HOME_RADIUS_FRAC = 0.34
+
 export function BlackHole({
   colors,
   amount,
   burn,
   rim,
   frozen,
+  centred,
+  emerge,
 }: {
   colors: SceneColors
   amount: { value: number }
@@ -206,8 +265,13 @@ export function BlackHole({
   rim: RimState
   /** Reduced motion: the hole is still there, the disc simply stops turning. */
   frozen: boolean
+  /** 0: the arc framing of the scene. 1: whole and centred, the home's background. */
+  centred: { value: number }
+  /** How far the home's hole has emerged out of the black screen, 0 to 1. */
+  emerge: { value: number }
 }) {
   const disc = useRef<THREE.Mesh>(null)
+  const core = useRef<THREE.Mesh>(null)
   const group = useRef<THREE.Group>(null)
   const camera = useThree((s) => s.camera) as THREE.PerspectiveCamera
   const size = useThree((s) => s.size)
@@ -238,28 +302,47 @@ export function BlackHole({
         uInnerColor: { value: colors.peach.clone() },
         uMidColor: { value: colors.orange.clone() },
         uOuterColor: { value: colors.ember.clone() },
+        /* The diamond's core: the page's cream, the brightest thing the ramp allows. */
+        uHotColor: { value: colors.textCream.clone() },
+        uCentred: { value: 0 },
       },
       transparent: true,
       depthWrite: false,
       blending: THREE.AdditiveBlending,
       side: THREE.DoubleSide,
     })
-    return { discMat, discGeom: new THREE.PlaneGeometry(2, 2) }
+    const coreMat = new THREE.ShaderMaterial({
+      vertexShader: VERT,
+      fragmentShader: CORE_FRAG,
+      uniforms: { uOpacity: { value: 0 } },
+      transparent: true,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+    })
+    return { discMat, coreMat, discGeom: new THREE.PlaneGeometry(2, 2) }
   }, [colors])
 
   useEffect(
     () => () => {
       built.discMat.dispose()
+      built.coreMat.dispose()
       built.discGeom.dispose()
     },
     [built],
   )
 
   const scratch = useMemo(() => ({ fwd: new THREE.Vector3(), up: new THREE.Vector3(), right: new THREE.Vector3() }), [])
+  /*
+   * The disc's own clock. It accumulates frame deltas rather than reading the wall clock, so a tab that was
+   * hidden (frameloop 'never') resumes where it left off instead of jumping the pattern forward by the whole
+   * absence; and the delta is clamped, so a stalled frame cannot do the same.
+   */
+  const holeTime = useRef(0)
 
-  useFrame(({ clock }) => {
+  useFrame((_, delta) => {
     const g = group.current
     if (!g || !disc.current) return
+    holeTime.current += Math.min(delta, 0.1)
     const { fwd, up, right } = scratch
     /*
      * Under reduced motion the hole is drawn, lit and lensing, and none of it moves: the clock is pinned, so
@@ -268,7 +351,7 @@ export function BlackHole({
      * through the dev `?scene=1` override — the reader who asks for less motion gets the poster — but the
      * rule should hold wherever the scene runs, not only where it usually runs.
      */
-    let t = frozen ? 0 : clock.elapsedTime
+    let t = frozen ? 0 : holeTime.current
     // The hold is a measurement device and belongs to development only; the branch is stripped from the build.
     if (import.meta.env.DEV) {
       const hold = built.discMat.uniforms.uHold.value as number
@@ -283,8 +366,16 @@ export function BlackHole({
      */
     const halfH = DISTANCE * Math.tan(((camera.fov || 35) * Math.PI) / 360)
     const perPixel = (2 * halfH) / size.height
-    const rPx = arcRadiusPx(size.width, size.height)
-    const radius = rPx * perPixel
+    /*
+     * Two framings, blended by `centred`: the scene's arc (centre one radius above the middle, only the lower
+     * arc in frame) and the home's whole ring (centred, a third of the short side). `emerge` grows the home's
+     * ring out of the black screen and is 1 whenever the scene framing is in force.
+     */
+    const c = centred.value
+    const em = c > 0 ? emerge.value : 1
+    const rArc = arcRadiusPx(size.width, size.height) * perPixel
+    const rHome = Math.min(size.width, size.height) * HOME_RADIUS_FRAC * perPixel
+    const radius = rArc + (rHome - rArc) * c
 
     camera.getWorldDirection(fwd)
     up.set(0, 1, 0).applyQuaternion(camera.quaternion)
@@ -297,15 +388,18 @@ export function BlackHole({
     g.position
       .copy(camera.position)
       .addScaledVector(fwd, DISTANCE)
-      .addScaledVector(up, radius * (1 + HOLE_FALL_LIFT * (1 - arrive)))
+      .addScaledVector(up, rArc * (1 + HOLE_FALL_LIFT * (1 - arrive)) * (1 - c))
     g.quaternion.copy(camera.quaternion)
-    disc.current.scale.setScalar(radius / INNER_FRAC)
+    disc.current.scale.setScalar((radius / INNER_FRAC) * (0.22 + 0.78 * em))
+    if (core.current) core.current.scale.setScalar(radius * CORE_FRAC * (0.22 + 0.78 * em))
 
     const beam = BEAM_CENTRE + BEAM_SWAY * Math.sin(t * BEAM_RATE) * built.discMat.uniforms.uMotion.value
     if (import.meta.env.DEV) (window as unknown as { __hole?: unknown }).__hole = built.discMat.uniforms
     built.discMat.uniforms.uTime.value = t
     built.discMat.uniforms.uBeam.value = beam
-    built.discMat.uniforms.uOpacity.value = arrive
+    built.discMat.uniforms.uOpacity.value = arrive * em
+    built.discMat.uniforms.uCentred.value = c
+    built.coreMat.uniforms.uOpacity.value = arrive * em
     built.discMat.uniforms.uBurn.value = burn.value
 
     /*
@@ -325,14 +419,16 @@ export function BlackHole({
     rim.ty = camera.position.y + fwd.y * RIM_TARGET_DISTANCE
     rim.tz = camera.position.z + fwd.z * RIM_TARGET_DISTANCE
     // The ring's own unquiet, on the light too, so the edge on the device breathes with what is casting it.
-    rim.intensity = RIM_INTENSITY * arrive * (0.88 + 0.12 * Math.sin(t * 0.83))
+    rim.intensity = RIM_INTENSITY * arrive * em * (0.88 + 0.12 * Math.sin(t * 0.83))
 
   })
 
   return (
     <group ref={group}>
-      {/* The ring, and only the ring. Nothing is painted inside it; see the note at the top of this file.
-          The lensing is not here either: it is applied to the star field, from the first frame, by the scene. */}
+      {/* The shadow: a black disc with a soft edge, under the ring (see the note at the top of this file). */}
+      <mesh ref={core} geometry={built.discGeom} material={built.coreMat} renderOrder={-2} />
+      {/* The ring, the corona and the diamond, additive. The lensing is not here: it is applied to the star
+          field, from the first frame, by the scene. */}
       <mesh ref={disc} geometry={built.discGeom} material={built.discMat} renderOrder={-1} />
     </group>
   )

@@ -2,8 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useGSAP } from '@gsap/react'
 import { Nav } from './components/Nav'
 import { Hero } from './components/Hero'
-import { Intro } from './components/Intro'
-import { HowItWorks } from './components/HowItWorks'
+import { Landing as Home } from './components/landing/Landing'
 import { Footer } from './components/Footer'
 import { initSmoothScroll, setPageLocked } from './motion/scroll'
 import { initReveals } from './motion/reveal'
@@ -37,8 +36,7 @@ function Landing() {
       <Nav hiddenUntilRelease={sceneMode} />
       <main>
         <Hero />
-        <Intro />
-        <HowItWorks />
+        <Home />
       </main>
       <Footer />
     </div>

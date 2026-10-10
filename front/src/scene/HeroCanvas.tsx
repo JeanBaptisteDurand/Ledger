@@ -7,8 +7,8 @@ import type { Dawn } from '../motion/dawn'
 
 export type CanvasControls = {
   invalidate: () => void
-  /** 'always' while the hero is pinned in view, 'demand' otherwise. */
-  setFrameloop: (mode: 'always' | 'demand') => void
+  /** 'always' while the scene or the home background is in view, 'demand' otherwise, 'never' while the tab is hidden. */
+  setFrameloop: (mode: 'always' | 'demand' | 'never') => void
 }
 
 type Props = {
@@ -25,6 +25,7 @@ type Props = {
 export function HeroCanvas({ progress, dawn, title, projectName, notes, showBlackHole, onReady, onFirstRender }: Props) {
   return (
     <Canvas
+      // The same ladder for the scene and for the home behind the glass: the author kept the resolution.
       dpr={[1, 1.5]}
       frameloop="always"
       // PCF (not "soft") so shadow.radius can follow the levitation height.

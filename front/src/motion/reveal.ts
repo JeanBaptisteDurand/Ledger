@@ -12,6 +12,8 @@ const MASK_SHOWN = 'inset(0% 0 0 0)'
 
 export function initReveals(scope: HTMLElement): void {
   const targets = gsap.utils.toArray<HTMLElement>('[data-reveal]', scope)
+  // The home carries no data-reveal any more; an empty list would make GSAP warn "target not found" three times.
+  if (!targets.length) return
 
   if (prefersReducedMotion()) {
     gsap.set(targets, { autoAlpha: 1, clearProps: 'clipPath,transform' })

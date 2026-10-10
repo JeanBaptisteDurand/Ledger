@@ -168,7 +168,7 @@ function LiveScreen({ live, signing, real }: { live: boolean; signing: string | 
   return (
     <div>
       <p className="t-micro-cap eyebrow m-0 mb-3">{real ? 'La Flex émulée du banc (votre vraie Ledger a son propre écran)' : 'L’écran de la Flex, en direct'} · {status}</p>
-      <div className={`device-frame ${signing ? 'mirror--pending' : ''}`}>
+      <div className={`device-frame ${signing ? 'app-mirror--pending' : ''}`}>
         {live ? (
           <img
             src={`/api/screen?t=${stamp}`}

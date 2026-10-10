@@ -39,8 +39,23 @@ export type HeroProgress = {
   nudgeSeq: number
   /** How hard that shake was, 0..1. The key resists more each time before it finally tears free. */
   nudgeStrength: number
+  /**
+   * The descent, 0 to 1. The landed reader scrolls once more: the name on the Flex goes out, the camera goes
+   * into its black screen, and the hole comes out of that screen, whole and centred. The player writes it on
+   * its own clock (DESCENT.s); the scene reads it the way it reads `p`.
+   */
+  descent: number
+  /** 'scene' until the screen has swallowed the frame; 'background' from then on, when the hole is all that is drawn. */
+  mode: 'scene' | 'background'
 }
-export type PlayerState = 'armed-later' | 'idle' | 'running' | 'waiting' | 'done'
+export type PlayerState = 'armed-later' | 'idle' | 'running' | 'waiting' | 'landed' | 'descending' | 'done'
+
+/**
+ * The descent's schedule, in seconds and in fractions of it. The name blinks out on the device's own going-out
+ * pattern (screen-words: WORD_BLINK_OUT), the dolly starts under the last flicker, the screen has the whole
+ * frame at `black`, and the hole grows out of it from `emergeFrom` to the end.
+ */
+export const DESCENT = { s: 3.4, dollyFrom: 0.1, dollyTo: 0.64, black: 0.64, emergeFrom: 0.68 } as const
 
 /** A scroll input counts as one intent for this long, so one flick cannot start two segments. */
 export const INPUT_WINDOW_MS = 220
@@ -87,6 +102,8 @@ export type HeroPlayerTargets = {
 export type HeroPlayer = {
   arm: () => void
   jumpTo: (p: number) => void
+  /** Dev / capture: the landed scene, locked, the descent still to come (`?p=1&land=1`). */
+  land: () => void
   state: () => PlayerState
   destroy: () => void
 }
@@ -106,6 +123,16 @@ export function createHeroPlayer(
    * at page load. It must never fire per frame: it crosses into React.
    */
   onLatePhase?: () => void,
+  /**
+   * The descent's three moments, for the DOM: 'start' when the landed reader scrolls, 'emerge' when the screen
+   * has the frame and the hole starts out of it (the home's hero may mount), 'end' when the page is released.
+   */
+  onDescent?: (phase: 'start' | 'emerge' | 'end') => void,
+  /**
+   * Fired when the reader releases a segment: 0 at the launch, then the index of the stop being flown to,
+   * STOPS.length for the finale. The soundtrack hangs its phrases on it (motion/sound.ts).
+   */
+  onSegment?: (index: number) => void,
 ): HeroPlayer {
   // DOM tweens, paused: their playhead is set from the player.
   const tl = gsap.timeline({ paused: true, defaults: { ease: 'none' } })
@@ -183,6 +210,7 @@ export function createHeroPlayer(
     // The lean belongs to the stop: it releases as soon as the sequence moves again.
     progress.pointerX = 0
     progress.pointerY = 0
+    onSegment?.(target)
   }
 
   const tick = (_time: number, deltaMs: number) => {
@@ -229,10 +257,42 @@ export function createHeroPlayer(
         progress.segIndex = -1
         target += 1
       } else {
-        state = 'done'
-            unlockScroll()
+        // Landed: the scene holds, still locked. The next scroll is the descent, not the page.
+        state = 'landed'
       }
     }
+  }
+
+  /**
+   * The descent. One tween on the player's own clock, never the scrollbar's: the reader asked for it with one
+   * scroll and it plays through, like every other segment. The page unlocks at the very end, so the first real
+   * scroll of the home lands on a page that is already there.
+   */
+  const descend = () => {
+    state = 'descending'
+    progress.pointerX = 0
+    progress.pointerY = 0
+    onDescent?.('start')
+    let emerged = false
+    gsap.to(progress, {
+      descent: 1,
+      duration: DESCENT.s,
+      ease: 'none',
+      onUpdate: () => {
+        t.section.style.setProperty('--hero-descent', progress.descent.toFixed(4))
+        if (!emerged && progress.descent >= DESCENT.emergeFrom) {
+          emerged = true
+          progress.mode = 'background'
+          onDescent?.('emerge')
+        }
+        onProgress(progress.p)
+      },
+      onComplete: () => {
+        state = 'done'
+        onDescent?.('end')
+        unlockScroll()
+      },
+    })
   }
 
   // Inputs: direction only, never amplitude, and one intent per window.
@@ -262,6 +322,11 @@ export function createHeroPlayer(
       state = 'running'
       progress.segFrom = progress.p
       progress.segIndex = 0
+      onSegment?.(0)
+      return
+    }
+    if (state === 'landed') {
+      descend()
       return
     }
     resume()
@@ -271,7 +336,7 @@ export function createHeroPlayer(
     if (e.deltaY !== 0) input(e.deltaY > 0 ? 1 : -1)
   }
   const onKey = (e: KeyboardEvent) => {
-    if (state === 'armed-later' || state === 'done') return
+    if (state === 'armed-later' || state === 'descending' || state === 'done') return
     if (e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === 'End' || (e.key === ' ' && !e.shiftKey) || e.key === 'Enter') {
       e.preventDefault()
       input(1)
@@ -300,7 +365,7 @@ export function createHeroPlayer(
   const fine = window.matchMedia('(hover: hover) and (pointer: fine)')
   const onPointerMove = (e: PointerEvent) => {
     // The landed device is as answerable to the pointer as the key is at a stop.
-    if (e.pointerType !== 'mouse' || (state !== 'waiting' && state !== 'done')) return
+    if (e.pointerType !== 'mouse' || (state !== 'waiting' && state !== 'landed')) return
     progress.pointerX = (e.clientX / window.innerWidth) * 2 - 1
     progress.pointerY = (e.clientY / window.innerHeight) * 2 - 1
   }
@@ -341,8 +406,24 @@ export function createHeroPlayer(
     jumpTo: (p) => {
       progress.p = Math.min(1, Math.max(0, p))
       state = 'done'
-        apply(progress.p)
+      apply(progress.p)
+      // At 1 the descent is over too: this is the home, with the hole already out of the screen.
+      if (progress.p >= 1) {
+        progress.descent = 1
+        progress.mode = 'background'
+        t.section.style.setProperty('--hero-descent', '1')
+        onDescent?.('emerge')
+        onDescent?.('end')
+      }
       unlockScroll()
+    },
+    land: () => {
+      progress.p = 1
+      progress.descent = 0
+      progress.mode = 'scene'
+      state = 'landed'
+      apply(1)
+      lockScroll()
     },
     state: () => state,
     destroy: () => {

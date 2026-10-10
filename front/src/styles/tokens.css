@@ -834,3 +834,486 @@ summary,
   color: var(--color-page-text-mute);
   text-wrap: pretty;
 }
+
+/* ─── The landing under the hero (DESIGN.md › Page structure). No hex here either: everything reads a token. ─── */
+
+/* exit-pair: two figures, one baseline, a 1px accent rule between them; the exit carries the weight. */
+.exit-pair {
+  display: grid;
+  grid-template-columns: auto 1px 1fr;
+  align-items: end;
+  gap: 24px;
+}
+.exit-pair__side {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.exit-pair__rule {
+  align-self: stretch;
+  background: var(--color-accent);
+}
+.exit-pair__entry,
+.exit-pair__exit {
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.exit-pair__exit .exit-pair__unit {
+  vertical-align: baseline;
+  margin-left: 0.15em;
+}
+
+/* device-screen-mirror: the honest twin of the device's screen. */
+.mirror {
+  background: var(--color-device-screen-off);
+  border: 1px solid var(--color-page-hairline-strong);
+  border-radius: var(--radius-device-flex);
+  padding: 20px 24px;
+  color: var(--color-device-screen-on);
+}
+.mirror__title {
+  color: var(--color-page-text-faint);
+  margin-bottom: 8px;
+}
+.mirror { container-type: inline-size; }
+.mirror__lines {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 20px;
+  row-gap: 4px;
+  align-items: baseline;
+}
+/* A narrow mirror stacks key over value rather than letting an address or a date break mid-way. */
+@container (max-width: 440px) {
+  .mirror__lines { grid-template-columns: 1fr; row-gap: 2px; }
+  .mirror__key { margin-top: 6px; }
+  .mirror__key:first-child { margin-top: 0; }
+}
+.mirror__key {
+  color: var(--color-page-text-faint);
+}
+/* The device shows a value as it is. An address is never re-cased; the tier's uppercase stays on the keys. */
+.mirror__value {
+  text-transform: none;
+  overflow-wrap: anywhere;
+}
+.mirror__missing {
+  color: var(--color-page-text-faint);
+  text-decoration: line-through;
+  text-decoration-color: var(--color-accent);
+}
+
+/* badge-state: text and a 1px border in the state colour at 40%, no fill. */
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: var(--radius-xs);
+  border: 1px solid color-mix(in srgb, currentColor 40%, transparent);
+  white-space: nowrap;
+}
+.badge--success { color: var(--color-state-success); }
+.badge--warning { color: var(--color-state-warning); }
+.badge--error   { color: var(--color-state-error); }
+.badge--info    { color: var(--color-state-info); }
+
+/* A short list of figures: label left, value right, hairline between rows, tabular. */
+.stats {
+  margin: 0;
+  border-top: 1px solid var(--color-page-hairline);
+}
+.stats__row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 16px;
+  align-items: baseline;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color-page-hairline);
+}
+.stats__row dt {
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-page-text-mute);
+}
+.stats__row dd {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: var(--color-page-text);
+}
+
+/* anchored-note in HTML: the elbow leaves the object above, turns once, ends at the sentence. */
+.anchored {
+  --elbow: 220px;
+  display: grid;
+  grid-template-columns: var(--elbow) 1fr;
+  align-items: center;
+  margin-top: 8px;
+}
+.anchored__svg {
+  display: block;
+  width: var(--elbow);
+  height: 96px;
+  overflow: visible;
+}
+.anchored__hair {
+  stroke: var(--color-accent);
+  stroke-width: 1;
+  fill: none;
+  shape-rendering: crispEdges;
+}
+.anchored__dot {
+  fill: var(--color-accent);
+}
+.anchored__text {
+  margin: 0;
+}
+@media (max-width: 1279px) {
+  .anchored {
+    display: block;
+    margin-top: 24px;
+    padding-left: 16px;
+    border-left: 1px solid var(--color-accent);
+  }
+  .anchored__svg { display: none; }
+}
+
+
+/* The two outcomes of an exception, given the same weight. */
+.outcomes {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+  border-top: 1px solid var(--color-page-hairline);
+  padding-top: 24px;
+}
+@media (min-width: 768px) {
+  .outcomes { grid-template-columns: 1fr 1fr; gap: 32px; }
+}
+
+/* What we found: one finding per row, the badge on the right. */
+.findings {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--color-page-hairline);
+}
+.findings__row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 24px;
+  align-items: start;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--color-page-hairline);
+}
+@media (max-width: 767px) {
+  .findings__row { grid-template-columns: 1fr; gap: 8px; }
+}
+
+/* Three bricks: a real <button> per row, four doors, the detail never hover-only. */
+.bricks {
+  border-top: 1px solid var(--color-page-hairline);
+}
+.bricks__row {
+  border-bottom: 1px solid var(--color-page-hairline);
+}
+.bricks__head {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 24px;
+  align-items: baseline;
+  width: 100%;
+  min-height: 64px;
+  padding: 16px 0;
+  background: none;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+.bricks__head:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 4px;
+  border-radius: 2px;
+}
+.bricks__body {
+  padding: 0 0 20px 0;
+}
+@media (max-width: 767px) {
+  .bricks__head { grid-template-columns: 1fr; gap: 4px; }
+}
+
+/* Typography tiers the landing needs that the hero did not: specified in DESIGN.md, built here. */
+@layer components {
+  .t-mono-data {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.5;
+    letter-spacing: 0;
+    font-variant-numeric: tabular-nums;
+  }
+  .t-mono-data-lg {
+    font-family: var(--font-mono);
+    font-size: 22px;
+    font-weight: 500;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+  }
+  .t-note {
+    font-family: var(--font-note);
+    font-size: clamp(17px, 1.32vw, 22px);
+    font-weight: 400;
+    line-height: 1.55;
+    letter-spacing: 0.005em;
+    max-width: 46ch;
+    text-wrap: pretty;
+    color: var(--color-text-050);
+  }
+}
+
+/*
+ * The display tiers step down with the viewport (DESIGN.md › Responsive: 80 → 60 → 48 → 40). Only display-xxl
+ * had its steps; the landing sets its section openers in display-xl, which at 60 px on a 390 px screen ran to
+ * four lines and most of the viewport.
+ */
+@media (max-width: 960px) {
+  .t-display-xl { font-size: 48px; line-height: 1.15; }
+}
+@media (max-width: 767px) {
+  .t-display-xl { font-size: 40px; line-height: 1.1; letter-spacing: 1px; }
+  .t-display-lg { font-size: 40px; }
+}
+
+/* ─── The three landing directions (A pinned · B ladder · C bento). Shared foundation first. ─── */
+
+/*
+ * The section register, after Vercel and Linear: sentence case, weight 600 as the ceiling, negative tracking
+ * that tightens as the size grows. A deliberate contrast with the hero's condensed capitals: the hero shouts,
+ * the sections speak.
+ */
+@layer components {
+  .t-title-xl { font-family: var(--font-body); font-size: clamp(40px, 5.2vw, 76px); font-weight: 600; line-height: 1.02; letter-spacing: -0.035em; text-wrap: balance; }
+  .t-title-lg { font-family: var(--font-body); font-size: clamp(32px, 3.6vw, 52px); font-weight: 600; line-height: 1.08; letter-spacing: -0.03em; text-wrap: balance; }
+  .t-title-md { font-family: var(--font-body); font-size: clamp(22px, 2vw, 28px); font-weight: 600; line-height: 1.2; letter-spacing: -0.02em; }
+  .t-kicker   { font-family: var(--font-mono); font-size: 12px; font-weight: 400; line-height: 1.6; letter-spacing: 0.06em; text-transform: uppercase; }
+}
+
+/* The surface ladder, Linear's way: the canvas, then three rungs, each a step warmer and lighter. */
+.band { position: relative; padding: var(--spacing-section) 0; background: var(--color-canvas-night); }
+/*
+ * ── The home ─────────────────────────────────────────────────────────────
+ * Once the hole is out of the screen the canvas is fixed under the whole page and the bands give up their
+ * fills: what carries the text is a glass sheet per section, blurred over the hole, so the ring and its heat
+ * are seen through every component and the page stays readable. The blur is per sheet, not per panel: a
+ * panel inside a sheet is already over blurred ground and only needs its fill.
+ */
+html[data-home] .band, html[data-home] .band--lift-1, html[data-home] .band--lift-2, html[data-home] .band--lift-3 { background: transparent; border-color: transparent; }
+html[data-home] .band + .band--lift-0 { border-top-color: transparent; }
+/* From the first frame of the descent the canvas stands on black: when the star field goes out under the screen, black is what stays. */
+#hero[data-mode] .hero-canvas { background: var(--color-canvas-night); }
+#hero[data-mode='background'] .hero-canvas { position: fixed; inset: 0; z-index: 0; }
+#hero[data-mode='background'] .hero-sky, #hero[data-mode='background'] .hero-night, #hero[data-mode='background'] .hero-stars, #hero[data-mode='background'] .screen-note-layer { display: none; }
+/* On the home the nav stands on a short scrim, so the sheets scrolling under it never collide with its links. */
+html[data-home] #site-nav::before { content: ''; position: absolute; inset: 0 0 -24px; z-index: -1; pointer-events: none; background: linear-gradient(to bottom, color-mix(in srgb, var(--color-canvas-night) 88%, transparent) 0%, color-mix(in srgb, var(--color-canvas-night) 55%, transparent) 62%, transparent 100%); }
+/* The vignette belongs to the scene: it goes with the dolly, and is gone before the hole comes out. */
+#hero[data-mode] .hero-vignette { opacity: clamp(0, 1 - var(--hero-descent, 0) * 2.2, 1); }
+#hero[data-mode='background'] .hero-vignette { display: none; }
+.glass {
+  padding: clamp(24px, 4vw, 56px);
+  border-radius: var(--radius-lg, 20px);
+  border: 1px solid color-mix(in srgb, var(--color-text-050) 9%, transparent);
+  background: color-mix(in srgb, var(--color-canvas-night) 42%, transparent);
+  -webkit-backdrop-filter: blur(26px) saturate(1.25);
+  backdrop-filter: blur(26px) saturate(1.25);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--color-text-050) 8%, transparent);
+}
+.glass--wide { margin: 0 auto; max-width: 1200px; }
+@media (max-width: 767px) { .glass { padding: 24px 20px; border-radius: var(--radius-md); } }
+@media (prefers-reduced-transparency: reduce) { .glass { background: var(--color-page-panel); -webkit-backdrop-filter: none; backdrop-filter: none; } }
+html[data-home] .panel--lift-1 { background: color-mix(in srgb, var(--color-page-surface-lift) 78%, transparent); }
+html[data-home] .panel--lift-2 { background: color-mix(in srgb, var(--color-page-panel) 82%, transparent); }
+html[data-home] .panel--lift-3 { background: color-mix(in srgb, var(--color-page-panel-raised) 84%, transparent); }
+/* The home's hero: over the hole, the name where the ring is, the thesis under it. */
+.home-hero { position: absolute; inset: 0; display: grid; place-content: center; gap: 20px; padding: 0 24px; text-align: center; pointer-events: none; }
+.home-hero__title { line-height: 0.9; text-shadow: 0 2px 40px color-mix(in srgb, var(--color-canvas-night) 70%, transparent); }
+.home-hero__catch { max-width: 30ch; margin-inline: auto; text-wrap: balance; }
+
+.band--lift-1 { background: var(--color-page-surface-lift); border-top: 1px solid var(--color-page-hairline); border-bottom: 1px solid var(--color-page-hairline); }
+.band--lift-2 { background: var(--color-page-panel); border-top: 1px solid var(--color-page-hairline); border-bottom: 1px solid var(--color-page-hairline); }
+.band--lift-3 { background: var(--color-page-panel-raised); border-top: 1px solid var(--color-page-hairline-strong); border-bottom: 1px solid var(--color-page-hairline-strong); }
+.band + .band--lift-0 { border-top: 1px solid var(--color-page-hairline); }
+
+.panel { border-radius: var(--radius-md); border: 1px solid var(--color-page-hairline); padding: 24px; }
+.panel--lift-1 { background: var(--color-page-surface-lift); }
+.panel--lift-2 { background: var(--color-page-panel); }
+.panel--lift-3 { background: var(--color-page-panel-raised); border-color: var(--color-page-hairline-strong); }
+/* A faint top edge, Linear's "pixel rendered" cue, on lifted panels. */
+.panel--lift-2, .panel--lift-3 { box-shadow: inset 0 1px 0 color-mix(in srgb, var(--color-text-050) 6%, transparent); }
+
+/* Word reveal: each line is a mask the words rise out of. SplitText sets the classes. */
+.split-line { overflow: hidden; }
+
+/* A note without the hero's elbow: the humanist face and a left accent rule. */
+.note { margin: 0; padding-left: 16px; border-left: 1px solid var(--color-accent); }
+
+/* A · a pinned stage holds the viewport while its timeline is scrubbed. Plain flow below 768px. */
+.stage { min-height: 100dvh; display: flex; align-items: center; padding: var(--spacing-huge) 0; }
+.stage__inner { width: 100%; }
+@media (max-width: 767px) { .stage { min-height: 0; padding: var(--spacing-section) 0; } }
+
+/* C · the bento: twelve columns, cells that span, one hero cell. */
+.bento { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-auto-rows: minmax(120px, auto); gap: 12px; }
+.bento__cell { grid-column: span 3; }
+.bento__cell--hero { grid-column: span 6; grid-row: span 2; }
+.bento__cell--wide { grid-column: span 6; }
+.bento__figure { line-height: 0.95; }
+@media (max-width: 1279px) { .bento__cell { grid-column: span 6; } .bento__cell--hero, .bento__cell--wide { grid-column: span 12; } }
+@media (max-width: 767px) { .bento__cell, .bento__cell--hero, .bento__cell--wide { grid-column: span 12; grid-row: auto; } .bento { gap: 8px; } }
+
+
+/*
+ * ── Audit, 2026-09-26 (web-interface-guidelines) ─────────────────────────
+ * The nav is fixed and 72 px tall: an anchor target must stop under it, not behind it. Every control on the
+ * home has a visible focus ring, in the accent, and the first Tab on the page reaches a skip link.
+ */
+.band, .stage, .frieze { scroll-margin-top: 88px; }
+.btn-ghost:focus-visible, .nav-link:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 40; padding: 10px 14px; border-radius: var(--radius-md); background: var(--color-page-panel-raised); color: var(--color-text-050); transform: translateY(-200%); }
+.skip-link:focus-visible { transform: none; outline: 2px solid var(--color-accent); outline-offset: 2px; }
+
+/*
+ * ── The glass, drawn in the canvas ───────────────────────────────────────
+ * From the emergence, `html[data-glass='webgl']`: the sheets are refracted, frosted and lit in the compositing
+ * pass (src/scene/glass.ts), on the live ring. The DOM sheet then carries only its hairline; the CSS blur above
+ * is the fallback for the posters, where there is no canvas.
+ */
+html[data-glass='webgl'] .glass { background: transparent; -webkit-backdrop-filter: none; backdrop-filter: none; border-color: color-mix(in srgb, var(--color-text-050) 10%, transparent); box-shadow: none; }
+
+/*
+ * ── The liquid figure ─────────────────────────────────────────────────────
+ * Two copies of a number (primitives: Figure). The upper one is the incandescent, masked from the bottom up
+ * to --fill, with a wave tile riding the surface; --slosh slides the tile as the count moves. The mask is the
+ * only place a data file is used for a colour-less shape.
+ */
+.liquid { position: relative; display: inline-block; --fill: 0%; --slosh: 0px; }
+/*
+ * The liquid. The upper copy is not a flat colour: it is the ignition's own ramp, ember below, incandescent
+ * up the body, a thin cream meniscus at the surface, clipped to the glyphs; its halo is the one the titles
+ * carry as they catch. Two wave tiles ride the surface in opposite directions, so the count sloshes.
+ */
+.liquid__fill {
+  position: absolute; inset: 0; pointer-events: none; color: transparent;
+  background-image: linear-gradient(to top, var(--color-sky-orange) 0%, var(--color-accent-incandescent) calc(var(--fill) - 0.42em), var(--color-text-050) calc(var(--fill) - 3px), var(--color-text-050) var(--fill), var(--color-accent-incandescent) 100%);
+  -webkit-background-clip: text; background-clip: text;
+  filter: drop-shadow(0 0 9px color-mix(in srgb, var(--color-sky-orange) 38%, transparent));
+  -webkit-mask-image: url(/wave-mask.svg), url(/wave-mask.svg), linear-gradient(#000, #000);
+  mask-image: url(/wave-mask.svg), url(/wave-mask.svg), linear-gradient(#000, #000);
+  -webkit-mask-repeat: repeat-x, repeat-x, no-repeat; mask-repeat: repeat-x, repeat-x, no-repeat;
+  -webkit-mask-size: 56px 12px, 92px 16px, 100% var(--fill); mask-size: 56px 12px, 92px 16px, 100% var(--fill);
+  -webkit-mask-position: var(--slosh) bottom calc(var(--fill) - 7px), calc(var(--slosh) * -0.62) bottom calc(var(--fill) - 9px), 0 bottom 0;
+  mask-position: var(--slosh) bottom calc(var(--fill) - 7px), calc(var(--slosh) * -0.62) bottom calc(var(--fill) - 9px), 0 bottom 0;
+}
+@media (prefers-reduced-motion: reduce) { .liquid { --fill: 100%; } }
+/* In WebGL mode the figure is drawn by the compositing pass (scene/liquid.ts): the DOM number keeps its place and its text, and shows nothing. */
+html[data-glass='webgl'] .liquid [data-text] { color: transparent; }
+html[data-glass='webgl'] .liquid__fill { display: none; }
+
+/*
+ * ── The frieze ─────────────────────────────────────────────────────────────
+ * A stage the height of a card row above and below the axis; the track slides in it under the playhead.
+ * The steps hang from the axis where they happen; a timed span sits on the axis and fills as it is crossed.
+ */
+.frieze { overflow: hidden; min-height: 100dvh; display: flex; flex-direction: column; justify-content: flex-start; gap: 16px; padding: 84px 0 24px; }
+.frieze__head, .frieze__foot { width: calc(100% - 48px); padding: 28px clamp(24px, 4vw, 56px); }
+.frieze__foot { display: grid; gap: 6px; padding-top: 20px; padding-bottom: 20px; }
+.frieze__stage { position: relative; height: clamp(380px, 46dvh, 420px); overflow: hidden; }
+/* A card must fit between the axis and the stage's edge: the glass is drawn from its DOM rectangle, which no overflow clips. */
+.frieze__step .t-title-md { font-size: 22px; line-height: 1.15; letter-spacing: -0.015em; }
+.frieze__step .t-mono-data-lg { font-size: 20px; }
+.frieze__playhead { position: absolute; top: 0; bottom: 0; left: 36%; width: 2px; background: var(--color-accent); opacity: 0.9; z-index: 2; }
+.frieze__playhead::before { content: ''; position: absolute; top: calc(50% - 5px); left: -4px; width: 10px; height: 10px; border-radius: 50%; background: var(--color-accent); }
+.frieze__track { position: absolute; top: 0; bottom: 0; left: 0; will-change: transform; }
+.frieze__axis { position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: var(--color-page-hairline-strong); }
+.frieze__tick { position: absolute; top: 50%; width: 1px; height: 8px; margin-top: -4px; background: var(--color-page-text-faint); opacity: 0.55; }
+.frieze__tick--major { height: 18px; margin-top: -9px; opacity: 1; }
+.frieze__tick-label { position: absolute; top: 24px; left: 6px; white-space: nowrap; color: var(--color-page-text-faint); text-transform: none; }
+.frieze__span { position: absolute; top: calc(50% - 1px); height: 3px; background: var(--color-page-hairline-strong); --done: 0; }
+.frieze__span::after { content: ''; position: absolute; inset: 0; background: var(--color-accent-incandescent); transform: scaleX(var(--done)); transform-origin: left center; }
+.frieze__step { position: absolute; width: 300px; padding: 18px 20px; transition: opacity 320ms ease; }
+.frieze__step--up { bottom: calc(50% + 30px); }
+.frieze__step--down { top: calc(50% + 30px); }
+.frieze__step::before { content: ''; position: absolute; left: 0; width: 1px; height: 30px; background: var(--color-page-hairline-strong); }
+.frieze__step--up::before { top: 100%; }
+.frieze__step--down::before { bottom: 100%; }
+.frieze__step[data-state='ahead'] { opacity: 0.42; }
+.frieze__step[data-state='live'], html[data-glass='webgl'] .frieze__step[data-state='live'] { border-color: color-mix(in srgb, var(--color-accent-incandescent) 55%, transparent); }
+.frieze__step[data-state='live']::before { background: var(--color-accent-incandescent); }
+@media (max-width: 767px) {
+  .frieze { min-height: 0; display: block; }
+  .frieze__head, .frieze__foot { width: auto; margin: 0 16px; }
+  .frieze__stage { height: auto; overflow: visible; margin: 24px 16px; }
+  .frieze__playhead, .frieze__axis, .frieze__tick, .frieze__span, .frieze__step::before { display: none; }
+  .frieze__track { position: static; width: auto !important; transform: none !important; display: grid; gap: 12px; }
+  .frieze__step { position: static; width: auto; opacity: 1 !important; }
+}
+
+/*
+ * ── Where the eye lands (2026-09-28) ─────────────────────────────────────
+ * A jury reads a section in a minute. Three things carry it: the takeaway line, read first; the hot fragment
+ * of the title, the one part that stays incandescent when the rest has cooled; the one value in a mirror or a
+ * table that matters. The heat is a held colour and the faintest warmth around it, not a halo.
+ */
+.hot { color: var(--color-accent-incandescent); text-shadow: 0 0 14px color-mix(in srgb, var(--color-sky-orange) 30%, transparent); }
+.text-hot { color: var(--color-accent-incandescent); }
+.mirror__hot { color: var(--color-accent-incandescent); text-shadow: 0 0 10px color-mix(in srgb, var(--color-sky-orange) 35%, transparent); }
+.takeaway { display: flex; align-items: center; gap: 10px; margin: 0 0 20px; color: var(--color-accent-incandescent); text-transform: none; letter-spacing: 0.02em; font-size: 13px; }
+.takeaway__ember { flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%; background: var(--color-accent-incandescent); box-shadow: 0 0 10px 2px color-mix(in srgb, var(--color-sky-orange) 55%, transparent); }
+.btn-ghost--hot { border-color: var(--color-accent-incandescent); color: var(--color-accent-incandescent); box-shadow: 0 0 22px color-mix(in srgb, var(--color-sky-orange) 22%, transparent); }
+.btn-ghost--hot:hover { background: var(--color-accent-incandescent); color: var(--color-ink); }
+/* Text on glass sits over a glow: a hair of shadow under every glyph keeps the edge. */
+.glass { text-shadow: 0 1px 1px color-mix(in srgb, var(--color-canvas-night) 55%, transparent); }
+/* Not on a liquid figure: its DOM text is transparent under WebGL, and a shadow would still be drawn over the lava. */
+.liquid, .liquid [data-text] { text-shadow: none; }
+
+/*
+ * ── Focus, and the frieze's links (2026-09-28, proofs) ───────────────────
+ * A sheet crossing the middle of the viewport carries an incandescent outline; so does the frieze's live
+ * card, whose stem lights with it, and the seconds are written on the axis over their span.
+ */
+.glass { transition: box-shadow 260ms ease, border-color 260ms ease; }
+/* Written twice: the WebGL rule above is one attribute more specific than a bare .glass, and would cancel the outline. */
+.glass[data-focus], html[data-glass='webgl'] .glass[data-focus] { border-color: color-mix(in srgb, var(--color-accent-incandescent) 70%, transparent); box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-accent-incandescent) 45%, transparent), 0 0 32px color-mix(in srgb, var(--color-sky-orange) 18%, transparent); }
+.frieze__step[data-state='live'], html[data-glass='webgl'] .frieze__step[data-state='live'] { border-color: color-mix(in srgb, var(--color-accent-incandescent) 75%, transparent); box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-accent-incandescent) 45%, transparent), 0 0 28px color-mix(in srgb, var(--color-sky-orange) 22%, transparent); }
+.frieze__step--untimed { border-style: dashed; }
+/* The seconds, written on the line under (or over) the span they measure. */
+.frieze__label { position: absolute; text-align: center; text-transform: none; color: var(--color-page-text-faint); white-space: nowrap; }
+/* Always just above the axis, over its span: the tick labels have the space below. */
+.frieze__label--up, .frieze__label--down { bottom: calc(50% + 6px); }
+.frieze__label[data-state='live'] { color: var(--color-accent-incandescent); }
+.frieze__label[data-state='done'] { color: var(--color-page-text-mute); }
+/* The living link: the seconds on the line, and the live card's stem lit with its outline. */
+.frieze__label { display: block; }
+.frieze__step[data-state='live']::before { background: var(--color-accent-incandescent); box-shadow: 0 0 10px color-mix(in srgb, var(--color-sky-orange) 50%, transparent); }
+@media (max-width: 767px) { .frieze__label { display: none !important; } }
+
+/*
+ * ── The sound toggle (2026-09-29) ────────────────────────────────────────
+ * Bottom-left of the scene, the nav's own link style, one dot that says the state: incandescent when the
+ * sound runs, faint when off, blinking while the browser still waits for a touch. Hidden on the home.
+ */
+.sound-toggle { position: absolute; left: 20px; bottom: 20px; z-index: 5; display: inline-flex; align-items: center; gap: 10px; padding-inline: 12px; background: none; border: 0; cursor: pointer; color: var(--color-page-text-mute); }
+.sound-toggle:hover { color: var(--color-text-050); }
+.sound-toggle:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
+.sound-toggle__dot { width: 7px; height: 7px; border-radius: 50%; background: var(--color-page-text-faint); }
+.sound-toggle[data-sound='on'] .sound-toggle__dot { background: var(--color-accent-incandescent); box-shadow: 0 0 8px color-mix(in srgb, var(--color-sky-orange) 55%, transparent); }
+.sound-toggle[data-sound='blocked'] .sound-toggle__dot { background: var(--color-accent-incandescent); animation: sound-ask 1.6s steps(1) infinite; }
+@keyframes sound-ask { 0%, 55% { opacity: 1; } 56%, 70% { opacity: 0.2; } 71%, 100% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .sound-toggle[data-sound='blocked'] .sound-toggle__dot { animation: none; } }
+#hero[data-mode='background'] .sound-toggle, #hero[data-mode='descending'] .sound-toggle { display: none; }
+@media (max-width: 767px) { .sound-toggle { left: 12px; bottom: 12px; } }

@@ -39,37 +39,51 @@ type Piece =
  */
 type NoteCopy = { pieces: Piece[] }
 
+/*
+ * Every figure below is quoted from README.md, by section, and no other is invented:
+ *   stop 0  § 1 and § 5 for the Agent Policies axis; § 3 and § 4 for the missing exit field of `earn yields`
+ *   stop 1  § 4 for six pools, 0.00 bps in, 9 990 bps out, "the same hook"; § 8 D for Base
+ *   stop 2  § 0, in full
+ *
+ * The counter used to roll a date and a version number, which announced and demonstrated nothing. It now rolls
+ * the entry price up to the exit price of the same six pools: the odometer performs the argument. No content
+ * carries a dash; highlighted fragments never break across a line.
+ */
 export const NOTE_COPY: Record<number, NoteCopy> = {
   0: {
     pieces: [
-      { t: 'In ' },
-      { mark: 'July', roll: { from: '0000', to: 2026, decimals: 0, pad: 4 } },
-      { t: ', LEDGER ships its ' },
-      { mark: 'Agent Stack' },
-      { t: ': AI agents now act with your funds.' },
+      { t: 'Agent Policies bound what an agent may ' },
+      { mark: 'spend' },
+      { t: '. Ledger\u2019s own Earn returns the provider, the token, the yield and a deposit link, and ' },
+      { mark: 'zero' },
+      { t: ' fields on the way out.' },
     ],
   },
   1: {
     pieces: [
-      { t: 'Its policies cap what an agent spends. Nothing caps what it can get back out: some positions cost nothing to enter and everything to leave.' },
+      { t: 'Six real pools on Base charge ' },
+      { mark: '0 bps' },
+      { t: ' to enter and ' },
+      { mark: '', roll: { from: '0', to: 9990, decimals: 0, pad: 0 } },
+      { t: ' to leave. The same hook sets both, and the agent only ever sees the first.' },
     ],
   },
   2: {
     pieces: [
-      { t: 'Sign ' },
-      { mark: 'one exit rule' },
-      { t: ' on your Ledger. A contract ' },
-      { mark: 'enforces it on every position' },
-      { t: ' your agents take.' },
+      { t: 'You sign your limits ' },
+      { mark: 'once' },
+      { t: ', on the device. A contract measures the way out inside every transaction, and anything past your limit comes back to you ' },
+      { mark: 'with the number' },
+      { t: '.' },
     ],
   },
 }
 
-/** The plain sentences, for each hotspot's accessible name. */
+/** The plain sentences, for each hotspot's accessible name and for the poster. */
 export const NOTE_SENTENCE: Record<number, string> = {
-  0: 'In July 2026, LEDGER ships its Agent Stack: AI agents now act with your funds.',
-  1: 'Its policies cap what an agent spends. Nothing caps what it can get back out: some positions cost nothing to enter and everything to leave.',
-  2: 'Sign one exit rule on your Ledger. A contract enforces it on every position your agents take.',
+  0: 'Agent Policies bound what an agent may spend. Ledger\u2019s own Earn returns the provider, the token, the yield and a deposit link, and zero fields on the way out.',
+  1: 'Six real pools on Base charge 0 bps to enter and 9\u202f990 to leave. The same hook sets both, and the agent only ever sees the first.',
+  2: 'You sign your limits once, on the device. A contract measures the way out inside every transaction, and anything past your limit comes back to you with the number.',
 }
 
 export function ScreenNotes({ notes }: { notes: NotesState }) {
@@ -161,7 +175,12 @@ function Note({ notes, stop, placement }: { notes: NotesState; stop: number; pla
       const pad = Number(node.dataset.pad ?? 0)
       const write = (v: number) => {
         const t = v.toFixed(decimals)
-        node.textContent = pad > 0 ? t.padStart(pad, '0') : t
+        const padded = pad > 0 ? t.padStart(pad, '0') : t
+        // Thousands grouped by a narrow no-break space, from four digits, as the rest of the site writes numbers.
+        // No year rolls on this site any more, so nothing here should ever read 2 026.
+        const [int, frac] = padded.split('.')
+        const grouped = int.replace(/\B(?=(\d{3})+(?!\d))/g, '\u202f')
+        node.textContent = frac !== undefined ? `${grouped}.${frac}` : grouped
       }
       if (reduced) {
         write(to)
@@ -241,7 +260,7 @@ function Note({ notes, stop, placement }: { notes: NotesState; stop: number; pla
               {piece.mark}
               {piece.roll ? (
                 <>
-                  &nbsp;
+                  {piece.mark ? '\u00a0' : null}
                   <span
                     data-count
                     data-to={piece.roll.to}

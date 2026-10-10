@@ -38,10 +38,10 @@ export function Mirror({ lines, pending, caption }: { lines: [string, ReactNode]
   return (
     <div>
       <p className="t-micro-cap eyebrow m-0 mb-3">Ce que l’appareil affiche</p>
-      <div className={`mirror t-mono-device ${pending ? 'mirror--pending' : ''}`}>
+      <div className={`app-mirror t-mono-device ${pending ? 'app-mirror--pending' : ''}`}>
         {lines.map(([label, value], i) => (
-          <div className="mirror__line" key={i}>
-            <span className="mirror__label">{label}</span>
+          <div className="app-mirror__line" key={i}>
+            <span className="app-mirror__label">{label}</span>
             <span>{value}</span>
           </div>
         ))}
@@ -62,7 +62,7 @@ export function Row({ label, value, keyFigure }: { label: ReactNode; value: Reac
 
 export type Tone = 'success' | 'warning' | 'error' | 'info' | 'mute'
 export function Badge({ tone, children }: { tone: Tone; children: ReactNode }) {
-  return <span className={`badge is-${tone}`}>{children}</span>
+  return <span className={`app-badge is-${tone}`}>{children}</span>
 }
 
 type BtnProps = ButtonHTMLAttributes<HTMLButtonElement> & { quiet?: boolean; small?: boolean }

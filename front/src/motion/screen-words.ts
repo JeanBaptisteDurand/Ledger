@@ -43,17 +43,27 @@ export const REST_WORD = 'SCROLL UP'
 /** On the landed device, after the morph. */
 export const LANDED_WORD = 'MONOLITH'
 
+/*
+ * The arc is context, problem, response, and the words come from UPDATE.md: what is bounded today, what nobody
+ * bounds, what we add.
+ *
+ * ALL THREE MUST RENDER AT ONE SIZE, and that is a measurement, not a hope. The OLED fits each word on its own,
+ * from 26 px down, so length decides size. The previous set broke this: OUR SOLUTION fell to 21 px against 26
+ * for the other two. Measured with the panel's own fitter (Barlow Condensed 700, 112 px available):
+ *   SPENDING 92.2 px · THE EXIT 83.0 px · THE RULE 88.3 px — all at 26 px.
+ * Any replacement word is measured the same way before it is adopted. THE MANDATE (22 px) was rejected for it.
+ */
 const ALL_STEPS: ReadonlyArray<ScreenStep> = [
-  { enabled: true, word: 'CONTEXT', axis: 'roll', turns: 1, seconds: 1.9, fill: 0.72, standDeg: 0 },
+  { enabled: true, word: 'SPENDING', axis: 'roll', turns: 1, seconds: 1.9, fill: 0.72, standDeg: 0 },
   // Same fill as the first stop, so the camera does not move between them: only the key does.
-  { enabled: true, word: 'THE ISSUE', axis: 'yaw', turns: 1, seconds: 1.9, fill: 0.72, standDeg: 18 },
+  { enabled: true, word: 'THE EXIT', axis: 'yaw', turns: 1, seconds: 1.9, fill: 0.72, standDeg: 18 },
   { enabled: false, word: 'SOLUTION', axis: 'pitch', turns: 1, seconds: 1.5, fill: 0.78, standDeg: 0 },
   /*
    * The third stop. Same fill again, so the camera still does not move between stops. The key comes back
-   * toward level here: flat at CONTEXT, standing 18 degrees at THE ISSUE where the narrative is at its most
-   * uncomfortable, and settling to 9 at the resolution.
+   * toward level here: flat at SPENDING, standing 18 degrees at THE EXIT where the narrative is at its most
+   * uncomfortable, and settling to 9 at the response.
    */
-  { enabled: true, word: 'OUR SOLUTION', axis: 'pitch', turns: 1, seconds: 1.9, fill: 0.72, standDeg: 9 },
+  { enabled: true, word: 'THE RULE', axis: 'pitch', turns: 1, seconds: 1.9, fill: 0.72, standDeg: 9 },
 ]
 
 /** The steps actually played in this scope. */
