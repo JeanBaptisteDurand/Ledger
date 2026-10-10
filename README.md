@@ -517,6 +517,7 @@ web/
 scripts/demo.sh               la version ligne de commande, en une commande (SIGNER=dmk|python)
 scripts/parcours.mjs          le parcours complet dans un vrai navigateur (Chromium headless), de la connexion à la reconnexion
 scripts/porteur.py            le porteur automatique du banc (Speculos) — optionnellement lent, jamais contre un vrai appareil
+scripts/reseau-reel.sh        le parcours des fonds sur un vrai réseau (Base Sepolia d'abord) : connexion, dépôt, mandat, retrait — .env.live requis
 scripts/ring-seal.sh          scelle la clé du MCP dans le Ledger Key Ring (ring CLI ; un Flex en USB, une fois)
 SKILL.md · AGENTS.md          le projet au format des skills de Ledger, pour un agent de code
 FRONT.md                      le cahier des charges du front, écran par écran, routes et modèle de données (pour qui refait l'interface)
@@ -535,9 +536,10 @@ front/                        le site (Vite + React) : le héros de Florent et l
 
 ### Depuis un clone neuf
 
-Rejoué le 10 octobre dans un dossier vide, en suivant ce README : `build-flex.sh` (5 min), `demo.sh`, les 32 tests,
-le parcours du banc (242 s), le parcours du front (171 s), les tests appareil (refus, deux onglets, redémarrage) — tout
-est passé, avec l'app compilée sur place. Ce qui n'a pas été rejoué : la vraie Flex en USB.
+Rejoué le 11 octobre à 1 h du matin dans un dossier vide, en suivant ce README : `build-flex.sh` (5 min), `demo.sh`,
+les 38 tests, le parcours du front avec le dépôt et le retrait signés sur l'appareil (157 s), les tests appareil (refus,
+deux onglets, redémarrage), le parcours du banc (103 s) — tout est passé, avec l'app compilée sur place, en dix minutes.
+Ce qui n'a pas été rejoué : la vraie Flex en USB, et le réseau réel.
 
 ### Les tests, séparément
 

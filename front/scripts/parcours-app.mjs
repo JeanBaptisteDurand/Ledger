@@ -84,6 +84,22 @@ s = await until((x) => x.signed, 'mandat signé dans la page', 180000)
 log(`mandat signé (${((Date.now() - t) / 1000).toFixed(1)} s) · ${JSON.stringify(s.last_report || {}).slice(0, 110)}`)
 await shot('02-mandat')
 
+// PARCOURS=fonds : a real network (Base Sepolia) has none of the trap pools and vaults — so only the gestures the
+// Ledger signs: sign in, deposit, mandate, withdrawal, log out. The rest of the journey is for the fork.
+if (process.env.PARCOURS === 'fonds') {
+  const before = BigInt(s.weth || '0')
+  await page.getByLabel('Retirer (WETH)').fill('0.1')
+  t = Date.now()
+  await btn('Retirer vers ma Ledger').click()
+  s = await until((x) => !x.pending && !x.signing && x.log.some((l) => /retrait autorisé sur ta Ledger et exécuté/.test(l)), 'retrait autorisé sur l’appareil, 0.1 WETH rendus', 180000)
+  if (BigInt(s.weth || '0') > before) fail('le coffre n’a pas baissé après le retrait')
+  log(`retrait (${((Date.now() - t) / 1000).toFixed(1)} s) · coffre ${(Number(s.weth) / 1e18).toFixed(4)} WETH`)
+  await go('Compte'); await sleep(1200); await shot('03-compte')
+  await api('/logout')
+  log(failed ? 'PARCOURS (fonds) : des échecs' : `PARCOURS (fonds) : tout est passé — chaîne ${s.chain_id ?? '?'}, ${s.network}`)
+  await browser.close(); process.exit(failed ? 1 : 0)
+}
+
 // 5 · a pools bot, one round — on the trading agents' page
 await go('Agents de trading')
 await page.getByLabel('Nom').fill('DCA prudente')

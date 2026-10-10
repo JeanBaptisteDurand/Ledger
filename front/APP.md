@@ -32,6 +32,11 @@ the descriptors and the SIWE message follow it). On Sepolia the vault, the depos
 work; the trap pools and the Morpho vaults only exist on Base mainnet, so the bots find nothing there. The same
 configuration with a Base RPC is mainnet — real money, tiny amounts.
 
+One command does that pass with the emulated Flex and the automatic holder — `scripts/reseau-reel.sh` (it needs
+`.env.live` at the root and test ETH on the deployer, the agent and the device's address); with a real Ledger,
+`APPAREIL=vrai scripts/reseau-reel.sh` starts the bench in live mode and leaves the gestures to you in Chrome. The journey
+has a reduced mode for it, `PARCOURS=fonds node scripts/parcours-app.mjs`: sign in, deposit, mandate, withdrawal, log out.
+
 ## The hero's 3D models
 
 `public/Ledger_Nano_X.fbx` and `public/Ledger_Stax.fbx` are Ledger's brand assets (brand.ledger.com → 3D assets). They are
