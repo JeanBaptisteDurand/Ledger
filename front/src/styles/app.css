@@ -70,6 +70,12 @@
   .eyebrow {
     color: var(--color-page-text-faint);
   }
+  /* A grid or flex item never widens the page: its content wraps inside the column (a long eyebrow pushed the
+     sign-in page 3 px past a phone screen). */
+  .app-page .grid > *,
+  .app-page .flex > * {
+    min-width: 0;
+  }
   .hairline-bottom {
     border-bottom: 1px solid var(--color-hairline-on-dark);
   }
