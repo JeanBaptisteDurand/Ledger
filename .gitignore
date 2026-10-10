@@ -23,3 +23,5 @@ front/.playwright-cli/
 front/design-shots/
 front/public/*.fbx
 front/tsconfig.tsbuildinfo
+.env
+.env.*
