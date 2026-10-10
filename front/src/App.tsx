@@ -57,7 +57,7 @@ function Product({ route }: { route: Exclude<ReturnType<typeof useRoute>, '/'> }
   return (
     <div>
       <AppShell route={route} nav={(account) => <Nav hiddenUntilRelease={false} solid account={account} />} />
-      <Footer />
+      <Footer product />
     </div>
   )
 }

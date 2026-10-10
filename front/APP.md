@@ -74,6 +74,17 @@ restarts the bench server:
 node scripts/tests-appareil.mjs
 ```
 
+A usability pass, as a person meets the site (with **no** holder running either): the home and its door, the device
+choice, wrong deposit amounts, bounds typed with Enter and the example chips, a rhythmic bot stopped and relaunched from
+its history, two bots at once, the journal filters, a request left refused then one signed, the analyst with a follow-up
+question, the account's key and configuration, a cancelled reset, the two bench signing paths each on a fresh mandate, a tap
+on the live screen, an emulator restart under the page, the phone menu, the bench page's own deposit and withdrawal, and an
+accepted reset. It prints its usability remarks at the end (240 s on 11 October, all passed):
+
+```bash
+node scripts/tests-usage.mjs
+```
+
 Last run (10 October, late evening, on Florent's merged home): login signed in the page 7 s, **deposit of 0.5 ETH signed on
 the device 8.5 s** (kept as WETH), mandate clear-signed 7.3 s (`isBlindSign=false`), pools bot 2 buys / 8 refusals, exception
 9.9 s with a queue of 3, « laisser refusé », watch and sell, **withdrawal of 0.1 WETH authorised on the device 8.6 s**, vaults
