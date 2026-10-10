@@ -58,6 +58,20 @@ await go('Vue d’ensemble')
 await btn('Ouvrir une session').click()
 s = await until((x) => !!x.vault, 'session ouverte : coffre déployé', 180000)
 
+// the deposit: an ETH transfer to the vault, signed on the device — the one transaction the Ledger signs
+{
+  // the bench put 5 fictional ETH on the holder's address: wait for the balance to show it (it refreshes every 5 s)
+  s = await until((x) => x.log.some((l) => /5 ETH fictifs/.test(l)) && BigInt(x.owner_eth || '0') >= 4990000000000000000n, 'le porteur a des ETH (fictifs, fork)', 60000)
+  const wethBefore = BigInt(s.weth || '0')
+  await page.getByLabel('Déposer (ETH)').fill('0.5')
+  t = Date.now()
+  await btn('Déposer depuis ma Ledger').click()
+  s = await until((x) => !x.pending && !x.signing && x.log.some((l) => /dépôt signé sur ta Ledger et confirmé/.test(l)) && BigInt(x.weth || '0') >= wethBefore + 500000000000000000n, 'dépôt signé sur l’appareil, 0.5 ETH gardés en WETH', 180000)
+  if (BigInt(s.owner_eth || '0') > 4500000000000000000n) fail('l’adresse du porteur n’a pas baissé de 0.5 ETH')
+  log(`dépôt (${((Date.now() - t) / 1000).toFixed(1)} s) · coffre ${(Number(s.weth) / 1e18).toFixed(4)} WETH · adresse ${(Number(s.owner_eth) / 1e18).toFixed(4)} ETH`)
+  await shot('01b-depot')
+}
+
 // 3 · strategy → bounds
 await page.getByRole('button', { name: /0,5 WETH prudemment sur la longue traîne/ }).click()
 s = await until((x) => !!x.proposal, 'bornes proposées', 120000)
@@ -105,6 +119,17 @@ s = await until((x) => !x.watching && x.watch, 'resondage', 180000)
 await page.getByRole('button', { name: 'Resonder et sortir' }).click()
 s = await until((x) => !x.watching && x.watch && x.watch.sell_if != null, 'resonder et sortir', 240000)
 log(`surveillance : ${JSON.stringify(s.watch.rows.map((r) => [r.name || r.pool_id.slice(0, 10), r.exit_bps_at_buy, r.exit_bps_now, r.action]))}`)
+
+// 7 bis · the withdrawal: an EIP-712 authorization read on the device, executed by the bench
+{
+  const before = BigInt(s.weth || '0')
+  await page.getByLabel('Retirer (WETH)').fill('0.1')
+  t = Date.now()
+  await btn('Retirer vers ma Ledger').click()
+  s = await until((x) => !x.pending && !x.signing && x.log.some((l) => /retrait autorisé sur ta Ledger et exécuté/.test(l)), 'retrait autorisé sur l’appareil, 0.1 WETH rendus', 180000)
+  if (BigInt(s.weth || '0') > before) fail('le coffre n’a pas baissé après le retrait')
+  log(`retrait (${((Date.now() - t) / 1000).toFixed(1)} s) · coffre ${(Number(s.weth) / 1e18).toFixed(4)} WETH`)
+}
 
 // 8 · a vaults bot that runs on a rhythm, then is stopped
 await go('Agents de trading')

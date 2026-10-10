@@ -46,6 +46,10 @@ interface IERC20Minimal {
 /// @dev La seconde instance de la meme question : un coffre a rendement. Le standard ecrit le piege
 ///      lui-meme — `previewRedeem` DOIT ignorer les limites de retrait, pendant que `maxWithdraw`
 ///      peut valoir zero (marche de pret utilise a 100 %, file d'attente, cooldown, pause).
+interface IWETH9 {
+    function deposit() external payable;
+}
+
 interface IERC4626 {
     function asset() external view returns (address);
     function deposit(uint256 assets, address receiver) external returns (uint256 shares);
@@ -88,8 +92,24 @@ contract ExitVault {
     bytes32 public constant EXCEPTION_TYPEHASH = keccak256(
         "ExitException(address agent,address budgetToken,bytes32 poolKeyHash,uint256 amountIn,uint16 seenExitBps,uint64 expiry,uint256 nonce)"
     );
+    /// @notice Un retrait que le porteur autorise par une signature sur son Ledger, et que n'importe qui
+    ///         peut executer pour lui (le banc paie le gaz). A usage unique, dans un delai.
+    struct Withdrawal {
+        address token; // address(0) = ETH natif
+        uint256 amount;
+        address to;
+        uint64 expiry;
+        uint256 nonce;
+    }
+
+    bytes32 public constant WITHDRAWAL_TYPEHASH =
+        keccak256("ExitWithdrawal(address token,uint256 amount,address to,uint64 expiry,uint256 nonce)");
     bytes32 private constant DOMAIN_TYPEHASH =
         keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
+
+    /// @dev Le WETH des chaines OP Stack (Base, Base Sepolia) : l'ETH que le porteur envoie au coffre devient du WETH,
+    ///      la monnaie des mandats.
+    address public constant WETH9 = 0x4200000000000000000000000000000000000006;
 
     address public immutable owner; // l'adresse du Ledger
     IPoolManager public immutable poolManager;
@@ -98,6 +118,7 @@ contract ExitVault {
     mapping(bytes32 => uint256) public spent; // hash du mandat => déjà dépensé
     mapping(bytes32 => bool) public revoked;
     mapping(bytes32 => bool) public exceptionUsed; // une derogation ne sert qu'une fois
+    mapping(bytes32 => bool) public withdrawalUsed; // un retrait autorise ne sert qu'une fois
 
     uint160 private constant MIN_SQRT_PRICE = 4295128739 + 1;
     uint160 private constant MAX_SQRT_PRICE = 1461446703485210103287273052203988822378723970342 - 1;
@@ -142,6 +163,10 @@ contract ExitVault {
     event Refused(bytes32 indexed mandateHash, address indexed token, uint256 exitBps, bool sellReverted);
     event Sold(address indexed token, uint256 amountIn, uint256 received);
     event Withdrawn(address indexed token, address indexed to, uint256 amount);
+    event Deposited(address indexed from, uint256 amount);
+
+    error WithdrawalExpired(uint64 expiry, uint256 nowTs);
+    error WithdrawalUsed();
 
     constructor(address _owner, IPoolManager _poolManager) {
         owner = _owner;
@@ -153,7 +178,15 @@ contract ExitVault {
         );
     }
 
-    receive() external payable {}
+    /// @notice Le depot du porteur : un simple envoi d'ETH depuis sa Ledger — la seule transaction qu'elle signe,
+    ///         lisible par n'importe quelle app Ethereum. Le coffre le garde en WETH, la monnaie des mandats.
+    ///         L'ETH que le PoolManager ou WETH9 renvoient au coffre n'est pas touche.
+    receive() external payable {
+        if (msg.sender == owner && msg.value > 0) {
+            IWETH9(WETH9).deposit{value: msg.value}();
+            emit Deposited(msg.sender, msg.value);
+        }
+    }
 
     /* ------------------------------------------------------------------- le mandat */
 
@@ -371,6 +404,27 @@ contract ExitVault {
     /// @notice Le porteur reprend ses fonds, quand il veut, sans mandat ni agent.
     function withdraw(address token, uint256 amount, address to) external {
         require(msg.sender == owner, "not owner");
+        _payOut(token, amount, to);
+    }
+
+    function hashWithdrawal(Withdrawal calldata w) public view returns (bytes32) {
+        bytes32 structHash = keccak256(abi.encode(WITHDRAWAL_TYPEHASH, w.token, w.amount, w.to, w.expiry, w.nonce));
+        return keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
+    }
+
+    /// @notice Le meme retrait, autorise par une signature du porteur (EIP-712, lue en clair sur son Ledger) et
+    ///         execute par n'importe qui — le banc, qui paie le gaz. Le porteur ne signe qu'un message, jamais une
+    ///         transaction ; l'autorisation ne vaut qu'une fois, pour ce montant, vers cette adresse, avant l'echeance.
+    function withdrawWithAuthorization(Withdrawal calldata w, bytes calldata sig) external {
+        bytes32 digest = hashWithdrawal(w);
+        if (withdrawalUsed[digest]) revert WithdrawalUsed();
+        if (block.timestamp > w.expiry) revert WithdrawalExpired(w.expiry, block.timestamp);
+        _requireOwnerSig(digest, sig);
+        withdrawalUsed[digest] = true;
+        _payOut(w.token, w.amount, w.to);
+    }
+
+    function _payOut(address token, uint256 amount, address to) internal {
         if (token == address(0)) {
             (bool ok,) = to.call{value: amount}("");
             require(ok, "eth send");

@@ -44,7 +44,7 @@ ANVIL = os.environ.get("ANVIL_URL", "http://127.0.0.1:8545")
 JOURNAL = Path(os.environ.get("PDS_JOURNAL", ROOT / "agent" / "journal.jsonl"))
 
 WETH = "0x4200000000000000000000000000000000000006"
-AGENT_KEY = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"  # anvil #1
+AGENT_KEY = os.environ.get("PDS_AGENT_KEY", "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d")  # anvil #1  # PDS_AGENT_KEY sur un vrai reseau
 AMOUNT_IN = 10**14  # 0,0001 WETH par tranche — valeur par defaut, la taille des mesures TARE
 
 # Parametres que le mandat signe impose a la strategie (remplis par --params).
@@ -186,6 +186,10 @@ def hook_analysis(c: dict) -> dict:
     """Ce que le hook PREND, remesure en direct par le contrefactuel de TARE, dans les deux sens."""
     key = {"currency0": WETH, "currency1": c["currency1"], "fee": c["fee"],
            "tickSpacing": c["tickSpacing"], "hooks": c["hook"]}
+    if os.environ.get("PDS_NO_COUNTERFACTUAL"):
+        # un vrai noeud n'a pas anvil_setCode : la mesure TARE se fait a part, sur un fork du bloc courant
+        return {"permissions_from_address": hook_permissions(c["hook"]), "live_counterfactual_entry": None,
+                "live_counterfactual_exit": None, "method": "pas de contrefactuel sur un vrai noeud (PDS_NO_COUNTERFACTUAL)"}
     entree = counterfactual(ANVIL, key, True, PARAMS["slice_wei"])
     sortie = None
     if entree.get("out_with"):

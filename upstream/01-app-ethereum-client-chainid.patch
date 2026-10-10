@@ -1,0 +1,16 @@
+--- a/client/src/ledger_app_clients/ethereum/eip712/InputData.py	2026-10-10 22:40:51
++++ b/client/src/ledger_app_clients/ethereum/eip712/InputData.py	2026-10-10 22:40:51
+@@ -575,10 +575,9 @@
+         caddr = caddr[2:]
+     sig_ctx["caddr"] = bytearray.fromhex(caddr)
+     chainid = domain["chainId"]
+-    sig_ctx["chainid"] = bytearray()
+-    for i in range(8):
+-        sig_ctx["chainid"].append(chainid & (0xff << (i * 8)))
+-    sig_ctx["chainid"].reverse()
++    # 8-byte big-endian chain id: the previous loop masked each byte without shifting it back, so
++    # bytearray.append raised ValueError for every chain id >= 256 (Base, Arbitrum, Avalanche, ...)
++    sig_ctx["chainid"] = bytearray(int(chainid).to_bytes(8, "big"))
+ 
+     # Order type fields
+     for type_name in types.keys():

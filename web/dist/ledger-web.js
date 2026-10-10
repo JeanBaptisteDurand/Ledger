@@ -53852,6 +53852,67 @@ ${ge(n42)}`;
         if (st2.status !== t3.Completed) throw new Error("signTypedData : " + describe(st2));
         return { signature: toSig(st2.output), address: state.address, report: sink.report || null };
       }
+      function hexToBytes2(h23) {
+        h23 = String(h23).replace(/^0x/, "");
+        if (h23.length % 2) h23 = "0" + h23;
+        const out = new Uint8Array(h23.length / 2);
+        for (let i42 = 0; i42 < out.length; i42++) out[i42] = parseInt(h23.substr(i42 * 2, 2), 16);
+        return out;
+      }
+      function bigToBytes(v33) {
+        v33 = BigInt(v33);
+        if (v33 === 0n) return new Uint8Array(0);
+        let h23 = v33.toString(16);
+        if (h23.length % 2) h23 = "0" + h23;
+        return hexToBytes2(h23);
+      }
+      function concat3(...arrs) {
+        const out = new Uint8Array(arrs.reduce((n42, a60) => n42 + a60.length, 0));
+        let o50 = 0;
+        for (const a60 of arrs) {
+          out.set(a60, o50);
+          o50 += a60.length;
+        }
+        return out;
+      }
+      function rlpLen(len, offset) {
+        if (len < 56) return new Uint8Array([len + offset]);
+        const lb = bigToBytes(len);
+        return concat3(new Uint8Array([offset + 55 + lb.length]), lb);
+      }
+      function rlpBytes(b18) {
+        return b18.length === 1 && b18[0] < 128 ? b18 : concat3(rlpLen(b18.length, 128), b18);
+      }
+      function rlpList(items) {
+        const body = concat3(...items);
+        return concat3(rlpLen(body.length, 192), body);
+      }
+      var toHex = (b18) => "0x" + Array.from(b18, (x15) => x15.toString(16).padStart(2, "0")).join("");
+      function txFields(tx) {
+        return [
+          bigToBytes(tx.chainId),
+          bigToBytes(tx.nonce),
+          bigToBytes(tx.maxPriorityFeePerGas),
+          bigToBytes(tx.maxFeePerGas),
+          bigToBytes(tx.gas),
+          hexToBytes2(tx.to),
+          bigToBytes(tx.value),
+          hexToBytes2(tx.data || "0x")
+        ].map(rlpBytes).concat([rlpList([])]);
+      }
+      async function signTransaction(tx, onStep) {
+        if (!state.dmk) throw new Error("pas de Ledger connect\xE9e");
+        const unsigned = concat3(new Uint8Array([2]), rlpList(txFields(tx)));
+        const signer = new m57({ dmk: state.dmk, sessionId: state.sessionId }).withContextModule(makeContextModule(null, {})).build();
+        const st2 = await lastState(signer.signTransaction(PATH, unsigned).observable, onStep);
+        if (st2.status !== t3.Completed) throw new Error("signTransaction : " + describe(st2));
+        const { r: r29, s: s59, v: v33 } = st2.output;
+        let y37 = Number(v33);
+        if (y37 === 27 || y37 === 28) y37 -= 27;
+        if (y37 > 1) y37 = y37 & 1;
+        const signed2 = concat3(new Uint8Array([2]), rlpList(txFields(tx).concat([rlpBytes(bigToBytes(y37)), rlpBytes(bigToBytes(r29)), rlpBytes(bigToBytes(s59))])));
+        return { raw: toHex(signed2), r: r29, s: s59, v: y37, address: state.address };
+      }
       async function disconnect() {
         if (state.dmk) {
           try {
@@ -53870,6 +53931,7 @@ ${ge(n42)}`;
         getAddress: getAddress2,
         signMessage,
         signTypedData,
+        signTransaction,
         disconnect,
         address: () => state.address,
         transport: () => state.transport,

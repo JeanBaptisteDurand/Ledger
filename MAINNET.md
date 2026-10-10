@@ -59,13 +59,16 @@ une sortie réelle. Ces trois gestes passent par l'agent — voir ci-dessous.
 
 ## Ce qui reste à faire dans le code
 
-- **La clé et l'adresse de l'agent par l'environnement.** Aujourd'hui elles sont écrites dans `web/server.py`,
-  `agent/agent.py`, `agent/vaults.py`, `agent/watch.py` (clé n° 1 d'anvil) et par défaut dans `ledger/sign_mandate.py`
-  et la page du mandat. Il faut une variable (`PDS_AGENT_KEY`), l'adresse qui en découle, et refuser une clé d'anvil
-  hors d'un fork.
-- **Le banc ne doit pas se brancher tel quel sur Base** : à l'ouverture de session il déploie avec la clé n° 0 et
-  emballe 5 ETH. Sur un réseau réel, le déploiement et le financement sont des gestes signés par la Ledger (commandes 1
-  et 3), dans la page — le contrat a déjà ce qu'il faut, le bouton pas encore.
+- **Le mode réseau** (10 oct.) : `PDS_NETWORK=live` avec `BASE_RPC_URL` (Base Sepolia d'abord, Base ensuite : le même
+  code, l'autre RPC), `PDS_DEPLOYER_KEY`, `PDS_AGENT_KEY`, `PDS_AGENT_ADDRESS`. En « live » le banc ne lance pas anvil,
+  ne crédite rien, et refuse d'avancer sans ces clés. Il reste à faire lire `PDS_AGENT_KEY` aux bots
+  (`agent/agent.py`, `agent/vaults.py`, `agent/watch.py`, qui écrivent encore la clé n° 1 d'anvil) et à refuser une clé
+  d'anvil hors d'un fork.
+- **Le financement est désormais un geste de la Ledger, dans la page** (10 oct.) : le dépôt est un envoi d'ETH au
+  coffre signé sur l'appareil (le coffre le garde en WETH), le retrait une autorisation EIP-712 lue en clair et exécutée
+  par le banc. Sur le fork, le banc crédite encore 5 WETH de démonstration au coffre et 5 ETH fictifs au porteur
+  (`PDS_FUND_VAULT=0` pour couper le premier) ; en « live », rien. Le déploiement du coffre reste payé par la clé de
+  déployeur du banc : sur un réseau réel, c'est la nôtre, avec quelques milliers de gaz.
 - **Le contrefactuel** : le lancer contre un fork local du bloc courant plutôt que contre le nœud.
 
 Rien de tout cela ne touche au contrat : `ExitVault` est déjà celui du réseau réel.

@@ -33,7 +33,7 @@ JOURNAL = Path(os.environ.get("PDS_JOURNAL", ROOT / "agent" / "journal.jsonl"))
 MORPHO_API = "https://blue-api.morpho.org/graphql"
 
 WETH = "0x4200000000000000000000000000000000000006"
-AGENT_KEY = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"  # anvil #1
+AGENT_KEY = os.environ.get("PDS_AGENT_KEY", "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d")  # anvil #1  # PDS_AGENT_KEY sur un vrai reseau
 PARAMS = {"slice_wei": 10**16, "min_total_assets_wei": 10**17, "require_listed": False}
 
 ENTER_SIG = "enterVault((address,address,uint256,uint16,uint64,uint256),bytes,address,uint256,address)"

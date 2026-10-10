@@ -1,0 +1,15 @@
+--- a/ERCS/erc-7730.md	2026-10-10 22:41:12
++++ b/ERCS/erc-7730.md	2026-10-10 22:41:12
+@@ -859,9 +859,9 @@
+         "interpolatedIntent": "Buy {order.amount} @ {order.price}",
+         "fields": [
+           { "path": "order.token",  "label": "Token",  "format": "addressName" },
+-          { "path": "order.amount", "label": "Amount", "format": "number" },
+-          { "path": "order.price",  "label": "Price",  "format": "number" },
+-          { "path": "salt",         "label": "Salt",   "format": "bytes32" }
++          { "path": "order.amount", "label": "Amount", "format": "raw" },
++          { "path": "order.price",  "label": "Price",  "format": "raw" },
++          { "path": "salt",         "label": "Salt",   "format": "raw" }
+         ]
+       }
+     }

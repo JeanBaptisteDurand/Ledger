@@ -9,6 +9,8 @@ file, a line, or a command.
 
 ---
 
+*The pull requests and issues these notes call for are written and ready to open in [`upstream/`](upstream/) — one file each, two patches, a script.*
+
 ## 1. Clear signing is closed to anyone without a partner token, and it fails silently
 
 **What happened.** We wired `SignerEthBuilder` without an `originToken`, as the sample does. The signer

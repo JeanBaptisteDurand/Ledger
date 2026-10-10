@@ -5,6 +5,8 @@
 > *Inside the mandate the agent acts on its own. It can never enter a position it cannot exit —
 > the vault checks the way out in the same transaction. Anything else comes back to the Flex.*
 
+**Vos Agent Policies bornent ce qu'un agent dépense. Personne ne borne ce qu'il peut ressortir.**
+
 Tout le monde borne ce qu'un agent **engage** : un plafond par jour, une liste de contrats, un
 glissement maximal. Personne ne vérifie ce qu'il pourra **récupérer**. Ça vaut pour un jeton qu'un hook
 empêche de revendre, pour un coffre à rendement dont on ne sort qu'après sept jours de file d'attente,
@@ -23,6 +25,55 @@ déposant bloquée**, pendant que cinq coffres sur dix refusent même le dépôt
 ```
 
 ---
+
+## In English, on one page
+
+**The sentence.** An agent cannot enter a position it does not know how to exit.
+
+**The gap.** Everything today bounds what an agent *spends* — a daily cap, an allow-list, a maximum slippage;
+Ledger's Agent Policies bound exactly that. Nothing bounds what it can *get back*. A token whose hook blocks
+the resale, a yield vault with a seven-day exit queue: the same closed door, invisible at entry.
+
+**The mechanism.** The holder signs **once**, on the Ledger, a mandate of three numbers read in clear on the
+screen: budget, tolerated round-trip loss in basis points, expiry. A vault contract at the holder's address
+(`ExitVault`) applies it at **every** entry: it buys, then simulates the full resale in the same transaction, and
+refuses if the exit costs more than the mandate. For an ERC-4626 vault it performs the real deposit and
+redemption, reverted, and reads the largest depositor's door. What overflows comes back to the device **with the
+number**: the holder reads the real exit cost and signs a one-time exception — or leaves the refusal. If the exit
+worsens before execution, the exception is void. The holder also funds the vault from the Ledger (one ETH transfer,
+the only transaction it signs) and takes funds back through a clear-signed withdrawal authorisation.
+
+**What is proven, on a Base fork pinned at block 50 614 000.** Six real Uniswap v4 traps, indistinguishable before
+buying: 0 bps at entry, 9 990 bps at exit. Ten real Morpho WETH vaults under the same mandate: the largest has 27 %
+of its biggest depositor's position locked, five refuse deposits outright. 38 Foundry tests, 8 suites. The whole
+journey — Sign-In with Ethereum, mandate, bots, refusals, exception, watch-and-sell, vault exception, analyst,
+account, reconnection, deposit and withdrawal — runs in a real browser against the emulated Flex, and the mandate
+was clear-signed on a physical Flex over USB (`ecrecover` matches).
+
+**The agents.** Execution bots (no language model) that the holder names, starts and stops; they never see the
+exit — the contract measures it; their key can only call the holder's vault. The one real agent is the **analyst**:
+Claude on a read-only MCP of ten tools, citing the tool behind every number; it cannot sign, send or stop anything.
+
+**Ledger's bricks, one role each.** Signer Kit + DMK in the holder's browser (WebHID for a real Ledger, Speculos
+for the bench), with our own EIP-712 descriptors — compiled with the test key of a 1.22.4 build of the official app,
+because the clear-signing registry answers 403 without a partner token. Agent Stack: the analyst, its MCP, Ledger's
+`wallet-cli` as one of its tools, our skills in Ledger's format. Ring CLI: a master secret sealed under the
+operator's seed, from which every account's MCP key is derived.
+
+**As a service.** The Ledger stays with the client: SIWE in the browser, a vault in their name, the mandate signed in
+the page, one session key per bench that can only call that vault, a webhook when something overflows. Accounts are
+addresses proven by the device; the MCP key is derived, never stored.
+
+**Five upstream findings** (`FEEDBACK.md`): clear signing closed without a partner token, silently; a one-line
+chainId bug in the official Python client (every chain ≥ 256); the Signer Kit detects blind signing, reports it to
+Ledger and not to the developer; `signMessage` drops any message containing one non-ASCII character and strands the
+app; two clients on one app and the Secure SDK answers `0x6901` to everything, with Speculos delivering each reply to
+every waiting request.
+
+**What it does not catch.** A switch flipped after the purchase is watched, not prevented; the price of the token;
+anything on a live network (the demo runs on a fork — `MAINNET.md` says what changes).
+
+**Run it.** `./scripts/demo.sh` for the command line; `python3 web/server.py` then `front/` for the site. Prerequisites below.
 
 ## Le problème
 
@@ -77,6 +128,12 @@ Cinq gestes, dans l'ordre :
 1. **Ouvre une session.** Un fork de Base au bloc 50 614 000, un Ledger Flex émulé servant l'app
    Ethereum 1.22.4 compilée avec les clés de test, et un coffre déployé **au nom de ton compte** —
    l'adresse prouvée à l'étape 0, pas un compte inventé.
+1 bis. **Dépose depuis ta Ledger.** Un envoi d'ETH de ton adresse à ton coffre, signé sur l'appareil : la seule
+   transaction que ta Ledger signe, lisible par n'importe quelle app Ethereum (montant, destinataire, frais). Le
+   coffre le garde en WETH. Tu reprends tes fonds de la même carte : une **autorisation de retrait** EIP-712, lue en
+   clair sur l'écran (montant, destinataire, échéance), que le banc exécute en payant le gaz, sans pouvoir y changer
+   un chiffre (`withdrawWithAuthorization`, 6 tests). Sur le fork, le banc t'a mis 5 ETH fictifs, et 5 WETH de
+   démonstration dans le coffre ; sur un vrai réseau, rien n'est crédité.
 2. **Demande une stratégie, en français.** Le CLI `claude` traduit ton intention en **bornes** :
    budget, coût de sortie toléré, taille de tranche, échéance. Il n'achète rien, ne choisit aucun
    jeton, et il écrit lui-même ce que ses bornes **ne** protègent **pas**.
@@ -353,7 +410,9 @@ Quelqu'un chez lui, sa Ledger, notre site. Rien à installer, aucun secret à no
 1. **Il se connecte avec sa Ledger** — *Sign-In with Ethereum* (EIP-4361) : un message texte normé, signé
    sur l'appareil **dans son navigateur** (Signer Kit + WebHID), vérifié par notre serveur (nonce, adresse,
    `cast wallet verify`). Pas de compte, pas de mot de passe.
-2. **Le coffre est déployé à son nom** — `owner` = l'adresse prouvée à l'étape 1.
+2. **Le coffre est déployé à son nom** — `owner` = l'adresse prouvée à l'étape 1 — **et c'est lui qui le remplit** :
+   un envoi d'ETH signé sur sa Ledger (la seule transaction qu'elle signe), gardé en WETH. Il le vide quand il veut,
+   par une autorisation de retrait lue en clair sur l'appareil, que nous exécutons sans pouvoir la modifier.
 3. **Il signe le mandat dans la page** — le même Signer Kit qu'en banc, transport WebHID, notre descripteur
    servi par `/api/descriptor` ; la page rend la signature à `/api/signed`. Notre serveur ne voit jamais
    l'appareil.
@@ -397,6 +456,25 @@ navigateur).
 
 ![le parcours SaaS : connecté avec sa Ledger, mandat signé dans la page](captures/front-saas.png)
 
+## Les mots, une fois pour toutes
+
+| mot | ce qu'il veut dire ici |
+|---|---|
+| **le porteur** | la personne qui tient la Ledger ; son adresse est son compte |
+| **le coffre** (`ExitVault`) | le contrat à son nom qui tient les fonds et applique le mandat à chaque entrée |
+| **le mandat** | trois nombres signés une fois sur l'appareil : budget, perte de sortie tolérée (bps), échéance |
+| **la sonde** | la simulation de la revente intégrale dans la transaction d'achat ; pour un coffre, le dépôt et le retrait réels, annulés |
+| **le coût de sortie** | ce que perd l'aller-retour, en points de base (bps) ; 10 000 bps = tout |
+| **la porte** (fermée) | la part d'une position qu'un coffre à rendement ne rend pas aujourd'hui |
+| **un piège one-way** | un pool où l'on entre à 0 bps et dont on ne ressort pas |
+| **la dérogation** | l'autorisation à usage unique, signée sur l'appareil avec le coût de sortie lu, pour une entrée hors mandat |
+| **le dépôt, le retrait** | l'envoi d'ETH du porteur à son coffre (la seule transaction qu'il signe) ; l'autorisation EIP-712 qui lui rend ses fonds |
+| **un bot** | un agent d'exécution sans modèle de langage, nommé par le porteur, qui ne voit jamais la sortie |
+| **l'analyste** | le vrai agent : Claude sur dix outils en lecture seule, qui cite l'outil sous chaque nombre |
+| **le contrefactuel** (TARE) | la même cotation avec un hook inerte à la place du vrai : l'écart est ce que le hook prend |
+| **le banc** | ce serveur et ces pages : un fork de Base, un Flex émulé, un compte par adresse |
+| **le veilleur** | le resondage des positions tenues, et la vente de ce qui a empiré au-delà du mandat |
+
 ## Ce qui tourne
 
 ```
@@ -408,6 +486,7 @@ contracts/
   test/Escalation.t.sol       6 tests : ce qu'une dérogation permet, et tout ce qu'elle ne permet pas
   test/MultiAgent.t.sol       5 tests : plusieurs agents, plusieurs mandats, un seul coffre
   test/Exit.t.sol             5 tests : vendre, retirer, et la sonde confrontee a l'execution
+  test/Withdrawal.t.sol       6 tests : le depot depuis la Ledger (ETH -> WETH), le retrait autorise par signature, ni rejeu ni modification
   test/GasProbe.t.sol         1 test  : le cout reel d'un take(), qui calibre la borne
 ledger/
   speculos.sh                 lance/arrête le Flex émulé
@@ -441,7 +520,9 @@ scripts/porteur.py            le porteur automatique du banc (Speculos) — opti
 scripts/ring-seal.sh          scelle la clé du MCP dans le Ledger Key Ring (ring CLI ; un Flex en USB, une fois)
 SKILL.md · AGENTS.md          le projet au format des skills de Ledger, pour un agent de code
 FRONT.md                      le cahier des charges du front, écran par écran, routes et modèle de données (pour qui refait l'interface)
-MAINNET.md                    du fork au réseau réel : ce qui change, dans quel ordre, avec la Ledger
+INTERACTIONS.md               tous les gestes de l'utilisateur : ce que fait le site, ce qui part en web3, ce que montre la Ledger, comment c'est vérifié
+MAINNET.md                    du fork au réseau réel : ce qui change, dans quel ordre, avec la Ledger ; `PDS_NETWORK=live` existe (10 oct.)
+upstream/                     les PR et issues qu'on doit à Ledger, prêtes à ouvrir (textes, patchs, `open.sh`) — rien d'ouvert encore
 captures/                     ce que l'appareil a affiché, page par page (dmk/ : par le Signer Kit, nos descripteurs — accueil, revue, contrat, bornes,
                               signature, et un mandat dont le budget est en USDC ; app-officielle/ : l'app de série, en brut)
 front/                        le site (Vite + React) : le héros de Florent et le pitch, puis l'espace du compte — front/APP.md
@@ -470,7 +551,7 @@ MANDATE_FILE=../mandate.json forge test --fork-url "$BASE_RPC_URL" --fork-block-
 d'écrire. Sans `MANDATE_FILE`, les six autres suites passent (31 tests) et `LedgerScene` dit ce qui lui manque.
 
 ```
-32 tests, 7 suites, tous verts :
+38 tests, 8 suites, tous verts :
   ExitVault      8   les six pièges détectés, les témoins acceptés, le mandat borné
   Vault4626      6   dix coffres réels : Moonwell refusé (porte 2 693 bps), cinq pleins, entrée/sortie/dérogation
   Escalation     6   ce qu'une dérogation permet, et tout ce qu'elle ne permet pas
@@ -478,6 +559,7 @@ d'écrire. Sans `MANDATE_FILE`, les six autres suites passent (31 tests) et `Led
   Exit           5   acheter, vendre, retirer — et la sonde confirmée par l'exécution réelle
   GasProbe       1   le take() reel coute 35 377 gaz, la borne est a 400 000
   LedgerScene    1   la scène complète, avec la signature venue de l'appareil
+  Withdrawal     6   le dépôt depuis la Ledger devient du WETH ; le retrait autorisé par signature, exécuté par n'importe qui, jamais rejoué ni modifié
 ```
 
 ## Prérequis

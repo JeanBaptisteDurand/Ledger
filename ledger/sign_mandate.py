@@ -210,6 +210,42 @@ def build_exception(vault: str, agent: str, pool_key_hash: str, amount_in: int,
     }
 
 
+def build_withdrawal(vault: str, token: str, amount: int, to: str, expiry: int, nonce: int):
+    """Le retrait que le porteur autorise par une signature : UN montant, UN destinataire, UN delai, une fois."""
+    return {
+        "domain": {"name": "ExitVault", "version": "1", "chainId": CHAIN_ID, "verifyingContract": vault},
+        "primaryType": "ExitWithdrawal",
+        "types": {
+            "EIP712Domain": [
+                {"name": "name", "type": "string"},
+                {"name": "version", "type": "string"},
+                {"name": "chainId", "type": "uint256"},
+                {"name": "verifyingContract", "type": "address"},
+            ],
+            "ExitWithdrawal": [
+                {"name": "token", "type": "address"},
+                {"name": "amount", "type": "uint256"},
+                {"name": "to", "type": "address"},
+                {"name": "expiry", "type": "uint64"},
+                {"name": "nonce", "type": "uint256"},
+            ],
+        },
+        "message": {"token": token, "amount": str(amount), "to": to, "expiry": expiry, "nonce": nonce},
+    }
+
+
+WITHDRAW_FILTERS = {
+    "name": "Exit withdrawal",
+    "tokens": [{"addr": WETH_BASE, "ticker": "WETH", "decimals": 18, "chain_id": CHAIN_ID}],
+    "fields": {
+        "token": {"type": "amount_join_token", "token": 0},
+        "amount": {"type": "amount_join_value", "name": "Withdraw", "token": 0},
+        "to": {"type": "raw", "name": "To"},
+        "expiry": {"type": "datetime", "name": "Valid until"},
+    },
+}
+
+
 EXCEPTION_FILTERS = {
     "name": "Exit exception",
     "tokens": [{"addr": WETH_BASE, "ticker": "WETH", "decimals": 18, "chain_id": CHAIN_ID}],

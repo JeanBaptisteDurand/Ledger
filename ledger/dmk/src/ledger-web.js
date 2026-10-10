@@ -6,10 +6,11 @@
  * le proxy du banc, même origine) pour l'appareil émulé. Notre context module sert nos descripteurs
  * compilés (servis par le banc) ; rien ne part vers un serveur de Ledger.
  *
- * Trois gestes, et rien d'autre :
+ * Quatre gestes, et rien d'autre :
  *   connect(transport)         -> l'adresse du porteur (aucune signature)
  *   signMessage(message)       -> la connexion « Sign-In with Ethereum » (EIP-4361, signature EIP-191)
- *   signTypedData(typed, desc) -> le mandat, ou une dérogation (EIP-712, clear-signé)
+ *   signTypedData(typed, desc) -> le mandat, une dérogation, ou un retrait (EIP-712, clear-signé)
+ *   signTransaction(tx)        -> le dépôt : un envoi d'ETH au coffre (la seule transaction, lue par toute app Ethereum)
  *
  * Bundle : `npm run build:web` dans ledger/dmk (esbuild) -> web/dist/ledger-web.js
  */
@@ -128,6 +129,45 @@ async function signTypedData(typedData, descriptor, onStep) {
   return { signature: toSig(st.output), address: state.address, report: sink.report || null };
 }
 
+/* ----------------------------------------------------------- une transaction : le dépôt */
+
+// RLP minimal, pour sérialiser une transaction EIP-1559 avant et après signature. Rien d'autre.
+function hexToBytes(h) {
+  h = String(h).replace(/^0x/, ""); if (h.length % 2) h = "0" + h;
+  const out = new Uint8Array(h.length / 2);
+  for (let i = 0; i < out.length; i++) out[i] = parseInt(h.substr(i * 2, 2), 16);
+  return out;
+}
+function bigToBytes(v) { v = BigInt(v); if (v === 0n) return new Uint8Array(0); let h = v.toString(16); if (h.length % 2) h = "0" + h; return hexToBytes(h); }
+function concat(...arrs) { const out = new Uint8Array(arrs.reduce((n, a) => n + a.length, 0)); let o = 0; for (const a of arrs) { out.set(a, o); o += a.length; } return out; }
+function rlpLen(len, offset) { if (len < 56) return new Uint8Array([len + offset]); const lb = bigToBytes(len); return concat(new Uint8Array([offset + 55 + lb.length]), lb); }
+function rlpBytes(b) { return (b.length === 1 && b[0] < 0x80) ? b : concat(rlpLen(b.length, 0x80), b); }
+function rlpList(items) { const body = concat(...items); return concat(rlpLen(body.length, 0xc0), body); }
+const toHex = (b) => "0x" + Array.from(b, x => x.toString(16).padStart(2, "0")).join("");
+
+/** Les neuf champs d'une transaction EIP-1559, dans l'ordre du type 2. */
+function txFields(tx) {
+  return [bigToBytes(tx.chainId), bigToBytes(tx.nonce), bigToBytes(tx.maxPriorityFeePerGas), bigToBytes(tx.maxFeePerGas),
+          bigToBytes(tx.gas), hexToBytes(tx.to), bigToBytes(tx.value), hexToBytes(tx.data || "0x")].map(rlpBytes).concat([rlpList([])]);
+}
+
+/**
+ * Le dépôt : un envoi d'ETH du porteur vers son coffre — la seule transaction que la Ledger signe, et que n'importe
+ * quelle app Ethereum lit en clair (montant, destinataire, frais). `tx` vient du banc (chainId, nonce, frais, gaz,
+ * destinataire, montant) ; on la sérialise, l'appareil la signe, on rend la transaction signée prête à publier.
+ */
+async function signTransaction(tx, onStep) {
+  if (!state.dmk) throw new Error("pas de Ledger connectée");
+  const unsigned = concat(new Uint8Array([2]), rlpList(txFields(tx)));
+  const signer = new SignerEthBuilder({ dmk: state.dmk, sessionId: state.sessionId }).withContextModule(makeContextModule(null, {})).build();
+  const st = await lastState(signer.signTransaction(PATH, unsigned).observable, onStep);
+  if (st.status !== DeviceActionStatus.Completed) throw new Error("signTransaction : " + describe(st));
+  const { r, s, v } = st.output;
+  let y = Number(v); if (y === 27 || y === 28) y -= 27; if (y > 1) y = y & 1;  // type 2 : la parité, 0 ou 1
+  const signed = concat(new Uint8Array([2]), rlpList(txFields(tx).concat([rlpBytes(bigToBytes(y)), rlpBytes(bigToBytes(r)), rlpBytes(bigToBytes(s))])));
+  return { raw: toHex(signed), r, s, v: y, address: state.address };
+}
+
 async function disconnect() {
   if (state.dmk) {
     try { await state.dmk.disconnect({ sessionId: state.sessionId }); } catch { /* Speculos : rien à fermer */ }
@@ -137,7 +177,7 @@ async function disconnect() {
 }
 
 window.LedgerWeb = {
-  connect, getAddress, signMessage, signTypedData, disconnect,
+  connect, getAddress, signMessage, signTypedData, signTransaction, disconnect,
   address: () => state.address, transport: () => state.transport,
   webHidSupported: () => typeof navigator !== "undefined" && !!navigator.hid,
 };

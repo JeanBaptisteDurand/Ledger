@@ -29,7 +29,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 ANVIL = os.environ.get("ANVIL_URL", "http://127.0.0.1:8545")
 WETH = "0x4200000000000000000000000000000000000006"
-AGENT_KEY = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
+AGENT_KEY = os.environ.get("PDS_AGENT_KEY", "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d")  # PDS_AGENT_KEY sur un vrai reseau
 JOURNAL = Path(os.environ.get("PDS_JOURNAL", ROOT / "agent" / "journal.jsonl"))
 WATCHLOG = ROOT / "agent" / "watch.jsonl"
 

@@ -134,28 +134,47 @@ function GlanceBand({ s }: { s: BenchState }) {
 function SessionBand({ s }: { s: BenchState }) {
   const { act } = useBench()
   const [busy, setBusy] = useState(false)
+  const [dep, setDep] = useState('0.5')
+  const [wd, setWd] = useState('tout')
   const open = async () => { setBusy(true); await act('/boot'); setBusy(false) }
+  const waiting = !!s.signing || !!s.pending
+  const eth = (wei: string) => `${(Number(wei || '0') / 1e18).toFixed(4)} ETH`
   return (
     <Band
       index="01"
       eyebrow="Session"
       title={s.vault ? 'Un coffre à votre nom' : 'Ouvrez une session'}
       lead={s.vault
-        ? 'Le coffre est un contrat dont vous êtes propriétaire. Vos bots ne peuvent appeler que lui, dans les bornes que vous signez.'
-        : 'Un coffre est déployé à l’adresse que votre Ledger a prouvée, sur un fork de Base au bloc 50 614 000.'}
+        ? 'Le coffre est un contrat dont vous êtes propriétaire. Ses fonds viennent de votre Ledger : un envoi d’ETH, gardé en WETH. Ils en ressortent sur une autorisation que vous lisez sur l’appareil. Vos bots ne peuvent appeler que lui, dans les bornes que vous signez.'
+        : s.network === 'live'
+          ? `Un coffre est déployé à l’adresse que votre Ledger a prouvée, sur le réseau réel (chaîne ${s.chain_id ?? '…'}). Rien n’est crédité : les fonds viennent de votre Ledger.`
+          : 'Un coffre est déployé à l’adresse que votre Ledger a prouvée, sur un fork de Base au bloc 50 614 000.'}
     >
       {s.vault ? (
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-6 lg:grid-cols-3">
           <Panel kicker="Le coffre">
             <Row label="Propriétaire" value={short(s.owner, 10, 8)} />
             <Row label="Contrat" value={short(s.vault, 10, 8)} />
             <Row label="Disponible" value={fmtWei(s.weth)} />
             <Row label="Consommé sous mandat" value={fmtWei(s.spent)} />
           </Panel>
+          <Panel kicker="Vos fonds · signés sur votre Ledger">
+            <Row label="Votre adresse" value={eth(s.owner_eth)} />
+            <form className="mt-5 flex flex-col gap-3" onSubmit={async (e) => { e.preventDefault(); await act('/deposit', { amount_eth: dep }) }}>
+              <Field label="Déposer (ETH)" type="number" step="any" min={0} inputMode="decimal" value={dep} onChange={(e) => setDep(e.target.value)} disabled={waiting} />
+              <div><SignOnDevice type="submit" disabled={waiting || s.signer !== 'browser'}>Déposer depuis ma Ledger</SignOnDevice></div>
+              {s.signer !== 'browser' ? <p className="t-caption m-0 is-faint">Le dépôt se signe dans la page : choisissez « Ma Ledger · ce navigateur » sur la page Appareil.</p> : null}
+            </form>
+            <form className="mt-5 flex flex-col gap-3" onSubmit={async (e) => { e.preventDefault(); await act('/withdraw', { amount: wd }) }}>
+              <Field label="Retirer (WETH)" value={wd} onChange={(e) => setWd(e.target.value)} placeholder="tout" disabled={waiting} />
+              <div><Ghost small quiet type="submit" disabled={waiting}>Retirer vers ma Ledger</Ghost></div>
+            </form>
+            <p className="t-caption m-0 mt-4 is-faint">Un envoi d’ETH : la seule transaction que votre Ledger signe, lisible par n’importe quelle app Ethereum. Le retrait est un message EIP-712 lu en clair ; le banc l’exécute et paie le gaz, sans pouvoir y changer un chiffre.</p>
+          </Panel>
           <Panel kicker="L’appareil">
             <Row label="Chemin de signature" value={{ browser: 'ma Ledger · ce navigateur', dmk: 'Signer Kit · banc', python: 'client APDU · banc' }[s.signer]} />
             <Row label="Flex du banc" value={s.speculos ? <span className="is-success">sous tension</span> : <span className="is-faint">hors tension</span>} />
-            <Row label="Fork de Base" value={s.anvil ? <span className="is-success">en ligne</span> : <span className="is-faint">arrêté</span>} />
+            <Row label={s.network === 'live' ? 'Réseau réel' : 'Fork de Base'} value={s.anvil ? <span className="is-success">{s.network === 'live' ? `chaîne ${s.chain_id ?? '…'}` : 'en ligne'}</span> : <span className="is-faint">arrêté</span>} />
             <div className="mt-5">
               <a className="nav-link t-button-cap -ml-3" {...linkProps('/appareil')}>Changer d’appareil</a>
             </div>

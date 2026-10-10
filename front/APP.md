@@ -11,11 +11,26 @@ An account page opened without a session sends you to `/connexion`, then back wh
 | `/` | anyone | the hero and the pitch, how it works, the door to the account |
 | `/schema` | anyone | the whole system on one sheet, then thirteen bands: the principle, the other axis, the agents, the site, the account, one signature step by step, the analyst's ten tools, the bricks, the numbers, the limits, what it needs to run, the findings, the SaaS promise |
 | `/connexion` | anyone | choose the Ledger (USB or the emulated Flex) and the signing path, sign the login message |
-| `/app` | account | overview: session and vault, strategy and mandate, the agents at a glance, out-of-bounds requests, positions |
+| `/app` | account | overview: session and vault, **deposit and withdrawal signed on the Ledger**, strategy and mandate, the agents at a glance, out-of-bounds requests, positions |
 | `/app/agents` | account | my trading agents (bots): add, live, stopped, restart, the journal; the requests they raise |
 | `/app/analyste` | account | my analysis agent: the conversation, the MCP calls under each answer |
 | `/compte` | account | the address proven by the Ledger, the MCP key and Claude configuration (one-click copy), what was done |
 | `/appareil` | account | my Ledger: which device, where the signature is made, the live screen with a finger |
+
+## The funds, signed on the Ledger (10 October)
+
+The vault is funded **from the holder's Ledger**: an ETH transfer to the vault, the one transaction the device signs,
+clear-signed by any Ethereum app (amount, recipient, fees); the vault keeps it as WETH. Funds come back through an
+EIP-712 withdrawal authorisation read in clear on the device (amount, recipient, expiry), executed by the bench's key,
+which cannot change a digit (`withdrawWithAuthorization`, six tests). On the fork, the bench also puts 5 fictional ETH on
+the holder's address and 5 demo WETH in the vault (`PDS_FUND_VAULT=0` turns the latter off). The journey exercises
+both gestures (`01b-depot`).
+
+**A real network, testnet first.** `PDS_NETWORK=live BASE_RPC_URL=<Base Sepolia or Base RPC> PDS_DEPLOYER_KEY=… PDS_AGENT_KEY=…
+PDS_AGENT_ADDRESS=… python3 web/server.py`: no anvil, nothing credited, the chain id read from the node (the mandate,
+the descriptors and the SIWE message follow it). On Sepolia the vault, the deposit, the mandate and the withdrawal
+work; the trap pools and the Morpho vaults only exist on Base mainnet, so the bots find nothing there. The same
+configuration with a Base RPC is mainnet — real money, tiny amounts.
 
 ## The hero's 3D models
 
@@ -54,10 +69,11 @@ restarts the bench server:
 node scripts/tests-appareil.mjs
 ```
 
-Last run: login signed in the page, vault, mandate signed in 10 s (`isBlindSign=false`), a pools bot (2 buys,
-8 refusals), an exception signed, « laisser refusé », watch 349 → 784 bps sold, a vaults bot stopped and found in the
-history, the Moonwell exception, the analyst answering through the `bots` tool, the account, and a second login through
-the bench's device landing on the same state — 98 to 177 s depending on the holder's pace, no failure (4 October: six runs, five passed; the one failure, the first EIP-712 after the Transaction Check opt-in on a fresh Speculos with a slow holder, did not reproduce in two replays). The device tests pass: refusal, two tabs, bench restart.
+Last run (10 October, late evening, on Florent's merged home): login signed in the page 7 s, **deposit of 0.5 ETH signed on
+the device 8.5 s** (kept as WETH), mandate clear-signed 7.3 s (`isBlindSign=false`), pools bot 2 buys / 8 refusals, exception
+9.9 s with a queue of 3, « laisser refusé », watch and sell, **withdrawal of 0.1 WETH authorised on the device 8.6 s**, vaults
+bot and Moonwell exception, the analyst through `bots` in 20 s, the account, logout and reconnection on the same state —
+146 s, no failure. The device tests pass (refusal, two tabs, bench restart); the bench page's own journey passes.
 
 ## Files
 

@@ -181,6 +181,14 @@
           <div class="v" id="f-vault" style="font-size:11.5px">—</div></div>
         <div class="kv" style="margin-top:9px"><div class="k">budget disponible</div>
           <div class="v" id="f-weth" style="font-size:13px">—</div></div>
+        <div class="kv" style="margin-top:9px"><div class="k">ton adresse (ETH)</div>
+          <div class="v" id="f-owner-eth" style="font-size:13px">—</div></div>
+        <div class="row" style="margin-top:12px;gap:6px;flex-wrap:wrap">
+          <input id="dep-amount" type="number" step="0.01" min="0.001" value="0.5" style="width:84px" title="ETH à déposer">
+          <button id="b-deposit" title="un envoi d'ETH au coffre, signé sur ta Ledger — gardé en WETH">déposer depuis ma Ledger</button>
+          <input id="wd-amount" type="text" value="tout" style="width:64px" title="WETH à retirer, ou « tout »">
+          <button id="b-withdraw" title="une autorisation EIP-712 lue sur ta Ledger, exécutée par le banc">retirer vers ma Ledger</button>
+        </div>
       </div>
     </div>
   </section>
@@ -394,11 +402,16 @@ async function refresh(){
   $('#devstate').textContent = st.signing ? 'en attente de toi' : (live ? 'sous tension' : 'hors tension');
   $('#b-boot').disabled = !!st.vault;
   if (st.vault){ $('#bootfacts').hidden = false; $('#f-vault').textContent = st.vault;
-                 $('#f-weth').textContent = fmtWei(st.weth); }
+                 $('#f-weth').textContent = fmtWei(st.weth);
+                 $('#f-owner-eth').textContent = fmtWei(st.owner_eth || '0').replace('WETH', 'ETH');
+                 $('#b-deposit').disabled = !!st.signing || !!st.pending || st.signer !== 'browser';
+                 $('#b-withdraw').disabled = !!st.signing || !!st.pending; }
 
   const w = $('#waiting');
   const txc = st.signer === 'dmk' ? " (Si l'appareil demande d'abord « Enable Transaction Check ? », c'est le Signer Kit qui pose la question de Ledger : « Maybe later ».)" : '';
   if (st.signing === 'mandate'){ w.hidden=false; w.textContent = "L'appareil affiche ton mandat. Balaie les pages, lis les trois champs, puis maintiens « Hold to sign »." + txc; }
+  else if (st.signing === 'deposit'){ w.hidden=false; w.textContent = "L'appareil affiche un envoi d'ETH vers ton coffre : le montant, l'adresse, les frais. Lis, puis maintiens « Hold to sign »."; }
+  else if (st.signing === 'withdraw'){ w.hidden=false; w.textContent = "L'appareil affiche le retrait : le montant, ton adresse, l'échéance. Lis, puis maintiens « Hold to sign »."; }
   else if (st.signing === 'exception'){ w.hidden=false; w.textContent = "L'appareil affiche le coût de sortie réel. Lis-le, puis maintiens « Hold to sign » — ou refuse." + txc; }
   else w.hidden = true;
 
@@ -611,6 +624,10 @@ async function refresh(){
 function esc(s){ return String(s).replace(/[<>&]/g, m=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[m])); }
 
 /* ---------- actions ---------- */
+$('#b-deposit').onclick = async () => { const r = await post('/deposit', { amount_eth: $('#dep-amount').value });
+  if (!r.ok) alert(r.msg); else if (r.pending_token) window.__myPending = r.pending_token; await refresh(); };
+$('#b-withdraw').onclick = async () => { const r = await post('/withdraw', { amount: $('#wd-amount').value });
+  if (!r.ok) alert(r.msg); else if (r.pending_token) window.__myPending = r.pending_token; await refresh(); };
 $('#b-boot').onclick = async () => { busy($('#b-boot'), true, 'ouverture…');
   const r = await post('/boot'); busy($('#b-boot'), false, 'ouvrir une session');
   if(!r.ok) alert(r.msg); await refresh(); };
@@ -723,6 +740,14 @@ async function signPending(p){
       ? (iv.requiredUserInteraction === 'sign-typed-data' ? 'lis les champs, puis maintiens « Hold to sign »' : iv.requiredUserInteraction)
       : (iv.step || '').replace('signer.eth.steps.', '')); };
   try {
+    if (p.kind === 'deposit') {   // un envoi d'ETH au coffre : la seule transaction que la Ledger signe
+      let t;
+      try { await ledgerConnect(); t = await LedgerWeb.signTransaction(p.tx, onStep); }
+      catch(e1){ if (/refus|reject|6985|denied/i.test(errText(e1))) throw e1;
+        await LedgerWeb.disconnect(); await ledgerConnect(); t = await LedgerWeb.signTransaction(p.tx, onStep); }
+      await post('/signed', { kind: p.kind, raw: t.raw, owner: t.address });
+      return;
+    }
     const desc = await (await fetch('/api/descriptor?kind=' + p.kind)).json();
     if (desc.error) throw new Error(desc.error);
     let r;

@@ -327,8 +327,9 @@ export function SchemaPage() {
             <p className="t-body-sm m-0 text-on-primary-mute">
               Le coffre, la sonde, les coffres Morpho et les pools v4 sont les vrais, lus sur un fork épinglé pour que les nombres se
               rejouent. Passer en réseau principal, c’est un nœud, un déploiement et une clé d’agent avec du gaz — et trois choses à
-              finir : le clear signing sur l’app de série (Ledger doit signer nos descripteurs), le dépôt et le retrait signés par la
-              Ledger dans la page (le contrat les a, le bouton pas encore), et un nœud qui accepte les surcharges d’état pour TARE.
+              finir : le clear signing sur l’app de série (Ledger doit signer nos descripteurs), des ETH réels sur trois adresses, et
+              un fork du bloc courant pour la mesure TARE. Le dépôt et le retrait signés par la Ledger existent déjà dans la page, et le
+              banc a un mode « réseau réel » (Base Sepolia d’abord).
             </p>
           </Panel>
           <Panel kicker="En dollars" title="La même porte">
@@ -393,6 +394,7 @@ export function SchemaPage() {
               <Row label="Sa connexion" value="Sign-In with Ethereum, signée dans sa page" />
               <Row label="Son coffre" value="un contrat à son nom, un par compte" />
               <Row label="Son mandat" value="lu et signé sur l’appareil, une fois" />
+              <Row label="Ses fonds" value="déposés depuis sa Ledger, repris sur une autorisation lue en clair" />
               <Row label="Ses données" value="un MCP en lecture seule, une clé dérivée de son adresse" />
             </div>
           </Panel>
@@ -403,7 +405,7 @@ export function SchemaPage() {
               <Row label="Rien d’autre" value="ni clé, ni fonds, ni droit d’en sortir" />
             </div>
             <p className="t-caption m-0 mt-5 is-faint">
-              Le coffre sait rendre les fonds et révoquer le mandat (prouvé par les tests) ; le bouton dans la page, signé par la Ledger, est le prochain geste à construire.
+              Le dépôt est un envoi d’ETH signé sur la Ledger, le retrait une autorisation lue en clair sur l’appareil et exécutée par nous, sans pouvoir y changer un chiffre. Reste à construire : révoquer un mandat avant son échéance.
             </p>
           </Panel>
         </div>

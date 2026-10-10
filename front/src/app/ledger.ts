@@ -6,7 +6,7 @@
  *
  * One client at a time on the device. A pending signature carries a token; only the tab that asked for it signs it.
  */
-import { post, type Pending } from './api'
+import { post, type Pending, type UnsignedTx } from './api'
 
 export type Transport = 'webhid' | 'speculos'
 
@@ -15,6 +15,7 @@ interface LedgerWeb {
   getAddress(): Promise<string>
   signMessage(message: string, onStep?: (iv: Step) => void): Promise<{ signature: string; address: string }>
   signTypedData(typedData: unknown, descriptor: unknown, onStep?: (iv: Step) => void): Promise<{ signature: string; address: string; report: unknown }>
+  signTransaction(tx: UnsignedTx, onStep?: (iv: Step) => void): Promise<{ raw: string; r: string; s: string; v: number; address: string }>
   disconnect(): Promise<void>
   address(): string | null
   transport(): Transport | null
@@ -139,13 +140,29 @@ export async function signPending(p: Pending, onStep?: (text: string) => void): 
   const step = (iv: Step) => {
     const k = iv.requiredUserInteraction
     if (k === 'sign-typed-data') onStep?.('Sur l’appareil : lisez chaque champ, puis maintenez « Hold to sign ».')
+    else if (k === 'sign-transaction') onStep?.('Sur l’appareil : le montant, l’adresse de votre coffre, les frais — puis maintenez « Hold to sign ».')
     else if (k === 'web3-checks-opt-in') onStep?.('L’appareil propose « Transaction Check » : répondez « Maybe later ».')
     else onStep?.('L’appareil prépare la revue…')
   }
   try {
+    const lw = await loadLedger()
+    if (p.kind === 'deposit') {
+      // the deposit: an ETH transfer to the vault — the one transaction the Ledger signs, readable by any Ethereum app
+      let t
+      try {
+        await connect()
+        t = await lw.signTransaction(p.tx!, step)
+      } catch (first) {
+        if (REFUSED.test(errText(first))) throw first
+        await lw.disconnect()
+        await connect()
+        t = await lw.signTransaction(p.tx!, step)
+      }
+      await post('/signed', { kind: p.kind, raw: t.raw, owner: t.address })
+      return
+    }
     const descriptor = await (await fetch('/api/descriptor?kind=' + p.kind, { cache: 'no-store' })).json()
     if (descriptor.error) throw new Error(descriptor.error)
-    const lw = await loadLedger()
     let r
     try {
       await connect()

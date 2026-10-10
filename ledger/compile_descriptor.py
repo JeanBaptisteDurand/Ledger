@@ -48,6 +48,8 @@ KINDS = {
     "mandate": (sm.FILTERS, lambda vault: sm.build_mandate(vault, sm.WETH_BASE, 0, 0, 0, 0)),
     "exception": (sm.EXCEPTION_FILTERS,
                   lambda vault: sm.build_exception(vault, sm.WETH_BASE, "0x" + "00" * 32, 0, 0, 0, 0)),
+    "withdraw": (sm.WITHDRAW_FILTERS,
+                 lambda vault: sm.build_withdrawal(vault, sm.WETH_BASE, 0, "0x" + "00" * 20, 0, 0)),
 }
 
 
@@ -94,7 +96,8 @@ def token_payload(ticker: str, addr: str, decimals: int, chain_id: int) -> str:
     return body.hex()
 
 
-def compile_descriptor(kind: str, vault: str, chain_id: int = sm.CHAIN_ID) -> dict:
+def compile_descriptor(kind: str, vault: str, chain_id: int | None = None) -> dict:
+    chain_id = sm.CHAIN_ID if chain_id is None else chain_id   # lu a l'appel : le banc peut changer de chaine
     filters, template = KINDS[kind]
     data = template(vault)
     types = data["types"]

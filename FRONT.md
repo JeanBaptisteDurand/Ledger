@@ -350,9 +350,12 @@ Les événements du compte (`GET /api/account`) : `{ts, kind, …détails}` (§ 
 
 ## 7 · Ce que le front peut préparer, mais que le serveur n'a pas encore
 
-- **Reprendre ses fonds** et **révoquer le mandat** depuis la page (le contrat le permet : `withdraw`, `revoke`) :
-  il faut une transaction signée par le porteur (`signTransaction` du Signer Kit, puis envoi) — prévoir les deux
-  boutons et l'état *à venir*.
+- **Déposer et reprendre ses fonds : fait le 10 oct.** `POST /api/deposit {amount_eth}` → une demande `pending` de
+  genre `deposit` avec `tx` (l'enveloppe EIP-1559 : chainId, nonce, frais, gaz, destinataire = le coffre, montant) que la
+  page fait signer (`LedgerWeb.signTransaction(tx)`) et rend par `POST /api/signed {kind: "deposit", raw}` ; `POST
+  /api/withdraw {amount | "tout"}` → une demande `pending` de genre `withdraw` (EIP-712 `ExitWithdrawal`, descripteur
+  `/api/descriptor?kind=withdraw`) signée comme le mandat. L'état porte `owner_eth` (l'ETH du porteur) à côté de `weth`.
+  Reste **révoquer le mandat** avant son échéance (le contrat a `revoke`, pas de bouton).
 - **Une clé de session par compte** (aujourd'hui tous les comptes partagent la clé d'agent du banc).
 - **Du SSE** à la place du polling ; **des filtres** sur le journal ; **une page par bot** ; **mobile**.
 - **Plusieurs comptes** dans un même navigateur (un cookie = un compte aujourd'hui).

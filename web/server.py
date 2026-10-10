@@ -35,7 +35,15 @@ def plog(msg: str) -> None:
         with open(PROXY_LOG, "a") as f:
             f.write(f"{time.strftime('%H:%M:%S')}.{int(time.time() * 1000) % 1000:03d} {msg}\n")
 
-ANVIL = os.environ.get("ANVIL_URL", "http://127.0.0.1:8545")
+# Le reseau : « fork » (anvil, un fork de Base epingle, des comptes de test, des credits fictifs — la demo) ou
+# « live » (un vrai RPC : Base Sepolia d'abord, Base ensuite ; PDS_DEPLOYER_KEY et PDS_AGENT_KEY a toi ; rien n'est
+# credite, le porteur depose depuis sa Ledger). Le reste du code est le meme.
+NETWORK = os.environ.get("PDS_NETWORK", "fork")
+LIVE = NETWORK == "live"
+ANVIL = os.environ.get("ANVIL_URL") or (BASE_RPC if LIVE else "http://127.0.0.1:8545")
+if LIVE:
+    os.environ["ANVIL_URL"] = ANVIL                 # les bots parlent a la meme chaine
+    os.environ["PDS_NO_COUNTERFACTUAL"] = "1"       # anvil_setCode n'existe pas sur un vrai noeud
 FORK_BLOCK = os.environ.get("FORK_BLOCK", "50614000")
 PORT = int(os.environ.get("PORT", "8099"))
 
@@ -48,9 +56,10 @@ import accounts  # noqa: E402  (un compte = une adresse prouvée par la Ledger ;
 
 WETH = "0x4200000000000000000000000000000000000006"
 POOL_MANAGER = "0x498581fF718922c3f8e6A244956aF099B2652b2b"
-DEPLOYER_KEY = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"  # anvil #0
-AGENT_KEY = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"  # anvil #1
-AGENT = "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+DEPLOYER_KEY = os.environ.get("PDS_DEPLOYER_KEY") if LIVE else "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"  # anvil #0
+AGENT_KEY = os.environ.get("PDS_AGENT_KEY") if LIVE else "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"  # anvil #1
+AGENT = os.environ.get("PDS_AGENT_ADDRESS") if LIVE else "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+FUND_VAULT = (not LIVE) and os.environ.get("PDS_FUND_VAULT", "1") == "1"   # le raccourci de banc : 5 WETH au coffre
 
 BUY_EXC_SIG = (
     "buyUnderException((address,address,uint256,uint16,uint64,uint256),bytes,"
@@ -70,7 +79,8 @@ BASE_RPC = os.environ.get("BASE_RPC_URL") or next(
 # ------------------------------------------------------------------ l'état : le banc, et un état par compte
 
 # Ce qui est commun à tout le monde : le fork, l'émulateur, les briques installées, le Key Ring de l'opérateur.
-G = {"anvil": False, "speculos": False, "ledger_stack": signers.stack_versions(), "ring": None}
+G = {"anvil": False, "speculos": False, "ledger_stack": signers.stack_versions(), "ring": None,
+     "network": NETWORK, "chain_id": None, "fork_block": None if LIVE else int(FORK_BLOCK)}
 _PROBED = [0.0]
 
 
@@ -96,9 +106,9 @@ def default_state(address: str | None = None) -> dict:
     """L'état d'un compte (ou de l'invité, avant connexion)."""
     return {
         "address": address, "dir": (str(accounts.paths(address)["dir"]) if address else None),
-        "owner": None, "vault": None, "weth": "0", "deployer": None, "deploy_nonce": None,
+        "owner": None, "vault": None, "weth": "0", "owner_eth": "0", "deployer": None, "deploy_nonce": None,
         "chat": [], "proposal": None,
-        "signing": None,            # "mandate" | "exception" | None
+        "signing": None,            # "mandate" | "exception" | "deposit" | "withdraw" | None
         "mandate": None, "signed": False,
         "running": False, "journal": [], "spent": "0", "positions": [],
         "bots": [], "bot_running": None,   # les bots du compte (agents d'execution nommes, dans le meme mandat)
@@ -305,6 +315,14 @@ def refresh_positions():
 def a_boot():
     if not BASE_RPC:
         return False, "BASE_RPC_URL introuvable"
+    if LIVE and not G["anvil"]:
+        if not BASE_RPC:
+            return False, "BASE_RPC_URL introuvable"
+        if not (DEPLOYER_KEY and AGENT_KEY and AGENT):
+            return False, "réseau réel : il faut PDS_DEPLOYER_KEY, PDS_AGENT_KEY et PDS_AGENT_ADDRESS"
+        if cast("block-number")[0] != 0:
+            return False, "la chaîne ne répond pas"
+        G["anvil"] = True
     if not G["anvil"]:
         P["anvil"] = subprocess.Popen(
             ["anvil", "--fork-url", BASE_RPC, "--fork-block-number", FORK_BLOCK, "--silent"],
@@ -324,6 +342,16 @@ def a_boot():
         G["speculos"] = True
         say("Speculos : un Ledger Flex, app Ethereum 1.22.4 compilée avec les clés de test")
 
+    rc, cid = cast("chain-id")
+    if rc == 0 and cid.strip().isdigit():
+        G["chain_id"] = int(cid.strip())
+        import sign_mandate as _sm
+        _sm.CHAIN_ID = G["chain_id"]
+        for filt in (_sm.FILTERS, _sm.EXCEPTION_FILTERS, _sm.WITHDRAW_FILTERS):
+            for tok in filt["tokens"]:
+                tok["chain_id"] = G["chain_id"]
+        if LIVE:
+            say(f"réseau réel : chaîne {G['chain_id']} — rien n'est crédité, les fonds viennent de ta Ledger")
     if not S["address"]:
         return False, "connecte-toi d'abord — ta Ledger dans le navigateur (Sign-In with Ethereum), ou l'appareil du banc"
     if S["signer"] == "browser":
@@ -359,8 +387,8 @@ def a_boot():
     # Les descripteurs de clear signing de CE coffre (mandat, dérogation), compilés et signés ici même
     # avec la clé de test : c'est ce que notre context module servira au Signer Kit.
     try:
-        S["descriptors"] = {k: str(signers.descriptor_path(k, S["vault"])) for k in ("mandate", "exception")}
-        say("descripteurs EIP-712 compilés pour ce coffre (mandat : 5 filtres, dérogation : 6) — signés cal.pem")
+        S["descriptors"] = {k: str(signers.descriptor_path(k, S["vault"])) for k in ("mandate", "exception", "withdraw")}
+        say("descripteurs EIP-712 compilés pour ce coffre (mandat : 5 filtres, dérogation : 6, retrait : 4) — signés cal.pem")
     except Exception as e:  # noqa: BLE001
         say(f"descripteurs : {e} — le chemin Python reste disponible")
         S["signer"] = "python"
@@ -370,12 +398,144 @@ def a_boot():
     else:
         say("Ledger Key Ring : non initialisé ici (`wallet-cli ring init` demande un Flex en USB)")
 
-    cast("send", WETH, "deposit()", "--value", "5ether", key=DEPLOYER_KEY)
-    cast("send", WETH, "transfer(address,uint256)", S["vault"], str(5 * 10**18), key=DEPLOYER_KEY)
-    rc, bal = cast("call", WETH, "balanceOf(address)(uint256)", S["vault"])
-    S["weth"] = bal.strip().split()[0] if rc == 0 else "?"
-    say("coffre approvisionné — raccourci de banc : les fonds viennent d'un compte anvil, pas du Ledger")
+    if FUND_VAULT:
+        cast("send", WETH, "deposit()", "--value", "5ether", key=DEPLOYER_KEY)
+        cast("send", WETH, "transfer(address,uint256)", S["vault"], str(5 * 10**18), key=DEPLOYER_KEY)
+        say("coffre approvisionné de 5 WETH — raccourci de banc : de l'argent fictif, d'un compte anvil")
+    if not LIVE:
+        # et le porteur lui-meme recoit 5 ETH fictifs : c'est LUI qui depose dans son coffre, depuis sa Ledger
+        cast("rpc", "anvil_setBalance", S["owner"], hex(5 * 10**18))
+        say("ton adresse a reçu 5 ETH fictifs (fork) : dépose dans ton coffre depuis ta Ledger")
+    refresh_funds()
     return True, "prêt"
+
+
+def refresh_funds() -> None:
+    """Le WETH du coffre et l'ETH du porteur, relus sur la chaine."""
+    if S["vault"]:
+        rc, bal = cast("call", WETH, "balanceOf(address)(uint256)", S["vault"])
+        S["weth"] = bal.strip().split()[0] if rc == 0 else S["weth"]
+    if S["owner"]:
+        rc, bal = cast("balance", S["owner"])
+        S["owner_eth"] = bal.strip().split()[0] if rc == 0 else S["owner_eth"]
+
+
+def _wei(x) -> int:
+    v = float(str(x).replace(",", "."))
+    if not (0 < v <= 1000):
+        raise ValueError("montant")
+    return int(round(v * 10**18))
+
+
+def a_deposit(amount_eth) -> tuple[bool, str]:
+    """Le depot : un envoi d'ETH du porteur a son coffre, que SA Ledger signe dans la page. Le banc ne prepare
+    que l'enveloppe (nonce, frais, gaz) ; l'appareil affiche le montant et l'adresse du coffre, comme pour
+    n'importe quel envoi. Le coffre le garde en WETH."""
+    if not S["vault"]:
+        return False, "il faut une session"
+    if S["signer"] != "browser":
+        return False, "le dépôt se signe dans la page : choisis « Ma Ledger · ce navigateur » sur la page Appareil"
+    if S["signing"] or S["pending"]:
+        return False, "une signature est déjà en attente"
+    try:
+        wei = _wei(amount_eth)
+    except ValueError:
+        return False, "un montant en ETH, entre 0 et 1000"
+    rc, cid = cast("chain-id")
+    rc2, nonce = cast("nonce", S["owner"])
+    rc3, gp = cast("gas-price")
+    if rc or rc2 or rc3:
+        return False, "la chaîne ne répond pas"
+    gas_price = int(gp.strip() or 0) or 10**6
+    tx = {"chainId": int(cid.strip()), "nonce": int(nonce.strip()), "to": S["vault"], "value": str(wei), "data": "0x",
+          "gas": 120000, "maxFeePerGas": str(gas_price * 2 + 10**6), "maxPriorityFeePerGas": str(min(gas_price, 10**6))}
+    S["pending"] = {"kind": "deposit", "tx": tx, "amount_wei": str(wei), "token": secrets.token_urlsafe(8), "ts": int(time.time())}
+    S["signing"] = "deposit"
+    return True, "ta Ledger, dans ton navigateur : lis le montant et l'adresse du coffre, puis maintiens « Hold to sign »"
+
+
+def _finish_deposit(raw: str) -> None:
+    """La transaction signee revient de la page : on la publie, on attend le recu."""
+    pend_amount = (S.get("_last_pending") or {}).get("amount_wei", "?")
+    rc, out = cast("publish", raw)
+    m = re.search(r"\"?transactionHash\"?\s*[:=]?\s*\"?(0x[0-9a-fA-F]{64})", out) or re.search(r"(0x[0-9a-fA-F]{64})", out)
+    if rc != 0 or not m:
+        say(f"dépôt : la chaîne a refusé la transaction — {out[-160:]}")
+        print(f"[deposit] publish rc={rc} : {out[-400:]}", file=sys.stderr, flush=True)
+        return
+    txh = m.group(1)
+    rc2, rcpt = cast("receipt", txh, "--json")
+    try:
+        ok = rc2 == 0 and int(json.loads(rcpt).get("status", "0x0"), 16) == 1
+    except (ValueError, AttributeError):
+        ok = False
+    refresh_funds()
+    if ok:
+        event("deposited", amount_wei=pend_amount, tx=txh)
+        say(f"dépôt signé sur ta Ledger et confirmé : {int(pend_amount) / 1e18 if pend_amount != '?' else '?'} ETH, "
+            f"gardés en WETH dans ton coffre ({txh[:10]}…)")
+    else:
+        say(f"dépôt : transaction publiée mais échouée ({txh[:10]}…)")
+
+
+def a_withdraw(amount) -> tuple[bool, str]:
+    """Le retrait : le porteur autorise, par une signature EIP-712 lue en clair, UN montant vers SON adresse,
+    valable une heure, une fois. Le banc l'execute (il paie le gaz) ; il ne peut rien y changer."""
+    if not S["vault"]:
+        return False, "il faut une session"
+    if S["signing"] or S["pending"]:
+        return False, "une signature est déjà en attente"
+    refresh_funds()
+    have = int(S["weth"]) if str(S["weth"]).isdigit() else 0
+    try:
+        wei = have if str(amount).strip() in ("", "all", "tout") else _wei(amount)
+    except ValueError:
+        return False, "un montant en WETH, ou « tout »"
+    if wei <= 0 or wei > have:
+        return False, f"le coffre tient {have / 1e18:.4f} WETH"
+    import sign_mandate as sm
+    sm.URL = SPECULOS
+    expiry, nonce = int(time.time()) + 3600, int(time.time())
+    data = sm.build_withdrawal(S["vault"], WETH, wei, S["owner"], expiry, nonce)
+    try:
+        S["descriptors"]["withdraw"] = str(signers.descriptor_path("withdraw", S["vault"]))
+    except Exception as e:  # noqa: BLE001
+        say(f"descripteur du retrait : {e}")
+    if S["signer"] == "browser":
+        S["pending"] = {"kind": "withdraw", "typedData": data, "amount_wei": str(wei), "expiry": expiry, "nonce": nonce,
+                        "token": secrets.token_urlsafe(8), "ts": int(time.time())}
+        S["signing"] = "withdraw"
+        return True, "ta Ledger, dans ton navigateur : lis le montant et le destinataire, puis maintiens « Hold to sign »"
+
+    st = current()
+
+    def worker():
+        bind(st)
+        try:
+            r = signers.sign("withdraw", data, sm.WITHDRAW_FILTERS, S["signer"], speculos=SPECULOS)
+            _finish_withdraw(r["signature"], wei, expiry, nonce)
+        except Exception as e:  # noqa: BLE001
+            say(f"retrait refusé ou erreur : {e}")
+        finally:
+            S["signing"] = None
+
+    S["signing"] = "withdraw"
+    threading.Thread(target=worker, daemon=True).start()
+    return True, "l'appareil attend : lis le montant et le destinataire, puis maintiens « Hold to sign »"
+
+
+WITHDRAW_SIG = "withdrawWithAuthorization((address,uint256,address,uint64,uint256),bytes)"
+
+
+def _finish_withdraw(sig: str, wei: int, expiry: int, nonce: int) -> None:
+    rc, out = cast("send", S["vault"], WITHDRAW_SIG, tup([WETH, wei, S["owner"], expiry, nonce]), sig, key=AGENT_KEY)
+    ok = rc == 0 and re.search(r"status\s+1", out)
+    refresh_funds()
+    if ok:
+        event("withdrawn", amount_wei=str(wei))
+        say(f"retrait autorisé sur ta Ledger et exécuté : {wei / 1e18:.4f} WETH rendus à ton adresse")
+    else:
+        say(f"retrait : le coffre a refusé — {out[-160:]}")
 
 
 def a_chat(prompt: str):
@@ -399,7 +559,7 @@ def _mandate_typed(p: dict):
 def _finish_mandate(sig: str, owner: str | None, signer: str, expiry: int, report=None):
     p = S["proposal"]
     S["last_report"] = report
-    S["mandate"] = {"owner": owner or S["owner"], "vault": S["vault"], "chainId": 8453, "signature": sig,
+    S["mandate"] = {"owner": owner or S["owner"], "vault": S["vault"], "chainId": G.get("chain_id") or 8453, "signature": sig,
                     "signer": signer, "deployer": S.get("deployer"), "deployNonce": S.get("deploy_nonce"),
                     "mandate": {"agent": AGENT, "budgetToken": WETH, "budgetAmount": p["budget_wei"],
                                 "maxRoundTripLossBps": int(p["max_round_trip_loss_bps"]), "expiry": expiry, "nonce": 1}}
@@ -991,13 +1151,13 @@ class H(BaseHTTPRequestHandler):
                 return self._send(502, {"error": str(e)})
         if path == "/api/descriptor":
             kind = parse_qs(urlparse(self.path).query).get("kind", ["mandate"])[0]
-            if kind not in ("mandate", "exception") or not S["vault"]:
-                return self._send(400, {"error": "kind=mandate|exception, et une session ouverte"})
+            if kind not in ("mandate", "exception", "withdraw") or not S["vault"]:
+                return self._send(400, {"error": "kind=mandate|exception|withdraw, et une session ouverte"})
             return self._send(200, Path(signers.descriptor_path(kind, S["vault"])).read_bytes())
         if path == "/api/siwe/nonce":
             S["siwe_nonce"] = secrets.token_hex(4)  # court : le message SIWE doit tenir dans une APDU (Signer Kit, FEEDBACK § 8)
             return self._send(200, {"nonce": S["siwe_nonce"], "domain": self.headers.get("Host", f"127.0.0.1:{PORT}"),
-                                    "chainId": 8453, "statement": "Porte de sortie — je me connecte avec ma Ledger."})
+                                    "chainId": G.get("chain_id") or 8453, "statement": "Porte de sortie — je me connecte avec ma Ledger."})
         if path in ("/", "/index.html"):
             return self._send(200, (Path(__file__).parent / "index.html").read_bytes(), "text/html; charset=utf-8")
         if path == "/api/screen":
@@ -1012,6 +1172,12 @@ class H(BaseHTTPRequestHandler):
                 return self._send(200, {"events": []})
         if path == "/api/state":
             probe_services()
+            if S["vault"] and time.time() - S.get("_funds_ts", 0) > 5:
+                S["_funds_ts"] = time.time()
+                try:
+                    refresh_funds()
+                except Exception:  # noqa: BLE001
+                    pass
             return self._send(200, {
                 **G,
                 **{k: v for k, v in S.items() if k not in ("journal", "bots")},
@@ -1096,10 +1262,24 @@ class H(BaseHTTPRequestHandler):
                     S["signing"] = None
                     err = str(body["error"])[:160]
                     say(f"{pend['kind']} : refusé ou erreur côté porteur — {err}")
+                    print(f"[signed] {pend['kind']} : erreur côté porteur — {err}", file=sys.stderr, flush=True)
                     if "InvalidStatusWord" in err or "6980" in err:
                         say("l'app Ethereum est peut-être restée « en cours de signature » : sur Speculos, "
                             "`ledger/speculos.sh up` ; sur un Flex, quitte et rouvre l'app (FEEDBACK § 8)")
                 return self._send(200, {"ok": True, "msg": "refus noté"})
+            if pend["kind"] == "deposit":
+                raw = body.get("raw") or ""
+                if not re.fullmatch(r"0x02[0-9a-fA-F]+", raw):
+                    return self._send(200, {"ok": False, "msg": "transaction signée mal formée"})
+                with LOCK:
+                    S["_last_pending"], S["pending"] = pend, None
+                    try:
+                        _finish_deposit(raw)
+                    except Exception as e:  # noqa: BLE001
+                        say(f"dépôt : {e}")
+                    finally:
+                        S["signing"] = None
+                return self._send(200, {"ok": True})
             sig = body.get("signature") or ""
             if not re.fullmatch(r"0x[0-9a-fA-F]{130}", sig):
                 return self._send(200, {"ok": False, "msg": "signature mal formée"})
@@ -1111,6 +1291,8 @@ class H(BaseHTTPRequestHandler):
                 try:
                     if pend["kind"] == "mandate":
                         _finish_mandate(sig, owner, "browser", pend["expiry"], body.get("report"))
+                    elif pend["kind"] == "withdraw":
+                        _finish_withdraw(sig, int(pend["amount_wei"]), pend["expiry"], pend["nonce"])
                     else:
                         _finish_exception(pend["escalation"], sig, pend["is_vault"], pend["key"], pend["pool_hash"],
                                           pend["expiry"], pend["nonce"], body.get("report"))
@@ -1125,6 +1307,14 @@ class H(BaseHTTPRequestHandler):
                 return self._send(200, {"ok": True})
             except Exception as e:  # noqa: BLE001
                 return self._send(200, {"ok": False, "error": str(e)})
+        if path == "/api/deposit":
+            with LOCK:
+                ok, msg = a_deposit(body.get("amount_eth", ""))
+            return self._send(200, {"ok": ok, "msg": msg, "pending_token": (S.get("pending") or {}).get("token")})
+        if path == "/api/withdraw":
+            with LOCK:
+                ok, msg = a_withdraw(body.get("amount", ""))
+            return self._send(200, {"ok": ok, "msg": msg, "pending_token": (S.get("pending") or {}).get("token")})
         if path == "/api/chat":
             with LOCK:
                 ok, msg = a_chat(body.get("prompt", ""))

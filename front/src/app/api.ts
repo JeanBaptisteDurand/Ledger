@@ -118,22 +118,28 @@ export interface Analysis {
   ts: number
 }
 
-export interface Pending { kind: 'mandate' | 'exception'; typedData: unknown; expiry: number; token: string; ts?: number }
+export type PendingKind = 'mandate' | 'exception' | 'withdraw' | 'deposit'
+export interface UnsignedTx { chainId: number; nonce: number; to: string; value: string; data: string; gas: number; maxFeePerGas: string; maxPriorityFeePerGas: string }
+export interface Pending { kind: PendingKind; typedData?: unknown; tx?: UnsignedTx; amount_wei?: string; expiry?: number; token: string; ts?: number }
 
 export interface BenchState {
   anvil: boolean
   speculos: boolean
+  network: 'fork' | 'live'
+  chain_id: number | null
+  fork_block: number | null
   ledger_stack: Record<string, string>
   ring: unknown
   address: string | null
   owner: string | null
   vault: string | null
   weth: string
+  owner_eth: string
   signer: Signer
   universe: Universe
   chat: ChatLine[]
   proposal: Proposal | null
-  signing: 'mandate' | 'exception' | null
+  signing: PendingKind | null
   pending: Pending | null
   mandate: Mandate | null
   signed: boolean
