@@ -664,8 +664,8 @@ async function siwe(){
   try {
     const addr = await ledgerConnect();
     const n = await (await fetch('/api/siwe/nonce')).json();
-    // EIP-4361 sans « statement », horodatage à la seconde : le message tient dans UNE APDU (< 229 octets).
-    // Au-delà, le Signer Kit 1.18.1 tronque le message à rien et laisse l'app coincée (FEEDBACK.md § 7).
+    // EIP-4361 sans « statement », horodatage à la seconde, ASCII pur : un seul caractère non ASCII et le
+    // Signer Kit 1.18.1 jette tout le message et laisse l'app coincée (FEEDBACK.md § 7).
     const msg = `${n.domain} wants you to sign in with your Ethereum account:\n${addr}\n\n` +
                 `URI: ${location.origin}\nVersion: 1\nChain ID: ${n.chainId}\nNonce: ${n.nonce}\nIssued At: ${new Date().toISOString().replace(/\.\d{3}Z$/, 'Z')}`;
     $('#waiting').hidden = false; $('#waiting').textContent = 'ta Ledger : lis le message de connexion, puis signe.';

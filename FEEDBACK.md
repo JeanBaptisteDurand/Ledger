@@ -184,35 +184,42 @@ open that PR too.
 
 ---
 
-## 7. `signMessage` silently drops any message longer than ~229 bytes — and strands the app
+## 7. `signMessage` drops the whole message as soon as it contains one non-ASCII character — and strands the app
 
 **What happened.** We wired Sign-In with Ethereum (EIP-4361) through the Signer Kit
-(`device-signer-kit-ethereum` 1.18.1, `signMessage`). A 272-byte SIWE message fails in ~150 ms with
-`InvalidStatusWordError`; a 229-byte one signs fine. Reproduced on Speculos (app-ethereum 1.22.4) from
-Node and from the browser; the exchange is:
+(`device-signer-kit-ethereum` 1.18.1, `signMessage`). Our first SIWE message, with a French `statement`
+("Porte de sortie — ta Ledger reste chez toi."), failed in ~150 ms with `InvalidStatusWordError`; the same
+message without the statement signed. We first read it as a length limit (~229 bytes). It is not: on 10 October
+we replayed it on Speculos (app-ethereum 1.22.4) with ASCII messages of 230, 255, 256 and 600 bytes — all sign,
+chunked correctly — and with `"é"` repeated ten times (10 characters, 20 bytes), which fails. The exchange:
 
 ```
-=> e008000019 05 8000002c 8000003c 80000000 00000000 00000000 0000010e     (path + length, ZERO message bytes)
+=> e008000019 05 8000002c 8000003c 80000000 00000000 00000000 0000000a     (path + length 10, ZERO message bytes)
 <= 9000                                                                       (the app waits for the rest)
    SendSignPersonalMessageTask → InvalidStatusWordError                       (no second chunk is ever sent)
+=> e00800001e … 00000005 68656c6c6f                                           ("hello", right after)
+<= 6980                                                                       (SWO_COMMAND_NOT_ALLOWED: the app is stuck)
 ```
 
-**Where.** `internal/app-binder/task/SendSignPersonalMessageTask.js` assembles path + length + message in an
-**`ApduBuilder`**, whose payload is capped at `APDU_MAX_PAYLOAD` and which *records* an overflow instead of
-throwing; the task never checks `getErrors()`, so `build()` yields a header-only payload, which
-`SendCommandInChunksTask` then sends as a single "first chunk". `SignPersonalMessageCommand.parseResponse`
-turns the app's intermediate `9000` into `InvalidStatusWordError("R is missing")`.
+**Where.** `internal/app-binder/task/SendSignPersonalMessageTask.ts`: l. 51 sizes the `ByteArrayBuilder` with
+`message.length + 1 + (paths.length + 1) * PATH_SIZE` and l. 61 writes `message.length` as the length field — both
+are **UTF-16 character counts**. L. 64 then calls `addAsciiStringToData(message)`, which (`ByteArrayBuilder.ts`
+l. 229) encodes the string with `TextEncoder` — **UTF-8 bytes**. One accented letter is two bytes: the buffer is
+one byte short, `addBufferToData` (l. 198) records a `DataOverflowError` and drops the whole message, `build()`
+returns the header alone, and `getErrors()` is never read. `SignPersonalMessageCommand.parseResponse` turns the
+app's intermediate `9000` into `InvalidStatusWordError("R is missing")`.
 
-**Why it hurts twice.** A typical SIWE message is 250–350 bytes, so every Sign-In-with-Ethereum flow through
-the kit fails. And on the device side, `handle_sign_personal_message` (`src/features/sign_message/cmd_sign_message.c`)
-sets `appState = APP_STATE_SIGNING_MESSAGE` **before** parsing the first chunk: once the client gives up, the
-app stays in that state and answers `0x6980` (`SWO_COMMAND_NOT_ALLOWED`) to every following message until
-it is quit and reopened. A user sees "it worked yesterday, now nothing signs".
+**Why it hurts twice.** Any message with an accent, a typographic dash, an emoji or a non-Latin script fails —
+that is most SIWE statements outside English. And on the device side, `handle_sign_personal_message`
+(`src/features/sign_message/cmd_sign_message.c`) sets `appState = APP_STATE_SIGNING_MESSAGE` **before** parsing
+the first chunk: once the client gives up, the app answers `0x6980` to every following message until it is quit
+and reopened. A user sees "it worked yesterday, now nothing signs".
 
-**One concrete suggestion.** Build the payload as a plain `ByteArrayBuilder` (no APDU cap) before chunking,
-and check `getErrors()` where an `ApduBuilder` is used for data that may exceed one APDU. On the app, arm
-`APP_STATE_SIGNING_MESSAGE` only after the first chunk parses, or drop back to idle on a parse error.
-Our workaround: a SIWE message without `statement`, seconds-precision `Issued At`, 8-hex nonce — 217 bytes.
+**One concrete suggestion.** Encode once — `const bytes = new TextEncoder().encode(message)` — and use
+`bytes.length` for both the builder size and the length field (the app counts bytes); check `getErrors()`
+wherever a builder may overflow. On the app, arm `APP_STATE_SIGNING_MESSAGE` only after the first chunk parses, or
+drop back to idle on a parse error. Our workaround: a SIWE message in plain ASCII, without `statement` — 217 bytes.
+Reproduction: `ledger/dmk/repro_signmessage_bug.cjs` (any string with a non-ASCII character).
 
 ---
 

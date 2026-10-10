@@ -1,15 +1,18 @@
 /**
- * Reproduction de FEEDBACK.md § 7 — Signer Kit ETH 1.18.1 : `signMessage` perd tout message > ~229 octets.
+ * Reproduction de FEEDBACK.md § 7 — Signer Kit ETH 1.18.1 : `signMessage` jette tout message qui contient un
+ * caractère non ASCII (le tampon et le champ longueur sont dimensionnés en caractères, le message encodé en octets).
  *
  *   node repro_signmessage_bug.cjs http://127.0.0.1:5013 "message court"      -> signature (une seule APDU)
- *   node repro_signmessage_bug.cjs http://127.0.0.1:5013 "<message de 272 octets>"
- *      -> le kit envoie `e0 08 00 00 19 <chemin> <longueur>` SANS un octet de message, l'app repond 9000
- *         (elle attend la suite), le kit echoue en InvalidStatusWordError — et l'app reste en SIGNING_MESSAGE :
- *         tout message suivant recoit 0x6980 jusqu'a redemarrage (FORCE=1 ledger/speculos.sh up).
+ *   node repro_signmessage_bug.cjs http://127.0.0.1:5013 "$(python3 -c "print('é'*10)")"   -> echec, app coincee
+ *   -> en cas d'echec, le kit envoie `e0 08 00 00 19 <chemin> <longueur en CARACTERES>` SANS un octet de
+ *      message, l'app repond 9000 (elle attend la suite), le kit echoue en InvalidStatusWordError — et l'app reste
+ *      en SIGNING_MESSAGE : tout message suivant recoit 0x6980 jusqu'a redemarrage (FORCE=1 ledger/speculos.sh up).
+ *   Un message ASCII de 600 octets, lui, est decoupe et signe (verifie le 10 oct. 2026).
  *
- * Cause (dist) : SendSignPersonalMessageTask assemble chemin+longueur+message dans un ApduBuilder plafonne a une
- * APDU avant le decoupage, sans lire getErrors() ; SignPersonalMessageCommand.parseResponse transforme le 9000
- * intermediaire en "R is missing". Logs DMK en debug pour voir l'echange.
+ * Cause (source du kit) : SendSignPersonalMessageTask.ts l.51 dimensionne le ByteArrayBuilder avec message.length
+ * (des caracteres UTF-16) et l.61 ecrit message.length comme longueur ; l.64 addAsciiStringToData encode en UTF-8
+ * (des octets). Un caractere accentue = un octet de trop : addBufferToData enregistre un DataOverflowError, jette
+ * le message, et getErrors() n'est jamais lu. Logs DMK en debug pour voir l'echange.
  */
 const { firstValueFrom } = require("rxjs");
 const { DeviceManagementKitBuilder, DeviceActionStatus, DeviceModelId, ConsoleLogger, LogLevel } = require("@ledgerhq/device-management-kit");

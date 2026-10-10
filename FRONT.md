@@ -78,7 +78,7 @@ explicite (`reject`, `6985`, `denied`).
 ### 2.3 · Sign-In with Ethereum (connexion)
 
 `GET /api/siwe/nonce` → `{nonce, domain, chainId, statement}`. Construire le message EIP-4361 **sans
-`statement` et à la seconde** (il doit tenir en moins de 229 octets : un bug du Signer Kit tronque au-delà) :
+`statement` et à la seconde**, en ASCII pur (un seul caractère non ASCII et le Signer Kit jette tout le message, FEEDBACK § 7) :
 
 ```
 <domain> wants you to sign in with your Ethereum account:

@@ -584,13 +584,14 @@ lance ensuite avec un avertissement « non vérifiée ». Chargé le 2 octobre s
   à l'onglet qui l'a demandée, sessions de signature sans le rafraîchisseur du DMK (`b001000000` chaque seconde,
   délai 800 ms) — et le parcours repasse avec un porteur qui met 20 s par écran (`FEEDBACK.md` § 8).
 
-- **`signMessage` du Signer Kit perd tout message de plus de ~229 octets — et laisse l'app coincée.**
-  Le payload est assemblé dans un `ApduBuilder` (plafonné à une APDU) *avant* le découpage ; le
-  dépassement est enregistré, jamais lu : le kit envoie un premier bloc sans un octet de message, l'app
-  répond `9000` et attend, le kit échoue (`InvalidStatusWordError`), et l'app reste en `SIGNING_MESSAGE`
-  (`0x6980` pour tout message suivant) jusqu'à redémarrage. Un message Sign-In with Ethereum fait 250-350
-  octets : **toute connexion SIWE par le kit échoue.** Reproduit en Node et dans le navigateur ; notre
-  message tient en 217 octets (`FEEDBACK.md` § 7).
+- **`signMessage` du Signer Kit jette tout message qui contient un seul caractère non ASCII — et laisse l'app coincée.**
+  Le kit dimensionne son tampon et écrit le champ longueur avec `message.length` (des caractères UTF-16), puis
+  encode le message en UTF-8 (des octets) : dès qu'un « é » ou un tiret long apporte un octet de plus, l'ajout
+  déborde, l'erreur est enregistrée et jamais lue, et le kit envoie un premier bloc sans un octet de message.
+  L'app répond `9000` et attend, le kit échoue (`InvalidStatusWordError`), et l'app reste en `SIGNING_MESSAGE`
+  (`0x6980` pour tout message suivant) jusqu'à redémarrage. On avait d'abord cru à une limite de longueur
+  (~229 octets) ; rejoué le 10 octobre : 600 octets d'ASCII signent, dix « é » échouent. Notre message est en
+  ASCII pur, sans `statement` (`FEEDBACK.md` § 7).
 - **Le Signer Kit détecte le blind signing, le rapporte à Ledger, et ne le dit pas au développeur.**
   `BuildEIP712ContextTask` retombe en silence sur `ClearSigningType.BASIC` quand les filtres manquent ;
   `BlindSigningDetectionTask` calcule `isBlindSign`, envoie le rapport au *reporter* du context module

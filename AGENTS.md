@@ -35,7 +35,7 @@ deposit/redeem round trip, plus the top depositor's door `maxWithdraw` vs `conve
 | `web/schema.html` | one page: the agents, the tools, the three bricks of the brief (`/schema.html`) |
 | `scripts/parcours.mjs` | the whole browser journey, end to end, in headless Chromium (SIWE → vault → mandate → pools → exception → watch → vaults → exception → analyst → account → device login) |
 | `ledger/dmk/src/ledger-web.js` → `web/dist/ledger-web.js` | the Signer Kit **in the browser** (DMK + WebHID or Speculos-through-proxy, our context module); `npm run build:web` (esbuild) |
-| `ledger/dmk/repro_signmessage_bug.cjs` | reproduces FEEDBACK § 7: `signMessage` > ~229 bytes → header-only APDU, app stranded in `SIGNING_MESSAGE` |
+| `ledger/dmk/repro_signmessage_bug.cjs` | reproduces FEEDBACK § 7: `signMessage` with any non-ASCII character → header-only APDU, app stranded in `SIGNING_MESSAGE` |
 | `scripts/demo.sh`, `scripts/ring-seal.sh` | full CLI demo; seal the MCP key in the Ledger Key Ring |
 | `FEEDBACK.md` | DX feedback for Ledger Dev Rel, every claim with a file and a line |
 | `FRONT.md` | the front-end brief (French): every screen, element, state, route and data shape — the contract a new front must honour |

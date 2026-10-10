@@ -174,7 +174,7 @@ export function SchemaPage() {
         <div className="grid gap-6 lg:grid-cols-3">
           <Panel kicker="Se connecter" title="Sign-In with Ethereum">
             <p className="t-body-sm m-0 text-on-primary-mute">
-              Un message EIP-4361 court — moins de 229 octets, à cause d’un bug du Signer Kit — signé sur l’appareil dans le
+              Un message EIP-4361 en ASCII pur — un seul caractère accentué et le Signer Kit jette tout, un bug que nous documentons — signé sur l’appareil dans le
               navigateur, vérifié par le serveur : nonce à usage unique, adresse, signature. Ensuite, une session par cookie.
               En banc, l’adresse peut aussi être lue sur la Flex émulée.
             </p>
@@ -373,7 +373,7 @@ export function SchemaPage() {
               <tr><td className="label text-text-050">Le clear signing est fermé sans jeton partenaire, et échoue en silence</td><td className="label">CAL, 403 sans origin token</td><td className="label is-mute">Compilé l’app de série avec sa clé de test et signé nos descripteurs nous-mêmes</td></tr>
               <tr><td className="label text-text-050">Un bug d’une ligne casse le filtrage EIP-712 sur toute chaîne ≥ 256</td><td className="label">client Python officiel</td><td className="label is-mute">Contourné ; correctif d’une ligne à proposer</td></tr>
               <tr><td className="label text-text-050">Le kit détecte le blind signing, le rapporte à Ledger, ne le rend pas au développeur</td><td className="label">Signer Kit, context module</td><td className="label is-mute">Notre propre context module : le rapport reste chez nous, et s’affiche</td></tr>
-              <tr><td className="label text-text-050">signMessage perd tout message de plus de 229 octets et laisse l’app bloquée</td><td className="label">Signer Kit 1.18.1</td><td className="label is-mute">Reproduit en Node et dans le navigateur ; notre connexion tient en 217 octets</td></tr>
+              <tr><td className="label text-text-050">signMessage jette tout message qui contient un caractère non ASCII et laisse l’app bloquée</td><td className="label">Signer Kit 1.18.1</td><td className="label is-mute">Reproduit en Node et dans le navigateur ; notre connexion tient en 217 octets</td></tr>
               <tr><td className="label text-text-050">Deux clients sur une app : une commande en attente est refusée (0x6901), puis tout l’est</td><td className="label">SDK sécurisé, Speculos</td><td className="label is-mute">Une signature est liée à l’onglet qui l’a demandée ; rafraîchisseur de session coupé</td></tr>
             </tbody>
           </table>

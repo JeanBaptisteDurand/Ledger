@@ -100,8 +100,8 @@ export async function disconnect(): Promise<void> {
 }
 
 /**
- * Sign-In with Ethereum (EIP-4361), signed on the device. No `statement`, seconds precision: the message has to
- * stay under 229 bytes — Ledger's Signer Kit 1.18.1 drops anything longer and strands the app.
+ * Sign-In with Ethereum (EIP-4361), signed on the device. No `statement`, seconds precision, plain ASCII: one
+ * non-ASCII character and Ledger's Signer Kit 1.18.1 drops the whole message and strands the app (FEEDBACK § 7).
  */
 export async function signIn(onStep?: (text: string) => void): Promise<{ ok: boolean; msg?: string; address?: string }> {
   onStep?.('Connexion à l’appareil…')
