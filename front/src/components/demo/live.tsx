@@ -184,7 +184,7 @@ export function Flex({ s, a }: { s: BenchState; a: Activity }) {
 
 export function Funds({ s }: { s: BenchState }) {
   const { act } = useBench()
-  const [dep, setDep] = useState('0.5')
+  const [dep, setDep] = useState('0.3')
   const waiting = !!s.signing || !!s.pending
   const browser = s.signer === 'browser'
   const deposit = async (e: FormEvent) => { e.preventDefault(); await act('/deposit', { amount_eth: dep }) }

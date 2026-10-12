@@ -29,7 +29,7 @@ async function shoot(width, height, suffix) {
     await page.evaluate(() => window.scrollTo(0, 0)); await sleep(300)
     const w = await page.evaluate(() => document.documentElement.scrollWidth)
     if (w > width) errors.push(`${suffix} ${path} : horizontal overflow ${w} > ${width}`)
-    await page.screenshot({ path: `${OUT}/${name}-${suffix}.png`, fullPage: path.startsWith('/demo#') ? false : true })
+    await page.screenshot({ path: `${OUT}/${name}-${suffix}.png`, fullPage: path.startsWith('/demo#') ? false : true, timeout: 120000 })   // a long page on a busy host
     log(`shot ${name}-${suffix} (${w}px wide)`)
   }
   await ctx.close()

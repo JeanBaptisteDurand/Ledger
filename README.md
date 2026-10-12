@@ -390,6 +390,7 @@ mention dans un README.
 | le brief dit | ce qui tourne ici | ce que ça prouve |
 |---|---|---|
 | **a Signer** | `@ledgerhq/device-signer-kit-ethereum` **1.18.1** sur le DMK **1.9.1**, transport Speculos 1.2.1 ou USB (node-hid 1.0.1) — [`ledger/dmk/sign_typed_data.cjs`](ledger/dmk/sign_typed_data.cjs). Le kit reçoit nos filtres d'un **context module à nous**, qui sert des descripteurs compilés et signés localement ([`ledger/compile_descriptor.py`](ledger/compile_descriptor.py), clé de test `cal.pem`). Aucun serveur de Ledger. | L'écran : `Contract · Exit mandate`, `Network · Base`, `Budget · 0.2 WETH`, `Max round-trip loss (bps) · 150`, `Expires · …`, `Hold to sign`. Le rapport du kit : `isBlindSign=false · eip7730 · 0 erreur`. La signature vérifiée par `ecrecover` dans le coffre (`LedgerScene.t.sol`, vert). |
+| **Clear signing** | nos descripteurs ERC-7730 du mandat, de la dérogation et du retrait, compilés et signés avec la clé de test de l'app Ethereum **1.22.4** ([`ledger/compile_descriptor.py`](ledger/compile_descriptor.py), [`ledger/build/build-flex.sh`](ledger/build/build-flex.sh)) ; servis au Signer Kit par notre context module | la Flex affiche les champs, pas un blob : `isBlindSign=false · eip7730` dans le rapport du kit, sur la Flex émulée et sur une vraie Flex (2 oct.) ; sans eux, le registre répond 403 et le kit retombe à l'aveugle sans un mot (FEEDBACK § 1) |
 | **Agent Stack** | `@ledgerhq/wallet-cli` **2.1.0** en lecture ([`ledger/walletcli.py`](ledger/walletcli.py)) ; l'outil MCP `ledger_earn_yields` ; [`SKILL.md`](SKILL.md) et [`AGENTS.md`](AGENTS.md) au format de leurs skills. Le modèle qui propose est le Claude Agent SDK (`claude -p`). | `wallet-cli earn yields` rend fournisseur, jeton, rendement, lien de dépôt — et **aucun champ sur la sortie** (délai, `maxWithdraw`, coût). Le trou qu'on comble est écrit dans leur propre CLI. |
 | **Ring CLI** | `wallet-cli ring` (Ledger Key Ring Protocol) scelle la clé du MCP : [`scripts/ring-seal.sh`](scripts/ring-seal.sh) ; le MCP la déchiffre au démarrage et dit d'où elle vient (`--key-status`). | La clé de lecture de l'agent adossée à la graine du porteur, révocable depuis l'appareil. **Honnêtement** : `ring init` exige un Flex en USB, une fois — pas Speculos ; on l'a câblé et testé jusqu'au message « not initialized », pas au-delà. |
 
@@ -511,7 +512,7 @@ mcp/
 web/
   server.py · index.html      le banc, un état par compte : connexion (SIWE ou appareil), mon compte, chat, mandat, mes bots (ordonnanceur, un tour à la fois), escalade nommée, analyste du compte, 3 chemins de signature
   accounts.py                 les comptes : dossier par adresse, clé MCP dérivée (HMAC), profil, événements, sessions
-  schema.html                 qui fait quoi : les agents, les outils, les trois briques (/schema.html)
+  schema.html                 qui fait quoi : les agents, les outils, les briques Ledger (/schema.html)
   dist/ledger-web.js          le bundle navigateur (esbuild), servi par le banc ; proxy /speculos/* meme origine
   strategist.py               une phrase en français -> des bornes, par le CLI `claude`
 scripts/demo.sh               la version ligne de commande, en une commande (SIGNER=dmk|python)

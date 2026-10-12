@@ -101,7 +101,7 @@ const PATH_LABEL = { browser: 'my Ledger · this browser', dmk: 'Signer Kit · b
 function Funds({ s }: { s: BenchState }) {
   const { act } = useBench()
   const [busy, setBusy] = useState(false)
-  const [dep, setDep] = useState('0.5')
+  const [dep, setDep] = useState('0.3')
   const [wd, setWd] = useState('all')
   const waiting = !!s.signing || !!s.pending
   const eth = (wei: string) => `${(Number(wei || '0') / 1e18).toFixed(4)} ETH`
@@ -180,7 +180,7 @@ function Keys({ s }: { s: BenchState }) {
 
   const load = useCallback(async () => {
     if (!address) { setAccount(null); return }
-    try { setAccount(await getAccount(reveal)) } catch { /* the bench is down: the page says so elsewhere */ }
+    try { const a = await getAccount(reveal); if (a && a.ok !== false && a.profile) setAccount(a) } catch { /* the bench is down: the page says so elsewhere */ }
   }, [address, reveal])
   useEffect(() => { load() }, [load])
   useEffect(() => {
@@ -210,9 +210,9 @@ function Keys({ s }: { s: BenchState }) {
           <Kicker>The address, proven by your Ledger</Kicker>
           <p className="t-mono-data-lg m-0 break-all text-page-text">{address}</p>
           <dl className="kv mt-5">
-            <Kv k="Since" v={dateTime(account?.profile.created)} />
-            <Kv k="Sign-ins" v={account?.profile.logins ?? '·'} />
-            <Kv k="Last path" v={account?.profile.last_via ?? '·'} />
+            <Kv k="Since" v={dateTime(account?.profile?.created)} />
+            <Kv k="Sign-ins" v={account?.profile?.logins ?? '·'} />
+            <Kv k="Last path" v={account?.profile?.last_via ?? '·'} />
             <Kv k="Vault" v={s.vault ? short(s.vault, 10, 8) : 'not opened'} />
             <Kv k="Mandate" v={s.signed ? <span className="is-success">signed</span> : <span className="text-page-text-faint">to sign</span>} />
           </dl>
@@ -267,14 +267,14 @@ function History({ s }: { s: BenchState }) {
   useEffect(() => {
     if (!address) return
     let live = true
-    const load = async () => { try { const a = await getAccount(false); if (live) setAccount(a) } catch { /* said elsewhere */ } }
+    const load = async () => { try { const a = await getAccount(false); if (live && a && a.ok !== false && a.events) setAccount(a) } catch { /* said elsewhere */ } }
     load()
     const t = window.setInterval(load, 6000)
     return () => { live = false; window.clearInterval(t) }
   }, [address, s.journal.length, s.bots.length, s.signed])
   return (
     <>
-      {account?.events.length ? (
+      {account?.events?.length ? (
         <div className="data-scroll">
           <table className="data-table">
             <thead><tr><th>Time</th><th>Gesture</th><th>Detail</th></tr></thead>
@@ -298,7 +298,7 @@ function History({ s }: { s: BenchState }) {
           </table>
         </div>
       ) : account ? <p className="t-body-md m-0 text-page-text-mute">Nothing yet.</p> : <Skeleton rows={4} />}
-      {account && account.events.length > 60 && !all ? <div className="mt-4"><button type="button" className="btn-ghost btn-ghost--quiet btn-ghost--small t-button-cap" onClick={() => setAll(true)}>Show all {account.events.length} gestures</button></div> : null}
+      {account && (account.events?.length ?? 0) > 60 && !all ? <div className="mt-4"><button type="button" className="btn-ghost btn-ghost--quiet btn-ghost--small t-button-cap" onClick={() => setAll(true)}>Show all {account.events.length} gestures</button></div> : null}
       {s.log.length ? (
         <details className="mt-10">
           <summary className="t-kicker cursor-pointer text-page-text-faint">The bench’s log · {s.log.length} lines</summary>

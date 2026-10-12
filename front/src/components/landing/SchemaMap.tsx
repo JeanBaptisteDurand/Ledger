@@ -13,7 +13,7 @@ const H = 820
 const NODES: Node[] = [
   { id: 'ledger', x: 440, y: 20, w: 320, h: 124, tone: 'signer', kicker: 'The holder · Signer · four gestures, never a purchase', title: 'Ledger Flex', lines: ['1 · sign-in: the address + a SIWE message', '2 · deposit: one ETH transfer, signed', '3 · mandate, exception: EIP-712 in clear', '4 · withdrawal: an EIP-712 authorisation'] },
   { id: 'ring', x: 860, y: 20, w: 300, h: 104, tone: 'ring', kicker: 'Ring CLI · keep a secret', title: 'Ledger Key Ring', lines: ['seals the master secret', 'the MCP keys derive from', 'once, a Flex over USB'] },
-  { id: 'browser', x: 40, y: 190, w: 300, h: 104, tone: 'signer', kicker: 'In the client’s browser', title: 'Signer Kit · DMK', lines: ['WebHID (real Ledger) or Speculos', 'our descriptors, signed by us', 'the server never sees the device'] },
+  { id: 'browser', x: 40, y: 190, w: 300, h: 104, tone: 'signer', kicker: 'In the client’s browser · clear signing', title: 'Signer Kit · DMK', lines: ['WebHID (real Ledger) or Speculos', 'ERC-7730 descriptors, ours, test key', 'the server never sees the device'] },
   { id: 'bench', x: 440, y: 190, w: 320, h: 118, kicker: 'The site', title: 'Account · bots · scheduler', lines: ['an account = a proven address', 'named bots, one round at a time', 'out-of-bounds requests queued'] },
   { id: 'mcp', x: 860, y: 190, w: 300, h: 104, tone: 'agent', kicker: 'Agent Stack · read only', title: 'MCP · 10 tools', lines: ['bots · operations · decision', 'positions · vault_openness', 'hook_analysis · earn_yields'] },
   { id: 'bots', x: 40, y: 350, w: 300, h: 118, kicker: 'They act · no LLM', title: 'The bots', lines: ['agent.py: DCA on the v4 long tail', 'vaults.py: displayed yield', 'they never see the exit'] },

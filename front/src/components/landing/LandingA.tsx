@@ -241,7 +241,7 @@ export function LandingA() {
         </div>
       </Band>
 
-      <Band id="bricks" label="Three bricks, three roles">
+      <Band id="bricks" label="Four bricks, four roles">
         <Takeaway>{BRICKS.takeaway}</Takeaway>
         <Title className="max-w-[18ch]">{hotTitle(BRICKS.title)}</Title>
         <p data-lead className="t-body-lg mt-8 max-w-[52ch] text-pretty text-page-text-mute">{BRICKS.lead}</p>

@@ -105,11 +105,12 @@ export const FINDINGS = {
 }
 
 export const BRICKS = {
-  title: ['Three bricks, ', 'three roles.', ''] as HotTitle,
+  title: ['Four bricks, ', 'four roles.', ''] as HotTitle,
   takeaway: 'The one that acts has no LLM · the one with an LLM cannot act',
   lead: 'The one that acts has no LLM. The one with an LLM cannot act. The model never touches a key.',
   items: [
-    { name: 'Signer', version: 'Signer Kit 1.18.1 on DMK 1.9.1', role: 'approve', line: 'The rule is born on the device. The mandate and every exception go through the official kit, in the holder’s own browser.', without: 'Without it we lose everything. It is the trust.' },
+    { name: 'Signer', version: 'Signer Kit 1.18.1 on DMK 1.9.1', role: 'approve', line: 'The rule is born on the device. The sign-in, the deposit, the mandate, every exception and the withdrawal go through the official kit, in the holder’s own browser.', without: 'Without it we lose everything. It is the trust.' },
+    { name: 'Clear signing', version: 'ERC-7730 · app-ethereum 1.22.4, test key', role: 'read, not guess', line: 'Our descriptors for the mandate, the exception and the withdrawal, compiled and signed with the test key of the official app: the device shows the fields, and the kit reports isBlindSign=false. Verified on the emulated Flex and on a real one.', without: 'Without it the device shows a hex blob, and the registry answers 403 without a partner token.' },
     { name: 'Agent Stack', version: 'wallet-cli 2.1.0', role: 'read and understand', line: 'The real agent is an analyst wired only to a read only MCP. It cites the tool under every number and cannot act.', without: 'Without it we lose the real agent, and the reading of their Earn.' },
     { name: 'Ring', version: 'Ledger Key Ring Protocol', role: 'keep a secret', line: 'It seals the key that opens the data to the analyst, under the operator’s seed, revocable from the device.', without: 'Without it, a key in clear on the disk. In SaaS it is the brick we would remove.' },
   ],
