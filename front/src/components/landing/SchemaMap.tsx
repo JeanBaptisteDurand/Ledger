@@ -11,19 +11,19 @@ const W = 1200
 const H = 820
 
 const NODES: Node[] = [
-  { id: 'ledger', x: 440, y: 20, w: 320, h: 124, tone: 'signer', kicker: 'The holder · Signer · four gestures, never a purchase', title: 'Ledger Flex', lines: ['1 · sign-in: the address + a SIWE message', '2 · deposit: one ETH transfer, signed', '3 · mandate, exception: EIP-712 in clear', '4 · withdrawal: an EIP-712 authorisation'] },
-  { id: 'ring', x: 860, y: 20, w: 300, h: 104, tone: 'ring', kicker: 'Ring CLI · keep a secret', title: 'Ledger Key Ring', lines: ['seals the master secret', 'the MCP keys derive from', 'once, a Flex over USB'] },
-  { id: 'browser', x: 40, y: 190, w: 300, h: 104, tone: 'signer', kicker: 'In the client’s browser · clear signing', title: 'Signer Kit · DMK', lines: ['WebHID (real Ledger) or Speculos', 'ERC-7730 descriptors, ours, test key', 'the server never sees the device'] },
-  { id: 'bench', x: 440, y: 190, w: 320, h: 118, kicker: 'The site', title: 'Account · bots · scheduler', lines: ['an account = a proven address', 'named bots, one round at a time', 'out-of-bounds requests queued'] },
+  { id: 'ledger', x: 440, y: 20, w: 320, h: 124, tone: 'signer', kicker: 'The holder · Signer', title: 'Ledger Flex', lines: ['sign-in · SIWE message', 'deposit · one ETH transfer', 'mandate · exception · EIP-712', 'withdrawal · EIP-712 authorisation'] },
+  { id: 'ring', x: 860, y: 20, w: 300, h: 104, tone: 'ring', kicker: 'Ring CLI', title: 'Ledger Key Ring', lines: ['master secret, sealed', 'MCP keys derived from it', 'init: a Flex over USB, once'] },
+  { id: 'browser', x: 40, y: 190, w: 300, h: 104, tone: 'signer', kicker: 'In the browser · clear signing', title: 'Signer Kit · DMK', lines: ['WebHID or Speculos', 'ERC-7730 descriptors, test key', 'signature → /api/signed'] },
+  { id: 'bench', x: 440, y: 190, w: 320, h: 118, kicker: 'The server', title: 'Account · bots · scheduler', lines: ['account = proven address', 'bots, one round at a time', 'out-of-bounds requests, queued'] },
   { id: 'mcp', x: 860, y: 190, w: 300, h: 104, tone: 'agent', kicker: 'Agent Stack · read only', title: 'MCP · 10 tools', lines: ['bots · operations · decision', 'positions · vault_openness', 'hook_analysis · earn_yields'] },
-  { id: 'bots', x: 40, y: 350, w: 300, h: 118, kicker: 'They act · no LLM', title: 'The bots', lines: ['agent.py: DCA on the v4 long tail', 'vaults.py: displayed yield', 'they never see the exit'] },
-  { id: 'vault', x: 440, y: 420, w: 320, h: 118, kicker: 'The contract · Base fork', title: 'ExitVault', lines: ['mandate verified by ecrecover', 'buy(): purchase + resale, same tx', 'enterVault(): deposit + withdrawal'] },
-  { id: 'analyst', x: 860, y: 350, w: 300, h: 104, tone: 'agent', kicker: 'The real agent · Claude', title: 'The account’s analyst', lines: ['answers by the tools, cites all', 'signs, sends, stops nothing', 'one key per account, derived'] },
-  { id: 'tare', x: 40, y: 540, w: 300, h: 104, kicker: 'The measure', title: 'TARE · counterfactual', lines: ['hook → 89 inert bytes, quoted 2×', 'the gap = what the hook takes', 'watch.py: re-probes, exits in time'] },
-  { id: 'pools', x: 440, y: 580, w: 150, h: 104, kicker: 'Universe 1', title: 'Uniswap v4', lines: ['WETH long tail', 'six real traps', '0 → 9 990 bps'] },
-  { id: 'vaults', x: 610, y: 580, w: 150, h: 104, kicker: 'Universe 2', title: 'ERC-4626', lines: ['ten Morpho vaults', 'Moonwell: door', 'closed at 27 %'] },
-  { id: 'walletcli', x: 860, y: 540, w: 300, h: 104, tone: 'agent', kicker: 'Agent Stack · their tool', title: 'wallet-cli', lines: ['earn yields: yield, token,', 'deposit. Nothing on the exit', 'read by the analyst'] },
-  { id: 'journal', x: 440, y: 724, w: 320, h: 76, kicker: 'The memory', title: 'journal · events', lines: ['every decision carries its bot', 'every gesture of the holder'] },
+  { id: 'bots', x: 40, y: 350, w: 300, h: 118, kicker: 'Execution agents · no LLM', title: 'The bots', lines: ['agent.py · DCA, v4 pools', 'vaults.py · yield, ERC-4626', 'session key: the vault only'] },
+  { id: 'vault', x: 440, y: 420, w: 320, h: 118, kicker: 'The contract · Base fork', title: 'ExitVault', lines: ['verify mandate · ecrecover', 'buy(): swap + resale, same tx', 'enterVault(): deposit + redeem'] },
+  { id: 'analyst', x: 860, y: 350, w: 300, h: 104, tone: 'agent', kicker: 'Agent Stack · Claude', title: 'The analyst', lines: ['reads through the MCP tools', 'cites each tool it called', 'no signing, no sending'] },
+  { id: 'tare', x: 40, y: 540, w: 300, h: 104, kicker: 'The measure', title: 'TARE · counterfactual', lines: ['hook → 89 inert bytes', 'quoted twice: in, out', 'watch.py · re-probe, exit'] },
+  { id: 'pools', x: 440, y: 580, w: 150, h: 104, kicker: 'Universe 1', title: 'Uniswap v4', lines: ['WETH long tail', 'six traps', '0 → 9 990 bps'] },
+  { id: 'vaults', x: 610, y: 580, w: 150, h: 104, kicker: 'Universe 2', title: 'ERC-4626', lines: ['ten Morpho vaults', 'Moonwell door', '27 % closed'] },
+  { id: 'walletcli', x: 860, y: 540, w: 300, h: 104, tone: 'agent', kicker: 'Agent Stack · tool', title: 'wallet-cli', lines: ['earn yields', 'yield · token · deposit', 'no exit field'] },
+  { id: 'journal', x: 440, y: 724, w: 320, h: 90, kicker: 'The memory', title: 'journal · events', lines: ['decisions, per bot', 'holder gestures'] },
 ]
 
 const EDGES: Edge[] = [
@@ -44,6 +44,9 @@ const EDGES: Edge[] = [
   { from: 'pools', to: 'journal', via: 'v' },
   { from: 'vaults', to: 'journal', via: 'v' },
 ]
+
+/** A line never leaves its box: cut to what fits between the paddings, at `px` per glyph for the face it is set in. */
+const clip = (t: string, w: number, px: number) => { const max = Math.floor((w - 32) / px); return t.length > max ? t.slice(0, max - 1).trimEnd() + '…' : t }
 
 const byId = Object.fromEntries(NODES.map((n) => [n.id, n]))
 const cx = (n: Node) => n.x + n.w / 2
@@ -92,11 +95,18 @@ const TONE: Record<NonNullable<Node['tone']> | 'default', string> = {
  * happening now. An edge named "from>to" is drawn hot. `stamp` changes whenever the activity changes, so the hot
  * parts blink on again (the hero's pulse table, in CSS steps), never fade.
  */
+/**
+ * The colour code, one meaning each: `hot` is acting now (incandescent), `asks` waits for the holder on the Flex
+ * (gold), `ok` is signed or entered (green), `refused` is refused by the vault (red). A node the journey has not
+ * reached yet is dimmed and dashed; it rises in when reached. An edge is drawn along its length when both its
+ * ends are reached, and takes the colour of the thing travelling it when it is live.
+ */
 export type LiveTone = 'hot' | 'ok' | 'refused' | 'asks'
 export type MapSlot = { name: string; state: 'live' | 'running' | 'stopped' | 'done' }
 /** `hot` lights one of the node's lines (the Ledger's gesture in progress); `slots` draws the agents' places, filled as they come. */
 export type LiveNode = { tone?: LiveTone; lines?: string[]; hot?: number; slots?: MapSlot[] }
-export type MapLive = { nodes: Record<string, LiveNode>; edges: string[]; stamp: string }
+/** `reached`: the nodes the journey has touched so far. `liveTone`: the colour a live edge takes (default incandescent). */
+export type MapLive = { nodes: Record<string, LiveNode>; edges: string[]; reached?: Set<string>; liveTone?: LiveTone; stamp: string }
 
 /** A region of the map, in its own units, the live stage zooms to: the group is scaled and translated to fit it. */
 export type MapFocus = { x: number; y: number; w: number; h: number }
@@ -112,18 +122,29 @@ export function SchemaMap({ live, focus, fit = false }: { live?: MapLive; focus?
         <g className="map-view" style={{ transform: `translate(${tx}px, ${ty}px) scale(${k})`, transformOrigin: '0 0' }}>
         <title id="schema-map-title">Overview: the holder and their Ledger, the site, the bots, the contract, the TARE measure, the MCP, the analyst, the Key Ring</title>
         <g fill="none" stroke="var(--color-accent)" strokeWidth={1}>
-          {EDGES.map((e, i) => { const p = path(e); const hot = live?.edges.includes(`${e.from}>${e.to}`); return <path key={hot ? `${i}-${live!.stamp}` : i} d={p.d} className={hot ? 'map-edge is-live blink-in' : 'map-edge'} /> })}
+          {EDGES.map((e, i) => {
+            const p = path(e)
+            const hot = live?.edges.includes(`${e.from}>${e.to}`)
+            const drawn = !live?.reached || (live.reached.has(e.from) && live.reached.has(e.to))
+            return <path key={i} d={p.d} pathLength={1} className={`map-edge ${drawn ? 'is-drawn' : ''} ${hot ? `is-live tone-${live!.liveTone ?? 'hot'}` : ''}`} />
+          })}
         </g>
         <g fill="var(--color-accent)">
-          {EDGES.map((e, i) => { const p = path(e); const hot = live?.edges.includes(`${e.from}>${e.to}`); return <g key={i} className={hot ? 'map-dots is-live' : 'map-dots'}><circle cx={p.a[0]} cy={p.a[1]} r={hot ? 4 : 2.5} /><circle cx={p.b[0]} cy={p.b[1]} r={hot ? 4 : 2.5} /></g> })}
+          {EDGES.map((e, i) => {
+            const p = path(e)
+            const hot = live?.edges.includes(`${e.from}>${e.to}`)
+            const drawn = !live?.reached || (live.reached.has(e.from) && live.reached.has(e.to))
+            return <g key={i} className={`map-dots ${drawn ? 'is-drawn' : ''} ${hot ? `is-live tone-${live!.liveTone ?? 'hot'}` : ''}`}><circle cx={p.a[0]} cy={p.a[1]} r={hot ? 4 : 2.5} /><circle cx={p.b[0]} cy={p.b[1]} r={hot ? 4 : 2.5} /></g>
+          })}
         </g>
         {NODES.map((n) => {
           const l = live?.nodes[n.id]
           const lines = l?.lines ?? n.lines
+          const reached = !live?.reached || live.reached.has(n.id)
           return (
-            <g key={l?.tone || l?.hot != null ? `${n.id}-${live!.stamp}` : n.id} className={l?.tone ? `map-node is-${l.tone} blink-in` : l?.hot != null ? 'map-node blink-in' : 'map-node'} data-node={n.id}>
-              <rect x={n.x} y={n.y} width={n.w} height={n.h} rx={8} fill="var(--color-page-panel)" stroke={TONE[n.tone ?? 'default']} strokeWidth={1} />
-              <text x={n.x + 16} y={n.y + 20} fill="var(--color-page-text-faint)" style={{ fontFamily: 'var(--font-body)', fontSize: 10, letterSpacing: 0.9, textTransform: 'uppercase' }}>{n.kicker.toUpperCase()}</text>
+            <g key={n.id} className={`map-node ${reached ? 'is-reached' : 'is-ahead'} ${l?.tone ? `is-${l.tone}` : ''}`} data-node={n.id} style={{ transformOrigin: `${cx(n)}px ${cy(n)}px` }}>
+              <rect x={n.x} y={n.y} width={n.w} height={n.h} rx={8} fill="var(--color-page-panel)" stroke={TONE[n.tone ?? 'default']} strokeWidth={1} strokeDasharray={reached ? undefined : '4 4'} />
+              <text x={n.x + 16} y={n.y + 20} fill="var(--color-page-text-faint)" style={{ fontFamily: 'var(--font-body)', fontSize: 10, letterSpacing: 0.9, textTransform: 'uppercase' }}>{clip(n.kicker.toUpperCase(), n.w, 7.4)}</text>
               <text x={n.x + 16} y={n.y + 44} fill="var(--color-text-050)" style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase' }}>{n.title.toUpperCase()}</text>
               {l?.slots ? (
                 <g className="map-slots">
@@ -144,7 +165,7 @@ export function SchemaMap({ live, focus, fit = false }: { live?: MapLive; focus?
                   })}
                 </g>
               ) : lines.slice(0, 4).map((t, i) => (
-                <text key={i} x={n.x + 16} y={n.y + 64 + i * 16} fill={l?.hot === i ? 'var(--color-accent-incandescent)' : l?.hot != null ? 'var(--color-page-text-faint)' : l?.lines ? 'var(--color-text-050)' : 'var(--color-page-text-mute)'} style={{ fontFamily: 'var(--font-mono)', fontSize: 11.5, fontWeight: l?.hot === i ? 700 : 400 }}>{t}</text>
+                <text key={`${t}-${i}`} className={l?.lines || l?.hot != null ? 'map-line rise-in' : 'map-line'} x={n.x + 16} y={n.y + 64 + i * 16} fill={l?.hot === i ? 'var(--color-accent-incandescent)' : l?.hot != null ? 'var(--color-page-text-faint)' : l?.lines ? 'var(--color-text-050)' : 'var(--color-page-text-mute)'} style={{ fontFamily: 'var(--font-mono)', fontSize: 11.5, fontWeight: l?.hot === i ? 700 : 400 }}>{clip(t, n.w, 6.95)}</text>
               ))}
             </g>
           )

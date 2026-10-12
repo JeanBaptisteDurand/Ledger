@@ -1402,7 +1402,6 @@ footer { position: relative; }
 .cockpit__grid { display: grid; grid-template-columns: minmax(0, 4fr) minmax(300px, 4fr) minmax(0, 4fr); gap: 24px; align-items: start; }
 .cockpit__col--flex .device-frame { margin: 0 auto; }
 .cockpit__col--flex .device-frame img { max-width: 360px; }
-.measure--large .measure__exit { font-size: clamp(64px, 7vw, 112px); }
 .conductor { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--color-page-hairline); }
 .conductor__step { display: grid; grid-template-columns: 3ch minmax(0, 1fr) auto; gap: 8px 16px; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--color-page-hairline); }
 .conductor__index { color: var(--color-page-text-faint); }
@@ -1474,10 +1473,6 @@ footer { position: relative; }
 .live-stage__flex .device-frame { margin: 0 auto; padding: 10px; }
 .live-stage__flex .device-frame img { max-width: 200px; }
 .live-stage__flex .t-caption, .live-stage__flex .t-micro-cap { display: none; }
-.live-stage__body--cockpit { display: grid; grid-template-columns: minmax(0, 4fr) minmax(300px, 4fr) minmax(0, 4fr); gap: 20px; }
-.live-stage__col { min-height: 0; overflow: auto; }
-.live-stage__col--flex { display: flex; flex-direction: column; align-items: center; justify-content: center; }
-.live-stage__col--flex .device-frame img { max-width: min(380px, 36vh * 0.8); }
 .live-stage__strip { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding-top: 10px; border-top: 1px solid var(--color-page-hairline); min-height: 44px; }
 .live-stage__strip > p { flex: 0 1 46ch; text-align: right; }
 .measure-line { display: inline-flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
@@ -1492,7 +1487,7 @@ footer { position: relative; }
 .drawer__sum { color: var(--color-page-text-faint); text-transform: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .drawer__body { padding: 4px 14px 14px; overflow: auto; min-height: 0; }
 .steprow { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--color-page-hairline); }
-.steprow__label { font-family: var(--font-body); font-size: 15px; font-weight: 600; color: var(--color-page-text-mute); }
+.steprow__label { font-family: var(--font-body); font-size: 15px; font-weight: 600; color: var(--color-page-text-mute); min-width: 0; overflow-wrap: anywhere; }
 .steprow[data-state='live'] .steprow__label, .steprow[data-state='pending'] .steprow__label { color: var(--color-accent-incandescent); }
 .steprow[data-state='done'] .steprow__label { color: var(--color-page-text); }
 .steprow[data-state='ahead'] { opacity: 0.55; }
@@ -1502,12 +1497,163 @@ footer { position: relative; }
 .drawer .agents__form > :nth-child(4) { grid-column: 1 / -1; }
 .drawer .agents__row { padding: 8px 0; }
 .drawer .agents__name { font-size: 17px; }
-.live-stage__measure-panel .measure__exit { font-size: clamp(48px, 6vh, 96px); }
 @media (max-width: 1279px) {
   .live-stage { height: auto; }
-  .live-stage__body--map, .live-stage__body--cockpit { grid-template-columns: 1fr; }
-  .live-stage__map svg { height: auto; }
-  .live-stage__col--flex { order: -1; }
-  .acts { flex-wrap: wrap; }
+  .live-stage__body--map,   .live-stage__map svg { height: auto; }
+    .acts { flex-wrap: wrap; }
   .acts li { flex: 1 1 45%; }
 }
+
+/*
+ * ── The live map, revealed as the journey goes (2026-10-12, the author) ──
+ * The blink gave way to a reveal: a node the journey has not reached is dimmed and dashed, it rises in when
+ * reached; an edge is drawn along its length (pathLength 1) once both its ends are reached; a changed line
+ * rises in. One colour code on the whole stage: orange acts now, gold waits for the holder on the Flex (a slow
+ * pulse, the one continuous animation, stopped under reduced motion), green is signed or entered, red refused,
+ * grey not reached yet.
+ */
+.map-node { transition: opacity 600ms ease-out, transform 600ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+.map-node.is-ahead { opacity: 0.28; transform: scale(0.97); }
+.map-node.is-reached { opacity: 1; transform: scale(1); }
+.map-node rect { transition: stroke 400ms ease-out, stroke-width 400ms ease-out; }
+.map-node.is-hot rect { stroke: var(--color-accent-incandescent); stroke-width: 1.5; filter: drop-shadow(0 0 6px color-mix(in srgb, var(--color-sky-orange) 55%, transparent)); }
+.map-node.is-ok rect { stroke: var(--color-state-success); stroke-width: 1.5; filter: drop-shadow(0 0 6px color-mix(in srgb, var(--color-state-success) 45%, transparent)); }
+.map-node.is-refused rect { stroke: var(--color-state-error); stroke-width: 1.5; filter: drop-shadow(0 0 6px color-mix(in srgb, var(--color-state-error) 45%, transparent)); }
+.map-node.is-asks rect { stroke: var(--color-state-warning); stroke-width: 2; animation: asks-pulse 1.6s ease-in-out infinite; }
+@keyframes asks-pulse { 0%, 100% { filter: drop-shadow(0 0 4px color-mix(in srgb, var(--color-state-warning) 35%, transparent)); } 50% { filter: drop-shadow(0 0 14px color-mix(in srgb, var(--color-state-warning) 80%, transparent)); } }
+.map-edge { stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset 900ms cubic-bezier(0.2, 0.8, 0.2, 1) 200ms, stroke 400ms ease-out, stroke-width 400ms ease-out; }
+.map-edge.is-drawn { stroke-dashoffset: 0; }
+.map-edge.is-live { stroke-width: 2.5; }
+.map-edge.is-live.tone-hot { stroke: var(--color-accent-incandescent); }
+.map-edge.is-live.tone-asks { stroke: var(--color-state-warning); }
+.map-edge.is-live.tone-ok { stroke: var(--color-state-success); }
+.map-edge.is-live.tone-refused { stroke: var(--color-state-error); }
+.map-dots { opacity: 0; transition: opacity 300ms ease-out 900ms; }
+.map-dots.is-drawn { opacity: 1; }
+.map-dots.is-live.tone-hot { fill: var(--color-accent-incandescent); }
+.map-dots.is-live.tone-asks { fill: var(--color-state-warning); }
+.map-dots.is-live.tone-ok { fill: var(--color-state-success); }
+.map-dots.is-live.tone-refused { fill: var(--color-state-error); }
+@keyframes rise-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.rise-in { animation: rise-in 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+svg .map-line.rise-in { transform-box: fill-box; }
+@media (prefers-reduced-motion: reduce) { .map-node, .map-edge, .map-dots { transition: none; } .rise-in { animation: none; } .map-node.is-asks rect { animation: none; } .now__pulse { animation: none; } }
+
+/* The rail: a dot per phase in its colour, the pinned one underlined. */
+.acts__btn { grid-template-columns: auto auto minmax(0, 1fr); }
+.acts__dot { width: 9px; height: 9px; border-radius: 50%; background: var(--color-page-hairline-strong); align-self: center; }
+.acts__sum { grid-column: 3; }
+.acts li[data-state='live'] .acts__dot { background: var(--color-accent-incandescent); box-shadow: 0 0 8px color-mix(in srgb, var(--color-sky-orange) 55%, transparent); }
+.acts li[data-state='asks'] .acts__dot { background: var(--color-state-warning); animation: asks-dot 1.6s ease-in-out infinite; }
+.acts li[data-state='asks'] .acts__label, .acts li[data-state='asks'] .acts__index { color: var(--color-state-warning); }
+.acts li[data-state='done'] .acts__dot { background: var(--color-state-success); }
+.acts li[data-pinned] .acts__btn { border-bottom-color: var(--color-page-text-mute); }
+.acts li[data-state='live'][data-pinned] .acts__btn { border-bottom-color: var(--color-accent-incandescent); }
+.acts li[data-state='asks'][data-pinned] .acts__btn { border-bottom-color: var(--color-state-warning); }
+@keyframes asks-dot { 0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-state-warning) 60%, transparent); } 50% { box-shadow: 0 0 0 6px transparent; } }
+
+/* The NOW card. */
+.now { border: 1px solid var(--color-page-hairline-strong); border-left: 3px solid var(--color-accent-incandescent); border-radius: var(--radius-sm); padding: 12px 14px; background: color-mix(in srgb, var(--color-page-panel-raised) 88%, transparent); }
+.now__step { margin: 0; color: var(--color-accent-incandescent); }
+.now__title { margin: 4px 0 0; font-family: var(--font-body); font-size: 19px; font-weight: 600; letter-spacing: -0.015em; line-height: 1.2; color: var(--color-page-text); }
+.now__text { color: var(--color-page-text-mute); }
+.now__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 10px; }
+.now__next { color: var(--color-page-text-faint); }
+.now__wait { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; }
+.now__pulse { width: 9px; height: 9px; border-radius: 50%; background: currentColor; animation: asks-dot 1.6s ease-in-out infinite; }
+.btn-ghost--now { min-height: 46px; padding: 12px 22px; border-color: var(--color-accent-incandescent); color: var(--color-ink); background: var(--color-accent-incandescent); box-shadow: 0 0 22px color-mix(in srgb, var(--color-sky-orange) 35%, transparent); }
+.btn-ghost--now:hover { background: var(--color-text-050); border-color: var(--color-text-050); }
+.now[data-tone='asks'] { border-left-color: var(--color-state-warning); }
+.now[data-tone='asks'] .now__step, .now[data-tone='asks'] .now__wait { color: var(--color-state-warning); }
+.now[data-tone='working'] { border-left-color: var(--color-accent-incandescent); }
+.now[data-tone='working'] .now__wait { color: var(--color-accent-incandescent); }
+.now[data-tone='done'] { border-left-color: var(--color-state-success); }
+.now[data-tone='done'] .now__step { color: var(--color-state-success); }
+
+/* The step rows inside the drawers: a dot in the step's colour, a state word. */
+.steprow { grid-template-columns: auto minmax(0, 1fr) auto; display: grid; gap: 10px; }
+.steprow__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-page-hairline-strong); align-self: center; }
+.steprow__state { color: var(--color-page-text-faint); }
+.steprow[data-state='live'] .steprow__dot { background: var(--color-accent-incandescent); }
+.steprow[data-state='pending'] .steprow__dot { background: var(--color-accent-incandescent); animation: asks-dot 1.6s ease-in-out infinite; }
+.steprow[data-state='pending'] .steprow__state { color: var(--color-accent-incandescent); }
+.steprow[data-state='asks'] .steprow__dot { background: var(--color-state-warning); animation: asks-dot 1.6s ease-in-out infinite; }
+.steprow[data-state='asks'] .steprow__label, .steprow[data-state='asks'] .steprow__state { color: var(--color-state-warning); }
+.steprow[data-state='done'] .steprow__dot { background: var(--color-state-success); }
+.steprow[data-state='done'] .steprow__state { color: var(--color-state-success); }
+.steprow[data-state='done'] .steprow__label { color: var(--color-page-text); }
+.steprow[data-state='ahead'] { opacity: 0.6; }
+/* The drawers follow the same code: the open one in the phase's colour. */
+.live-stage[data-act] .drawer[data-open] { border-color: color-mix(in srgb, var(--color-accent-incandescent) 55%, transparent); }
+.live-stage__side { grid-template-rows: auto auto minmax(0, 1fr); }
+/* The side column at 900 px: the Flex a little smaller, the open drawer never shorter than its head, its body the only thing that scrolls. */
+.live-stage__flex .device-frame img { max-width: 168px; }
+.drawers { overflow: hidden; }
+.drawer[data-open] { min-height: 120px; overflow: hidden; }
+.drawer__head { flex: 0 0 auto; }
+/* The open drawer takes the room that is left, never more: the folded heads under it stay in view. */
+.drawer[data-open] { flex: 1 1 0; min-height: 96px; }
+/* A step with two outcomes puts them on their own line under the label: the label never gets squeezed. */
+.steprow:has(.steprow__actions > button + button) { grid-template-columns: auto minmax(0, 1fr); }
+.steprow:has(.steprow__actions > button + button) .steprow__actions { grid-column: 2; justify-content: flex-start; }
+
+/*
+ * ── TARE, the module, and the single drawer (2026-10-12, the author) ─────
+ * While a round runs, and for nine seconds after the decision, TARE opens beside the map: four steps lit in
+ * sequence, the exit figure counting up, the verdict in the stage's colour code. The side column keeps the NOW
+ * card, the Flex, and one drawer, the active phase's: the rail is where the others are.
+ */
+.live-stage__body--map.has-tare { grid-template-columns: minmax(0, 1fr) minmax(340px, 30%) clamp(300px, 26vw, 400px); }
+.tare { min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; border: 1px solid var(--color-page-hairline-strong); border-left: 3px solid var(--color-accent-incandescent); border-radius: var(--radius-sm); background: color-mix(in srgb, var(--color-page-panel-raised) 90%, transparent); animation: rise-in 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.tare[data-verdict='ok'] { border-left-color: var(--color-state-success); }
+.tare[data-verdict='refused'] { border-left-color: var(--color-state-error); }
+.tare[data-verdict='exception'] { border-left-color: var(--color-state-warning); }
+.tare__kicker { margin: 0; color: var(--color-accent-incandescent); }
+.tare__title { margin: 0; font-family: var(--font-body); font-size: 18px; font-weight: 600; letter-spacing: -0.015em; line-height: 1.2; color: var(--color-page-text); }
+.tare__steps { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; }
+.tare__step { position: relative; display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 0 12px; padding: 8px 0 10px; transition: opacity 400ms ease-out; }
+.tare__step::before { content: ''; position: absolute; left: 12px; top: 34px; bottom: -2px; width: 1px; background: var(--color-page-hairline-strong); transition: background 400ms ease-out; }
+.tare__step:last-child::before { display: none; }
+.tare__n { width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--color-page-hairline-strong); display: grid; place-items: center; font-family: var(--font-mono); font-size: 12px; color: var(--color-page-text-faint); background: var(--color-page-panel); transition: border-color 400ms ease-out, color 400ms ease-out, box-shadow 400ms ease-out; }
+.tare__body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.tare__step-title { font-family: var(--font-body); font-size: 15px; font-weight: 600; color: var(--color-page-text-mute); }
+.tare__line { color: var(--color-page-text-faint); overflow-wrap: anywhere; }
+.tare__detail { color: var(--color-page-text-faint); animation: rise-in 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.tare__step[data-state='ahead'] { opacity: 0.45; }
+.tare__step[data-state='live'] .tare__n { border-color: var(--color-accent-incandescent); color: var(--color-accent-incandescent); box-shadow: 0 0 10px color-mix(in srgb, var(--color-sky-orange) 55%, transparent); animation: asks-dot 1.6s ease-in-out infinite; }
+.tare__step[data-state='live'] .tare__step-title { color: var(--color-accent-incandescent); }
+.tare__step[data-state='live'] .tare__line, .tare__step[data-state='done'] .tare__line, .tare__step[data-state='verdict'] .tare__line { color: var(--color-page-text); }
+.tare__step[data-state='done'] .tare__n { border-color: var(--color-state-success); color: var(--color-state-success); }
+.tare__step[data-state='done']::before { background: var(--color-state-success); }
+.tare__step[data-state='done'] .tare__step-title { color: var(--color-page-text); }
+.tare__step[data-state='verdict'] .tare__step-title { color: var(--color-page-text); }
+.tare[data-verdict='ok'] .tare__step[data-state='verdict'] .tare__n { border-color: var(--color-state-success); color: var(--color-state-success); }
+.tare[data-verdict='refused'] .tare__step[data-state='verdict'] .tare__n { border-color: var(--color-state-error); color: var(--color-state-error); }
+.tare[data-verdict='exception'] .tare__step[data-state='verdict'] .tare__n { border-color: var(--color-state-warning); color: var(--color-state-warning); }
+.tare__figure { margin-top: auto; padding-top: 10px; border-top: 1px solid var(--color-page-hairline); }
+.tare__exit { font-size: clamp(44px, 5.4vh, 80px); line-height: 1; color: var(--color-accent-incandescent); }
+.tare[data-verdict='ok'] .tare__exit { color: var(--color-state-success); }
+.tare[data-verdict='refused'] .tare__exit { color: var(--color-state-error); }
+.tare[data-verdict='exception'] .tare__exit { color: var(--color-state-warning); }
+.tare[data-verdict='ok'] .exit-pair__rule { background: var(--color-state-success); }
+.tare[data-verdict='refused'] .exit-pair__rule { background: var(--color-state-error); }
+.tare[data-verdict='exception'] .exit-pair__rule { background: var(--color-state-warning); }
+.tare__verdict { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 8px; }
+@media (prefers-reduced-motion: reduce) { .tare, .tare__detail { animation: none; } .tare__step[data-state='live'] .tare__n { animation: none; } }
+@media (max-width: 1279px) { .live-stage__body--map.has-tare { grid-template-columns: 1fr; } }
+/* One drawer: it takes the room under the Flex, its head stays, its body scrolls. */
+.live-stage__side { grid-template-rows: auto auto minmax(0, 1fr); }
+.drawers { display: none; }
+.drawer[data-open] { flex: 1 1 auto; min-height: 0; }
+.drawer__head { cursor: default; }
+/* The figure first, under the title; a step's detail never runs past three lines. */
+.tare__figure { margin-top: 0; padding-top: 8px; padding-bottom: 8px; border-top: 0; border-bottom: 1px solid var(--color-page-hairline); }
+.tare__detail { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.tare__exit { font-size: clamp(40px, 4.8vh, 68px); }
+/* The panel fits 900 px: a detail is one line on a done step, three on the live one and the verdict. */
+.tare__step[data-state='done'] .tare__detail { -webkit-line-clamp: 1; }
+.tare__step { padding: 6px 0 8px; }
+.tare__exit { font-size: clamp(36px, 4.2vh, 56px); }
+.tare__title { font-size: 16px; }
+.tare__steps { gap: 0; }
+.tare__step .tare__line { font-size: 13px; }

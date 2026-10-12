@@ -1,9 +1,14 @@
 /**
  * The live stage: one screen, no scroll. A rail of four phases on top (setup · agents · request · watch and
- * analyst), the map or the cockpit's three columns in the middle, one strip at the bottom (TARE's last measure,
- * the one sentence that says what the system is doing). The phase follows the bench on its own: the active
- * phase's drawer is open, the others are folded to one line, and the map zooms to the region that acts. A click on
- * a phase pins it (Follow brings the auto back). Fullscreen for the projector. The recap stays under the stage.
+ * analyst), the map in the middle, the Flex and the drawers beside it, one strip at the bottom (TARE's last
+ * measure, the one sentence that says what the system is doing). Above the Flex, the NOW card: the step the
+ * journey is at, what to do, the one button that does it, and what comes after. The phase follows the bench on its
+ * own: the active drawer is open, the others fold to one line, the map zooms to the region that acts and reveals
+ * the nodes as the journey reaches them. A click on a phase pins it (Follow brings the auto back). Fullscreen for
+ * the projector. The recap stays under the stage.
+ *
+ * The colour code, everywhere on the stage: orange is acting now, gold waits for the holder on the Flex, green is
+ * signed or entered, red is refused, grey is not reached yet.
  */
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useBench } from '../../app/useBench'
@@ -12,12 +17,12 @@ import { Field } from '../../app/ui'
 import { fmtWei, short, type BenchState } from '../../app/api'
 import { linkProps } from '../../app/router'
 import { prefersReducedMotion } from '../../motion/flags'
-import { Badge, Kicker } from '../landing/primitives'
+import { Badge } from '../landing/primitives'
 import { SchemaMap, type MapFocus } from '../landing/SchemaMap'
 import { AnalystThread } from '../account/analyst'
-import { activity, Agents, Door, Funds, mapLive, Measure, STRATEGY, STRATEGY_IDEAS, useSteps, type Activity, type Phase } from './live'
+import { activity, Agents, Door, Funds, mapLive, Measure, rowOf, STRATEGY, STRATEGY_IDEAS, useSteps, type Activity, type Phase } from './live'
+import { TarePanel } from './Tare'
 
-export type StageMode = 'map' | 'cockpit'
 type Act = 'setup' | 'agents' | 'request' | 'watch'
 const ACTS: { id: Act; label: string; phases: Phase[] }[] = [
   { id: 'setup', label: 'Setup', phases: ['session', 'bounds', 'mandate'] },
@@ -25,9 +30,10 @@ const ACTS: { id: Act; label: string; phases: Phase[] }[] = [
   { id: 'request', label: 'Request', phases: ['request'] },
   { id: 'watch', label: 'Watch and analyst', phases: ['watch', 'analyst'] },
 ]
-const FOCUS: Record<Act, MapFocus> = {
+const FOCUS: Record<Act | 'tare', MapFocus> = {
   setup: { x: 20, y: 0, w: 760, h: 560 },
   agents: { x: 20, y: 330, w: 760, h: 490 },
+  tare: { x: 20, y: 330, w: 760, h: 380 },
   request: { x: 400, y: 0, w: 400, h: 560 },
   watch: { x: 20, y: 160, w: 1160, h: 500 },
 }
@@ -36,35 +42,54 @@ const actOf = (p: Phase): Act => ACTS.find((a) => a.phases.includes(p))!.id
 /** What the setup drawer needs from the stage: the holder's sentence, and the way to send it. */
 type Setup = { sentence: string; setSentence: (v: string) => void; ask: (text?: string) => Promise<void>; asking: boolean }
 
-export function Stage({ mode }: { mode: StageMode }) {
+export function Stage() {
   const [asking, setAsking] = useState(false)
   const [sentence, setSentence] = useState(STRATEGY)
   const { steps, a, s, ask } = useSteps({ asking, setAsking, sentence })
   const [pinned, setPinned] = useState<Act | null>(null)
   const stage = useRef<HTMLDivElement>(null)
+  const { act: benchAct } = useBench()
+  // TARE stays open a few seconds after a round ends, so the verdict is read before the phase moves on.
+  const running = !!s?.running
+  const [hold, setHold] = useState(false)
+  const wasRunning = useRef(false)
+  useEffect(() => {
+    if (wasRunning.current && !running) { setHold(true); const t = window.setTimeout(() => setHold(false), 12000); wasRunning.current = false; return () => window.clearTimeout(t) }
+    wasRunning.current = running
+  }, [running])
+  const [resetting, setResetting] = useState(false)
+  const startOver = async () => {
+    if (!window.confirm('Start the demo over? The mandate, the bots and the positions of this account are deleted. The bench keeps running.')) return
+    setResetting(true); setPinned(null)
+    await benchAct('/reset')
+    setResetting(false)
+  }
   const [full, setFull] = useState(false)
   useEffect(() => {
     const on = () => setFull(document.fullscreenElement === stage.current)
     document.addEventListener('fullscreenchange', on)
     return () => document.removeEventListener('fullscreenchange', on)
   }, [])
-  // Once a live mode is chosen the stage is what the presenter looks at: bring it into view, once.
-  useEffect(() => { stage.current?.scrollIntoView({ block: 'start', behavior: prefersReducedMotion() ? 'auto' : 'smooth' }) }, [mode])
+  // The stage is what the presenter looks at: bring it into view once, when the session opens.
+  const signedIn = !!s?.address
+  useEffect(() => { if (signedIn) stage.current?.scrollIntoView({ block: 'start', behavior: prefersReducedMotion() ? 'auto' : 'smooth' }) }, [signedIn])
   if (!s || !s.address) return <div ref={stage} className="live-stage live-stage--door"><Door /></div>
   const auto = actOf(a.phase)
   const act = pinned ?? auto
   const live = mapLive(s, a)
+  const tare = (act === 'agents' && (running || !!a.lastRow)) || (hold && !pinned)
   const setup: Setup = { sentence, setSentence, ask, asking }
   const toggleFull = () => { if (document.fullscreenElement) document.exitFullscreen(); else stage.current?.requestFullscreen?.() }
   return (
-    <div ref={stage} className={`live-stage ${full ? 'is-full' : ''}`} data-mode={mode} data-act={act}>
+    <div ref={stage} className={`live-stage ${full ? 'is-full' : ''}`} data-act={act}>
       <div className="live-stage__rail">
         <ol className="acts" aria-label="Phases">
           {ACTS.map((x, i) => {
-            const state = x.id === act ? 'live' : ACTS.findIndex((y) => y.id === auto) > i ? 'done' : 'ahead'
+            const state = x.id === auto ? (a.signing ? 'asks' : 'live') : ACTS.findIndex((y) => y.id === auto) > i ? 'done' : 'ahead'
             return (
-              <li key={x.id} data-state={state}>
+              <li key={x.id} data-state={state} data-pinned={x.id === act || undefined}>
                 <button type="button" className="acts__btn" aria-current={x.id === act ? 'step' : undefined} onClick={() => setPinned(x.id === auto ? null : x.id)}>
+                  <span className="acts__dot" aria-hidden />
                   <span className="t-kicker acts__index">{String(i + 1).padStart(2, '0')}</span>
                   <span className="acts__label">{x.label}</span>
                   <span className="t-kicker acts__sum">{summary(x.id, s)}</span>
@@ -74,37 +99,24 @@ export function Stage({ mode }: { mode: StageMode }) {
           })}
         </ol>
         <div className="live-stage__tools">
+          <button type="button" className="btn-ghost btn-ghost--quiet btn-ghost--small t-button-cap" onClick={startOver} disabled={resetting || !!s.signing}>{resetting ? 'Resetting…' : 'Start over'}</button>
           {pinned ? <button type="button" className="btn-ghost btn-ghost--quiet btn-ghost--small t-button-cap" onClick={() => setPinned(null)}>Follow</button> : <span className="t-kicker text-page-text-faint">following the bench</span>}
           <button type="button" className="btn-ghost btn-ghost--quiet btn-ghost--small t-button-cap" onClick={toggleFull}>{full ? 'Exit fullscreen' : 'Fullscreen'}</button>
         </div>
       </div>
 
-      {mode === 'map' ? (
-        <div className="live-stage__body live-stage__body--map">
-          <div className="live-stage__map"><SchemaMap live={live} focus={FOCUS[act]} fit /></div>
-          <div className="live-stage__side">
-            <div className="live-stage__flex"><LiveScreen live={s.speculos} signing={s.signing} real={false} /></div>
-            <Drawers act={act} s={s} a={a} steps={steps} setup={setup} onOpen={(x) => setPinned(x === auto ? null : x)} />
-          </div>
+      <div className={`live-stage__body live-stage__body--map ${tare ? 'has-tare' : ''}`}>
+        <div className="live-stage__map"><SchemaMap live={live} focus={tare ? FOCUS.tare : FOCUS[act]} fit /></div>
+        {tare ? <TarePanel s={s} row={s.escalation?.possible ? (rowOf(s, s.escalation) ?? a.lastRow) : a.lastRow} running={running} /> : null}
+        <div className="live-stage__side">
+          <Now steps={steps} a={a} s={s} />
+          <div className="live-stage__flex"><LiveScreen live={s.speculos} signing={s.signing} real={false} /></div>
+          <Drawer act={act} s={s} a={a} steps={steps} setup={setup} />
         </div>
-      ) : (
-        <div className="live-stage__body live-stage__body--cockpit">
-          <div className="live-stage__col">
-            <Drawers act={act} s={s} a={a} steps={steps} setup={setup} onOpen={(x) => setPinned(x === auto ? null : x)} />
-          </div>
-          <div className="live-stage__col live-stage__col--flex">
-            <LiveScreen live={s.speculos} signing={s.signing} real={false} />
-          </div>
-          <div className="live-stage__col">
-            <div className="panel panel--lift-2 live-stage__measure-panel"><Measure s={s} a={a} /></div>
-            <div className="panel panel--lift-2 mt-4"><Agents s={s} /></div>
-            <div className="panel panel--lift-2 mt-4"><Kicker>The analyst · read only</Kicker><AnalystThread s={s} compact /></div>
-          </div>
-        </div>
-      )}
+      </div>
 
       <div className="live-stage__strip">
-        {mode === 'map' ? <MeasureLine s={s} a={a} /> : <span className="t-kicker text-page-text-faint">{s.journal.length} decisions · {s.positions.length} positions · {(s.escalation?.possible ? 1 : 0) + s.escalation_queue.length} requests waiting</span>}
+        <MeasureLine s={s} a={a} />
         <p className={`t-body-md m-0 text-pretty ${a.signing ? 'text-hot' : 'text-page-text'}`} aria-live="polite">{a.now}</p>
       </div>
     </div>
@@ -119,36 +131,62 @@ function summary(act: Act, s: BenchState): string {
   return `${s.positions.length} positions${s.watch ? ' · probed' : ''}${s.analyses.length ? ' · analyst answered' : ''}`
 }
 
-/** The four drawers: the active one open, the others one line. Clicking a folded one opens it (pins it). */
-function Drawers({ act, s, a, steps, setup, onOpen }: { act: Act; s: BenchState; a: Activity; steps: ReturnType<typeof useSteps>['steps']; setup: Setup; onOpen: (x: Act) => void }) {
+/** The active phase's drawer, alone: the rail above is where the other phases are. Its body is the one thing that scrolls. */
+function Drawer({ act, s, a, steps, setup }: { act: Act; s: BenchState; a: Activity; steps: ReturnType<typeof useSteps>['steps']; setup: Setup }) {
+  const x = ACTS.find((y) => y.id === act)!
+  const body = useRef<HTMLDivElement>(null)
+  useEffect(() => { body.current?.scrollTo({ top: 0 }) }, [act])
   return (
-    <div className="drawers">
-      {ACTS.map((x) => {
-        const open = x.id === act
-        return (
-          <section key={x.id} className="drawer" data-open={open || undefined} aria-label={x.label}>
-            <button type="button" className="drawer__head" aria-expanded={open} onClick={() => onOpen(x.id)}>
-              <span className="drawer__title">{x.label}</span>
-              <span className="t-kicker drawer__sum">{summary(x.id, s)}</span>
-            </button>
-            {open ? <div className="drawer__body">{x.id === 'setup' ? <SetupDrawer s={s} steps={steps} setup={setup} /> : x.id === 'agents' ? <AgentsDrawer s={s} a={a} steps={steps} /> : x.id === 'request' ? <RequestDrawer s={s} steps={steps} /> : <WatchDrawer s={s} steps={steps} />}</div> : null}
-          </section>
-        )
-      })}
-    </div>
+    <section className="drawer" data-open aria-label={x.label}>
+      <div className="drawer__head">
+        <span className="drawer__title">{x.label}</span>
+        <span className="t-kicker drawer__sum">{summary(x.id, s)}</span>
+      </div>
+      <div ref={body} className="drawer__body">{x.id === 'setup' ? <SetupDrawer s={s} steps={steps} setup={setup} /> : x.id === 'agents' ? <AgentsDrawer s={s} a={a} steps={steps} /> : x.id === 'request' ? <RequestDrawer s={s} steps={steps} /> : <WatchDrawer s={s} steps={steps} />}</div>
+    </section>
   )
 }
 
 type Steps = ReturnType<typeof useSteps>['steps']
 const step = (steps: Steps, id: Phase) => steps.find((x) => x.id === id)!
+const ORDER: Phase[] = ['session', 'bounds', 'mandate', 'agents', 'request', 'watch', 'analyst']
+
+/**
+ * The NOW card: the step the journey is at, in its colour, what to do and the one button that does it. While the
+ * Flex waits for the holder it turns gold and says the gesture. Under it, in one line, what comes next.
+ */
+function Now({ steps, a, s }: { steps: Steps; a: Activity; s: BenchState }) {
+  const cur = step(steps, a.phase)
+  const i = ORDER.indexOf(a.phase)
+  const next = ORDER.slice(i + 1).map((id) => step(steps, id)).find((x) => x.state !== 'done')
+  const tone = a.signing ? 'asks' : cur.state === 'pending' ? 'working' : cur.state === 'done' ? 'done' : 'live'
+  const gesture = s.signing === 'mandate' ? 'Read the three bounds, swipe to the end, hold to sign.' : s.signing === 'exception' ? 'Read the exit cost, then hold to sign, or reject.' : s.signing === 'deposit' ? 'Read the amount and the vault’s address, hold to sign.' : 'Read the authorisation, hold to sign.'
+  return (
+    <div className="now" data-tone={tone} aria-live="polite">
+      <p className="t-kicker now__step">Step {i + 1} of {ORDER.length} · {tone === 'asks' ? 'on the Flex' : tone === 'working' ? 'working' : tone === 'done' ? 'done' : 'your move'}</p>
+      <p className="now__title">{cur.label}</p>
+      <p className="t-body-md m-0 mt-1 text-pretty now__text">{tone === 'asks' ? gesture : a.now}</p>
+      <div className="now__actions">
+        {tone === 'asks' ? <span className="now__wait"><span className="now__pulse" aria-hidden />waiting for your signature</span> : null}
+        {tone === 'working' ? <span className="now__wait"><span className="now__pulse" aria-hidden />{cur.id === 'agents' ? 'the bot chooses, TARE measures' : cur.id === 'bounds' ? 'the strategist thinks' : cur.id === 'watch' ? 'TARE re-probes' : 'the analyst queries the tools'}</span> : null}
+        {cur.action && tone !== 'asks' ? <button type="button" className="btn-ghost btn-ghost--now t-button-cap" onClick={cur.action}>{cur.actionLabel}</button> : null}
+        {cur.second && tone !== 'asks' ? <button type="button" className="btn-ghost btn-ghost--quiet btn-ghost--small t-button-cap" onClick={cur.second}>{cur.secondLabel}</button> : null}
+      </div>
+      {next ? <p className="t-caption m-0 mt-2 now__next">Then: {next.label.toLowerCase()}{next.id === 'request' && !s.escalation?.possible ? ' (if a bot meets a position the mandate refuses)' : ''}</p> : tone === 'done' ? <p className="t-caption m-0 mt-2 now__next">The journey is complete. Add another bot, or re-probe.</p> : null}
+    </div>
+  )
+}
 
 function StepRow({ st }: { st: Steps[number] }) {
+  const onFlex = st.state === 'pending' && (st.id === 'mandate' || st.id === 'request')
   return (
-    <div className="steprow" data-state={st.state}>
+    <div className="steprow" data-state={onFlex ? 'asks' : st.state}>
+      <span className="steprow__dot" aria-hidden />
       <span className="steprow__label">{st.label}</span>
       <span className="steprow__actions">
-        {st.state === 'pending' ? <span className="t-kicker text-hot">{st.id === 'mandate' || st.id === 'request' ? 'on the Flex' : 'working…'}</span> : null}
-        {st.state === 'done' ? <span className="t-kicker text-page-text-faint">done</span> : null}
+        {st.state === 'pending' ? <span className="t-kicker steprow__state">{onFlex ? 'on the Flex' : 'working…'}</span> : null}
+        {st.state === 'done' ? <span className="t-kicker steprow__state">done</span> : null}
+        {st.state === 'ahead' ? <span className="t-kicker steprow__state">later</span> : null}
         {st.action ? <button type="button" className={`btn-ghost btn-ghost--small t-button-cap ${st.id === 'mandate' || st.id === 'request' ? 'btn-ghost--hot' : ''}`} onClick={st.action}>{st.actionLabel}</button> : null}
         {st.second ? <button type="button" className="btn-ghost btn-ghost--quiet btn-ghost--small t-button-cap" onClick={st.second}>{st.secondLabel}</button> : null}
       </span>

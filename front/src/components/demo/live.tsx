@@ -16,6 +16,11 @@ export const STRATEGY = '0.5 WETH cautiously on the long tail of Base, I do not 
 export const STRATEGY_IDEAS = [STRATEGY, '1 WETH, aggressive profile, 10 slices', '0.5 WETH on yield vaults, cautiously']
 export const QUESTION = 'Which of my bots was refused, and why?'
 
+/** The journal keeps a 12-character prefix of a pool id or a vault address; a request carries the full one. Match on the prefix, or on the name. */
+export const sameId = (rowPool: string, fullId: string) => fullId.toLowerCase().startsWith(rowPool.toLowerCase()) || rowPool.toLowerCase().startsWith(fullId.toLowerCase().slice(0, 12))
+export const rowOf = (s: BenchState, e: { pool_id: string; name?: string } | null | undefined): JournalRow | null =>
+  e ? (s.journal.slice().reverse().find((x) => sameId(x.pool, e.pool_id) || (!!e.name && x.name === e.name)) ?? null) : null
+
 /* ─── what is happening, read off the state ─── */
 
 export type Phase = 'session' | 'bounds' | 'mandate' | 'agents' | 'request' | 'watch' | 'analyst'
@@ -33,27 +38,38 @@ export function activity(s: BenchState, local: { asking: boolean }): Activity {
     // The four gestures of the Ledger: the deposit and the withdrawal belong to the setup, the mandate and the exception have their own phase.
     const what = s.signing === 'mandate' ? 'the mandate' : s.signing === 'exception' ? 'the exception, with the number' : s.signing === 'deposit' ? 'the deposit, one ETH transfer to your vault' : 'the withdrawal authorisation'
     const phase: Phase = s.signing === 'mandate' ? 'mandate' : s.signing === 'exception' ? 'request' : 'session'
-    return { phase, now: `The Flex is waiting for you: ${what}. Read, swipe, hold to sign.`, signing: true, lastRow }
+    return { phase, now: `On the Flex: ${what}. Read, swipe, hold to sign.`, signing: true, lastRow }
   }
-  if (s.analysis?.pending) return { phase: 'analyst', now: 'The analyst is querying the MCP tools, read only.', signing: false, lastRow }
-  if (s.watching) return { phase: 'watch', now: 'TARE re-probes every held position. The exit is measured again, now.', signing: false, lastRow }
-  if (s.running) return { phase: 'agents', now: `Bot “${s.bots.find((b) => b.id === s.bot_running)?.name ?? 'round'}” is choosing. TARE measures, the vault decides.`, signing: false, lastRow }
-  if (s.escalation?.possible) return { phase: 'request', now: `Out of bounds: ${s.escalation.seen_exit_bps} bps to leave, the mandate allows ${s.escalation.mandate_allows_bps}. Your call, on the Flex.`, signing: false, lastRow }
-  if (local.asking) return { phase: 'bounds', now: 'The strategist turns your sentence into bounds. It buys nothing.', signing: false, lastRow }
-  if (!s.vault) return { phase: 'session', now: 'No vault yet. Open the session: a Base fork, the emulated Flex, a vault in your name.', signing: false, lastRow }
-  if (!s.proposal && !s.signed) return { phase: 'bounds', now: 'Say what you want in one sentence. Three numbers will travel to the Flex.', signing: false, lastRow }
-  if (!s.signed) return { phase: 'mandate', now: 'The bounds are ready. Sign them once on the Flex.', signing: false, lastRow }
-  if (s.positions.length && !s.watch) return { phase: 'watch', now: 'Positions held. Re-probe them: a door can close after the purchase.', signing: false, lastRow }
-  if (s.journal.length && !s.analyses.length) return { phase: 'analyst', now: 'Ask the analyst why. It cites the tool behind every number.', signing: false, lastRow }
-  return { phase: 'agents', now: 'The mandate holds. Add a bot, or run one round: the contract decides.', signing: false, lastRow }
+  if (s.analysis?.pending) return { phase: 'analyst', now: 'The analyst queries the MCP tools.', signing: false, lastRow }
+  if (s.watching) return { phase: 'watch', now: 'TARE re-probes every held position.', signing: false, lastRow }
+  if (s.running) return { phase: 'agents', now: `Bot “${s.bots.find((b) => b.id === s.bot_running)?.name ?? 'round'}” chooses. TARE measures, the vault decides.`, signing: false, lastRow }
+  if (s.escalation?.possible) return { phase: 'request', now: `${s.escalation.seen_exit_bps} bps to leave, the mandate allows ${s.escalation.mandate_allows_bps}. Sign on the Flex, or leave refused.`, signing: false, lastRow }
+  if (local.asking) return { phase: 'bounds', now: 'The strategist proposes bounds.', signing: false, lastRow }
+  if (!s.vault) return { phase: 'session', now: 'Open the session: the Base fork, the emulated Flex, a vault in your name.', signing: false, lastRow }
+  if (!s.proposal && !s.signed) return { phase: 'bounds', now: 'One sentence in, three bounds out.', signing: false, lastRow }
+  if (!s.signed) return { phase: 'mandate', now: 'Sign the bounds on the Flex, once.', signing: false, lastRow }
+  if (s.positions.length && !s.watch) return { phase: 'watch', now: 'Re-probe the held positions.', signing: false, lastRow }
+  if (s.journal.length && !s.analyses.length) return { phase: 'analyst', now: 'Ask the analyst why.', signing: false, lastRow }
+  return { phase: 'agents', now: 'Add a bot, or run one round.', signing: false, lastRow }
 }
 
-/** The map, lit from the state: which nodes are live, which edges are hot, and what each node says now. */
+/**
+ * The map, drawn from the state: which nodes the journey has reached (they rise in, the edges between them are
+ * drawn), which are live and in what colour, and what each node says now.
+ */
 export function mapLive(s: BenchState, a: Activity): MapLive {
   const nodes: MapLive['nodes'] = {}
   const edges: string[] = []
+  let liveTone: MapLive['liveTone'] = 'hot'
+  // Reached, cumulatively: the signer and the site at sign-in, the vault once the session is open, the agents'
+  // side once a bot exists or a round ran, the reading side once the analyst was asked. The Key Ring and
+  // wallet-cli come with the MCP: they are the operator's and the analyst's, not a step of the holder's.
+  const reached = new Set<string>(['ledger', 'browser', 'bench'])
+  if (s.vault) reached.add('vault')
+  if (s.bots.length || s.journal.length) { reached.add('bots'); reached.add('tare'); reached.add('pools'); reached.add('vaults'); reached.add('journal') }
+  if (s.analyses.length || s.analysis?.pending) { reached.add('mcp'); reached.add('analyst'); reached.add('walletcli'); reached.add('ring') }
   const m = s.mandate
-  const mandateLines = m ? [`budget ${Number(m.mandate.budgetAmount) / 1e18} WETH · ${m.mandate.maxRoundTripLossBps} bps`, `expires ${new Date(m.mandate.expiry * 1000).toISOString().slice(0, 10)}`, 'signed once, read in clear'] : undefined
+  const mandateLines = m ? [`budget ${Number(m.mandate.budgetAmount) / 1e18} WETH · ${m.mandate.maxRoundTripLossBps} bps`, `expires ${new Date(m.mandate.expiry * 1000).toISOString().slice(0, 10)}`, 'signed'] : undefined
   const r = a.lastRow
   const tareLines = r ? [`${r.name ?? r.pool.slice(0, 12)}`, r.kind === 'vault' ? `door ${r.stuck_bps ?? r.exit ?? '·'} bps` : `hook in ${r.hook_in ?? r.entry} · out ${r.hook_out ?? r.exit ?? '·'} bps`, r.decision === 'EXECUTED' ? 'entered' : `refused: ${r.why.slice(0, 22)}`] : undefined
   const bots = s.bots.filter((b) => b.status === 'running')
@@ -63,33 +79,38 @@ export function mapLive(s: BenchState, a: Activity): MapLive {
   if (mandateLines) nodes.vault = { lines: mandateLines }
   if (tareLines) nodes.tare = { lines: tareLines }
   nodes.pools = { lines: [`${s.positions.filter((p) => p.kind === 'pool').length} held`, `${s.journal.filter((x) => x.kind === 'pool' && x.decision !== 'EXECUTED').length} refused`, '0 → 9 990 bps'] }
-  nodes.vaults = { lines: [`${s.positions.filter((p) => p.kind === 'vault').length} held`, `${s.journal.filter((x) => x.kind === 'vault' && x.decision !== 'EXECUTED').length} refused`, 'Moonwell: 27 % closed'] }
+  nodes.vaults = { lines: [`${s.positions.filter((p) => p.kind === 'vault').length} held`, `${s.journal.filter((x) => x.kind === 'vault' && x.decision !== 'EXECUTED').length} refused`, '27 % closed'] }
   switch (a.phase) {
     case 'session':
       nodes.bench = { ...nodes.bench, tone: 'hot' }
       if (s.signing === 'deposit' || s.signing === 'withdraw') {
         // The second and fourth gestures of the Ledger: the deposit (a transaction) and the withdrawal (an EIP-712 authorisation).
         nodes.ledger = { tone: 'asks', hot: s.signing === 'deposit' ? 1 : 3 }
+        liveTone = 'asks'
         edges.push(s.signer === 'browser' ? 'ledger>browser' : 'ledger>bench', 'bench>vault')
       }
       break
-    case 'bounds': nodes.bench = { ...nodes.bench, tone: 'hot', lines: ['the strategist, once', 'a sentence → three bounds', 'it buys nothing'] }; break
+    case 'bounds': nodes.bench = { ...nodes.bench, tone: 'hot', lines: ['strategist', 'sentence → three bounds', 'proposal pending'] }; break
     case 'mandate':
-      nodes.ledger = { tone: a.signing ? 'asks' : 'hot', lines: a.signing ? ['REVIEW TYPED MESSAGE', 'BUDGET · MAX LOSS · EXPIRES', 'hold to sign'] : ['the mandate is ready', 'three numbers, read in clear', 'sign once'] }
+      nodes.ledger = { tone: a.signing ? 'asks' : 'hot', lines: a.signing ? ['REVIEW TYPED MESSAGE', 'BUDGET · MAX LOSS · EXPIRES', 'hold to sign'] : ['mandate ready', 'budget · max loss · expiry', 'sign once'] }
+      if (a.signing) liveTone = 'asks'
       edges.push(s.signer === 'browser' ? 'ledger>browser' : 'ledger>bench', 'bench>vault'); break
     case 'agents':
       nodes.bots = { ...nodes.bots, tone: 'hot' }
-      if (s.running) { nodes.tare = { ...nodes.tare, tone: 'hot' }; nodes.vault = { ...nodes.vault, tone: r ? (r.decision === 'EXECUTED' ? 'ok' : 'refused') : 'hot' }; edges.push('bench>bots', 'bots>tare', 'bots>vault', 'tare>pools', 'vault>pools', 'vault>vaults') }
+      if (s.signed) nodes.ledger = { tone: 'ok', lines: ['mandate signed', 'idle'] }
+      if (s.running) { nodes.tare = { ...nodes.tare, tone: 'hot' }; nodes.vault = { ...nodes.vault, tone: 'hot' }; edges.push('bench>bots', 'bots>tare', 'bots>vault', 'tare>pools', 'vault>pools', 'vault>vaults') }
+      else if (r) { nodes.vault = { ...nodes.vault, tone: r.decision === 'EXECUTED' ? 'ok' : 'refused' }; liveTone = r.decision === 'EXECUTED' ? 'ok' : 'refused'; edges.push('bots>vault', r.kind === 'vault' ? 'vault>vaults' : 'vault>pools') }
       break
     case 'request':
-      nodes.vault = { ...nodes.vault, tone: 'refused', lines: [`exit ${s.escalation?.seen_exit_bps ?? '·'} bps measured`, `mandate allows ${s.escalation?.mandate_allows_bps ?? '·'}`, 'CannotExit → back to you'] }
-      nodes.ledger = { tone: 'asks', lines: a.signing ? ['EXIT COST (BPS)', String(s.escalation?.seen_exit_bps ?? ''), 'hold to sign, or reject'] : ['out-of-bounds request', 'read and sign, or leave refused', `${s.escalation_queue.length} more waiting`] }
+      nodes.vault = { ...nodes.vault, tone: 'refused', lines: [`exit ${s.escalation?.seen_exit_bps ?? '·'} bps measured`, `mandate allows ${s.escalation?.mandate_allows_bps ?? '·'}`, 'CannotExit → request'] }
+      nodes.ledger = { tone: 'asks', lines: a.signing ? ['EXIT COST (BPS)', String(s.escalation?.seen_exit_bps ?? ''), 'hold to sign · reject'] : ['out-of-bounds request', 'read and sign · leave refused', `${s.escalation_queue.length} more waiting`] }
+      liveTone = 'asks'
       edges.push('bench>vault', s.signer === 'browser' ? 'ledger>browser' : 'ledger>bench'); break
-    case 'watch': nodes.tare = { ...nodes.tare, tone: 'hot', lines: s.watching ? ['re-probing every position', 'the exit, measured now', 'exits while it still can'] : nodes.tare?.lines }; edges.push('tare>pools', 'bots>tare'); break
-    case 'analyst': nodes.mcp = { tone: 'hot', lines: s.analysis?.pending ? ['querying…', 'ten tools, read only', 'your key, your data'] : undefined }; nodes.analyst = { tone: 'hot', lines: s.analyses.length && !s.analysis?.pending ? ['answered, tools cited', s.analyses[s.analyses.length - 1].tools_used.map((t) => t.tool).join(' · ').slice(0, 36) || 'no tool called', 'cannot sign, send, stop'] : undefined }; edges.push('bench>mcp', 'mcp>analyst', 'walletcli>analyst'); break
+    case 'watch': nodes.tare = { ...nodes.tare, tone: 'hot', lines: s.watching ? ['re-probing positions', 'exit measured now', 'exit if worse'] : nodes.tare?.lines }; edges.push('tare>pools', 'bots>tare'); break
+    case 'analyst': nodes.mcp = { tone: 'hot', lines: s.analysis?.pending ? ['querying', '10 tools, read only', 'account key'] : undefined }; nodes.analyst = { tone: 'hot', lines: s.analyses.length && !s.analysis?.pending ? ['answered', s.analyses[s.analyses.length - 1].tools_used.map((t) => t.tool).join(' · ') || 'no tool called', 'read only'] : undefined }; edges.push('bench>mcp', 'mcp>analyst', 'walletcli>analyst'); break
   }
   const stamp = `${a.phase}-${s.signing ?? ''}-${s.running}-${s.watching}-${s.analysis?.pending}-${s.journal.length}-${s.escalation?.pool_id ?? ''}-${s.bots.length}`
-  return { nodes, edges, stamp }
+  return { nodes, edges, reached, liveTone, stamp }
 }
 
 /* ─── the door: one click on the bench Flex ─── */
@@ -138,10 +159,10 @@ export function useSteps(local: StepsLocal): { steps: StepDef[]; a: Activity; s:
   const steps: StepDef[] = [
     { id: 'session', label: 'Open the session', hint: 'a Base fork, the emulated Flex, a vault in your name', state: s.vault ? 'done' : 'live', action: s.vault ? undefined : () => act('/boot'), actionLabel: 'Open' },
     { id: 'bounds', label: 'Ask for bounds', hint: local.sentence?.trim() || STRATEGY, state: s.signed || s.proposal ? 'done' : s.vault ? (local.asking ? 'pending' : 'live') : 'ahead', action: s.vault && !s.signed && !local.asking ? () => ask() : undefined, actionLabel: s.proposal ? 'Ask again' : 'Ask' },
-    { id: 'mandate', label: 'Sign the mandate on the Flex', hint: 'budget, max round-trip loss, expiry: read, then hold to sign', state: s.signed ? 'done' : s.signing === 'mandate' ? 'pending' : s.proposal ? 'live' : 'ahead', action: s.proposal && !s.signed && !s.signing ? () => act('/sign_mandate') : undefined, actionLabel: 'Sign on Ledger' },
-    { id: 'agents', label: 'Let the agents in', hint: 'add a bot, or run one round: TARE measures, the vault decides', state: s.running ? 'pending' : s.journal.length ? 'done' : s.signed ? 'live' : 'ahead', action: s.signed && !s.running ? async () => { await act('/universe', { universe: s.universe }); await act('/run') } : undefined, actionLabel: 'Run one round' },
-    { id: 'request', label: 'Answer the request on the Flex', hint: 'read the number, sign the exception, or leave it refused', state: s.signing === 'exception' ? 'pending' : s.escalation?.possible ? 'live' : s.exception_buys.length || s.refused_escalations.length ? 'done' : 'ahead', action: s.escalation?.possible && !s.signing ? () => act('/escalate') : undefined, actionLabel: 'Read and sign', second: s.escalation?.possible && !s.signing ? () => act('/escalate_no') : undefined, secondLabel: 'Leave refused' },
-    { id: 'watch', label: 'Re-probe, exit while you can', hint: 'TARE measures the exit again on every held position', state: s.watch ? 'done' : s.watching ? 'pending' : s.positions.length ? 'live' : 'ahead', action: s.positions.length && !s.watching ? () => act('/watch') : undefined, actionLabel: 'Re-probe', second: s.positions.length && !s.watching ? () => act('/watch_sell') : undefined, secondLabel: 'Re-probe and exit' },
+    { id: 'mandate', label: 'Sign the mandate', hint: 'budget, max round-trip loss, expiry: read, then hold to sign', state: s.signed ? 'done' : s.signing === 'mandate' ? 'pending' : s.proposal ? 'live' : 'ahead', action: s.proposal && !s.signed && !s.signing ? () => act('/sign_mandate') : undefined, actionLabel: 'Sign on Ledger' },
+    { id: 'agents', label: 'Run the agents', hint: 'add a bot, or run one round: TARE measures, the vault decides', state: s.running ? 'pending' : s.journal.length ? 'done' : s.signed ? 'live' : 'ahead', action: s.signed && !s.running ? async () => { await act('/universe', { universe: s.universe }); await act('/run') } : undefined, actionLabel: 'Run one round' },
+    { id: 'request', label: 'Answer the request', hint: 'read the number, sign the exception, or leave it refused', state: s.signing === 'exception' ? 'pending' : s.escalation?.possible ? 'live' : s.exception_buys.length || s.refused_escalations.length ? 'done' : 'ahead', action: s.escalation?.possible && !s.signing ? () => act('/escalate') : undefined, actionLabel: 'Read and sign', second: s.escalation?.possible && !s.signing ? () => act('/escalate_no') : undefined, secondLabel: 'Leave refused' },
+    { id: 'watch', label: 'Re-probe the positions', hint: 'TARE measures the exit again on every held position', state: s.watch ? 'done' : s.watching ? 'pending' : s.positions.length ? 'live' : 'ahead', action: s.positions.length && !s.watching ? () => act('/watch') : undefined, actionLabel: 'Re-probe', second: s.positions.length && !s.watching ? () => act('/watch_sell') : undefined, secondLabel: 'Re-probe and exit' },
     { id: 'analyst', label: 'Ask the analyst', hint: QUESTION, state: s.analyses.length && !s.analysis?.pending ? 'done' : s.analysis?.pending ? 'pending' : s.journal.length ? 'live' : 'ahead', action: s.journal.length && !s.analysis?.pending ? () => act('/analyze', { question: QUESTION }) : undefined, actionLabel: 'Ask why' },
   ]
   return { steps, a, s, ask }
@@ -262,7 +283,7 @@ export function Agents({ s }: { s: BenchState }) {
 export function Measure({ s, a }: { s: BenchState; a: Activity }) {
   const e = s.escalation?.possible ? s.escalation : null
   // The measure shown is the request's when one waits on the Flex (its own journal row), else the last decision's.
-  const r = e ? (s.journal.slice().reverse().find((x) => x.pool.toLowerCase() === e.pool_id.toLowerCase()) ?? a.lastRow) : a.lastRow
+  const r = e ? (rowOf(s, e) ?? a.lastRow) : a.lastRow
   const allows = s.mandate?.mandate.maxRoundTripLossBps ?? s.proposal?.max_round_trip_loss_bps ?? null
   const vault = e ? (e.kind ?? r?.kind) === 'vault' : r?.kind === 'vault'
   const exit = e ? e.seen_exit_bps : r ? (vault ? (r.stuck_bps ?? r.exit) : r.exit) : null
@@ -305,7 +326,7 @@ export function JournalStrip({ s, max = 6 }: { s: BenchState; max?: number }) {
           {rows.map((r, i) => {
             const vault = r.kind === 'vault'
             return (
-              <tr key={`${r.tick}-${r.pool}-${i}`} className={i === 0 ? 'blink-in' : ''} title={r.why}>
+              <tr key={`${r.tick}-${r.pool}-${i}`} className={i === 0 ? 'rise-in' : ''} title={r.why}>
                 <td>{r.under_exception ? 'exc.' : r.tick}</td>
                 <td className="label is-mute">{r.bot ?? '·'}</td>
                 <td className={vault ? 'label' : ''}>{r.name ?? short(r.pool, 10, 4)}</td>
