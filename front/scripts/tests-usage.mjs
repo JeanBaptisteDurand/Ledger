@@ -35,7 +35,7 @@ async function until(pred, label, timeout = 120000, every = 1000) {
   while (Date.now() - t < timeout) { s = await state(); if (s && pred(s)) { log('ok  ' + label); return s } await sleep(every) }
   fail(`${label} : pas atteint en ${timeout / 1000}s`); return s
 }
-const btn = (name, exact = false) => page.getByRole('button', { name, exact })   // exact where a longer name contains it
+const btn = (name, exact = false) => page.getByRole('button', { name, exact }).first()   // exact where a longer name contains it; first: the NOW card and the drawer may both carry the same action
 const chip = (text) => page.locator('button.segment', { hasText: text }).first()
 /** The sheets reveal on scroll (Florent's motion): walk the page once so everything is on, then come back up. */
 const reveal = async (p = page) => {
