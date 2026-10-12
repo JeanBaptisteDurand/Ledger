@@ -94,7 +94,11 @@ accepted reset. It prints its usability remarks at the end (240 s on 11 October,
 node scripts/tests-usage.mjs
 ```
 
-Last run (12 October, on the pages above, with Florent's branch merged), every step passed: sign-in, deposit of 0.5 ETH
+Final campaign of 12 October, late evening, on a quiet host, all green: the usability pass (`tests-usage.mjs`, 39 checks, 323 s),
+the device tests (refusal on the device, two tabs, bench restart), the bench page's own journey (112 s), the funds journey
+(`PARCOURS=fonds`: sign-in 9 s, deposit 8.6 s, withdrawal 8.6 s, 83 s in all), the 38 Foundry tests, and the full journey below.
+
+Full journey (12 October, on the pages above, with Florent's branch merged), every step passed: sign-in, deposit of 0.5 ETH
 signed on the device, bounds (Claude), mandate clear-signed (`isBlindSign=false`), pools bot 2 buys / 8 refusals, exception
 with a queue of 3, « leave refused », re-probe and exit (one position sold at 310 → 600 bps), withdrawal of 0.1 WETH
 authorised on the device, vaults bot (Moonwell at 2 691 bps) stopped from the live table and its exception signed, the

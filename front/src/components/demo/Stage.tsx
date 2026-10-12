@@ -113,7 +113,7 @@ export function Stage({ mode }: { mode: StageMode }) {
 
 /** One line per phase, folded: what it has to say about itself. */
 function summary(act: Act, s: BenchState): string {
-  if (act === 'setup') return s.signed ? `mandate ${s.mandate ? Number(s.mandate.mandate.budgetAmount) / 1e18 : s.proposal?.budget_weth} WETH · ${s.mandate?.mandate.maxRoundTripLossBps ?? s.proposal?.max_round_trip_loss_bps} bps` : s.proposal ? 'bounds proposed, to sign' : s.vault ? 'vault open' : 'no vault yet'
+  if (act === 'setup') return s.signed ? `mandate signed · ${s.mandate ? Number(s.mandate.mandate.budgetAmount) / 1e18 : s.proposal?.budget_weth} WETH · ${s.mandate?.mandate.maxRoundTripLossBps ?? s.proposal?.max_round_trip_loss_bps} bps${s.last_report && s.last_report.isBlindSign === false ? ' · clear-signed' : ''}` : s.proposal ? 'bounds proposed, to sign' : s.vault ? 'vault open' : 'no vault yet'
   if (act === 'agents') { const live = s.bots.filter((b) => b.status === 'running').length; const bought = s.journal.filter((r) => r.decision === 'EXECUTED').length; return s.bots.length ? `${s.bots.length} bot${s.bots.length > 1 ? 's' : ''} · ${bought} in · ${s.journal.length - bought} refused${live ? ' · running' : ''}` : 'no agent yet' }
   if (act === 'request') { const w = (s.escalation?.possible ? 1 : 0) + s.escalation_queue.length; return w ? `${w} waiting on the Flex` : `${s.exception_buys.length} signed · ${s.refused_escalations.length} left refused` }
   return `${s.positions.length} positions${s.watch ? ' · probed' : ''}${s.analyses.length ? ' · analyst answered' : ''}`

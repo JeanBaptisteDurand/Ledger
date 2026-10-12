@@ -120,8 +120,8 @@ s = await until((x) => x.proposal && Number(x.proposal.budget_weth) === 1, 'une 
 await page.screenshot({ path: `${OUT}/05-demo-mandat.png`, fullPage: false })
 await btn('Sign on Ledger', true).click()
 s = await until((x) => x.signed, 'mandat signé dans la page', 180000)
-if (!(await has('Exit mandate · signed'))) note('après la signature, la carte ne dit pas clairement « signed »')
-if (!(await has('isBlindSign=false'))) note('après la signature, le rapport du kit (isBlindSign) n’est pas visible')
+if (!(await has('mandate signed'))) note('après la signature, la carte ne dit pas clairement « signed »')
+if (!(await has('clear-signed')) && !(await has('isBlindSign=false'))) note('après la signature, le rapport du kit (clear-signed) n’est pas visible')
 
 // ───────────── 5 · the trades page: empty state, a rhythmic bot, stop, restart, a second bot, the filters
 await go('Trades')
@@ -170,10 +170,11 @@ await page.getByLabel('Your question').fill('And which one has the most refusals
 s = await until((x) => x.analyses.length >= 2 && !x.analysis.pending && x.analysis.answer, 'une seconde question, avec l’historique', 300000, 2500)
 if (!(await page.locator('.thread__trace').count())) note('la trace des outils n’est pas visible sous la réponse')
 await shot('09-analyste')
-// the same conversation, compact, in the demo's drawer
+// the same conversation, compact, in the demo's drawer (opened by its head, as a person does)
 await liveMap()
-if (!(await has('And which one has the most refusals?'))) note('la carte vivante ne montre pas la conversation avec l’analyste dans son tiroir')
-if (!(await page.getByLabel('Your question').count())) fail('la carte vivante n’a pas de champ pour parler à l’analyste')
+await page.locator('.drawer__head', { hasText: 'Watch and analyst' }).first().click(); await sleep(600)
+if (!(await page.locator('.drawer[data-open]').getByText('And which one has the most refusals?').count())) note('la carte vivante ne montre pas la conversation avec l’analyste dans son tiroir')
+if (!(await page.locator('.drawer[data-open]').getByLabel('Your question').count())) fail('la carte vivante n’a pas de champ pour parler à l’analyste')
 
 // ───────────── 8 · the account: key, config, copy, history, reset cancelled
 await go('Account')
