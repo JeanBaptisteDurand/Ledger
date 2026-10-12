@@ -1,5 +1,6 @@
 /**
- * Direction A — the pinned chronicle (Vercel Ship + GSAP scrollytelling).
+ * The pinned chronicle (Vercel Ship + GSAP scrollytelling), nine sections since 2026-10-12: a pitch, each section
+ * led by one argument (pitch.ts).
  *
  * Three stages hold the viewport and are scrubbed by the scrollbar: the trap (0 rolls to 9 990 as you scroll,
  * then Moonwell's five figures enter one by one), the rule (the mandate's lines light in device order, then the
@@ -10,9 +11,9 @@ import { useRef } from 'react'
 import { useGSAP } from '@gsap/react'
 import { blurFade, focusSheets, frieze, maskWipe, pinStage, scrubFigure, treatTitle } from '../../motion/landing'
 import { Frieze, FriezeClock, PLAYHEAD, PX_PER_S, TRACK_PAD } from './Frieze'
-import { Badge, Band, Bricks, DeviceMirror, ExitPair, hotTitle, Kicker, Mark, Note, Panel, Source, Stats, Takeaway, Title } from './primitives'
-import { ACCOUNT, AGENT, AGENTS, BRICKS, CALL, CLAIM, FINDINGS, MAP, MEASURED, OVERFLOW, PRINCIPLE, PROOFS, RULE, SERVICE, SIGNATURE, TRAP } from './content'
-import { KV, Rows, Steps } from './lists'
+import { Badge, Band, DeviceMirror, ExitPair, Hot, hotTitle, Kicker, Mark, Note, Panel, Source, Stats, Takeaway, Title } from './primitives'
+import { FINDINGS as FINDINGS_ROWS, MEASURED as MEASURED_STEPS } from './content'
+import { AGENTS, CALL, CLAIM, FINDINGS, MEASURED, OVERFLOW, PRODUCT, RULE, TRAP } from './pitch'
 import { SchemaMap } from './SchemaMap'
 
 export function LandingA() {
@@ -68,10 +69,11 @@ export function LandingA() {
       <Band id="the-claim" label="The claim">
         <Takeaway>{CLAIM.takeaway}</Takeaway>
         <Title size="xl" className="max-w-[22ch]">{hotTitle(CLAIM.title)}</Title>
+        <p data-lead className="t-body-lg mt-8 max-w-[62ch] text-pretty text-page-text-mute">{CLAIM.lead}</p>
         <Source>{CLAIM.source}</Source>
       </Band>
 
-      {/* Stage 1 */}
+      {/* Stage 1 · the trap */}
       <section id="the-trap" aria-label="The trap, two instances" className="stage band band--lift-1" data-stage="trap">
         <div className="stage__inner glass mx-auto max-w-[1200px]">
           <Takeaway>{TRAP.takeaway}</Takeaway>
@@ -95,32 +97,27 @@ export function LandingA() {
         </div>
       </section>
 
-      <Band id="the-principle" label="The principle">
-        <Takeaway>{PRINCIPLE.takeaway}</Takeaway>
-        <Title className="max-w-[22ch]">{hotTitle(PRINCIPLE.title)}</Title>
-        <p data-lead className="t-body-lg mt-8 max-w-[62ch] text-pretty text-page-text-mute">{PRINCIPLE.lead}</p>
-        <Rows rows={PRINCIPLE.rows} />
-        <Source>{PRINCIPLE.source}</Source>
-      </Band>
-
-      <Band id="the-agent" label="And the agent goes in anyway">
-        <div className="grid grid-cols-1 gap-12 xl:grid-cols-12 xl:gap-10">
-          <div className="xl:col-span-6">
-            <Takeaway>{AGENT.takeaway}</Takeaway>
-            <Title className="max-w-[18ch]">{hotTitle(AGENT.title)}</Title>
-            <p data-lead className="t-body-lg mt-8 max-w-[52ch] text-pretty text-page-text-mute">{AGENT.lead}</p>
-            <p data-lead className="t-body-md mt-4 max-w-[52ch] text-pretty text-page-text-mute">
-              {AGENT.body[0]}<span className="t-mono-data text-page-text">{AGENT.body[1]}</span>{AGENT.body[2]}
-            </p>
-            <Source>{AGENT.source}</Source>
-          </div>
-          <div className="xl:col-span-5 xl:col-start-8" data-wipe>
-            <DeviceMirror title={AGENT.mirrorTitle} lines={AGENT.mirror} caption={AGENT.caption} hot={AGENT.mirrorHot} />
-          </div>
+      <Band id="the-product" label="What Net·Out does">
+        <Takeaway>{PRODUCT.takeaway}</Takeaway>
+        <Title size="xl" className="max-w-[20ch]">{PRODUCT.title[0]}<Hot>{PRODUCT.title[1]}</Hot>{PRODUCT.title[2]}<Hot>{PRODUCT.title[3]}</Hot>{PRODUCT.title[4]}</Title>
+        <p data-lead className="t-body-lg mt-8 max-w-[62ch] text-pretty text-page-text-mute">{PRODUCT.lead}</p>
+        <div className="mt-10 grid grid-cols-1 gap-6 xl:grid-cols-3" data-list>
+          {PRODUCT.cols.map((c) => (
+            <div key={c.word} data-row>
+              <Panel lift={2} className="h-full">
+                <p className="t-display-lg m-0 text-hot" style={{ fontSize: 40, lineHeight: 1 }}>{c.word}</p>
+                <Kicker>{c.kicker}</Kicker>
+                <h3 className="t-title-md m-0 text-page-text">{c.title}</h3>
+                <p className="t-body-md m-0 mt-3 text-pretty text-page-text-mute">{c.text}</p>
+                <div className="mt-5"><Stats rows={c.facts} /></div>
+              </Panel>
+            </div>
+          ))}
         </div>
+        <Source>{PRODUCT.source}</Source>
       </Band>
 
-      {/* Stage 2 */}
+      {/* Stage 2 · one signature */}
       <section id="the-rule" aria-label="One signature" className="stage band band--lift-1" data-stage="rule">
         <div className="stage__inner glass mx-auto grid max-w-[1200px] grid-cols-1 gap-10 xl:grid-cols-12 xl:gap-10">
           <div className="xl:col-span-5" data-mirror>
@@ -136,43 +133,6 @@ export function LandingA() {
         </div>
       </section>
 
-      <Band id="the-map" label="The whole system on one sheet" lift={1} full>
-        <div className="mx-auto max-w-[1200px]">
-          <Takeaway>{MAP.takeaway}</Takeaway>
-          <Title className="max-w-[18ch]">{hotTitle(MAP.title)}</Title>
-          <div className="mt-10" data-wipe><SchemaMap /></div>
-          <div className="mt-8"><Note>{MAP.note[0]}<Mark>{MAP.note[1]}</Mark>{MAP.note[2]}</Note></div>
-          <Source>{MAP.source}</Source>
-        </div>
-      </Band>
-
-      <Band id="the-agents" label="Two kinds of agents, one boundary">
-        <Takeaway>{AGENTS.takeaway}</Takeaway>
-        <Title className="max-w-[18ch]">{hotTitle(AGENTS.title)}</Title>
-        <p data-lead className="t-body-lg mt-8 max-w-[62ch] text-pretty text-page-text-mute">{AGENTS.lead}</p>
-        <div className="mt-10 grid grid-cols-1 gap-6 xl:grid-cols-12" data-list>
-          <div className="xl:col-span-7" data-row>
-            <Panel lift={2}>
-              <Kicker>{AGENTS.bots.kicker}</Kicker>
-              <h3 className="t-title-md m-0 text-page-text">{AGENTS.bots.title}</h3>
-              <p className="t-body-md m-0 mt-3 max-w-[60ch] text-pretty text-page-text-mute">{AGENTS.bots.text}</p>
-              <div className="mt-5"><Stats rows={AGENTS.bots.facts} /></div>
-            </Panel>
-          </div>
-          <div className="xl:col-span-5" data-row>
-            <Panel lift={2}>
-              <Kicker>{AGENTS.analyst.kicker}</Kicker>
-              <h3 className="t-title-md m-0 text-page-text">{AGENTS.analyst.title}</h3>
-              <p className="t-body-md m-0 mt-3 max-w-[60ch] text-pretty text-page-text-mute">{AGENTS.analyst.text}</p>
-              <div className="mt-5"><Stats rows={AGENTS.analyst.facts} /></div>
-            </Panel>
-          </div>
-        </div>
-        <div className="mt-10"><Kicker>The analyst’s ten tools, all read only</Kicker><KV rows={AGENTS.tools} /></div>
-        <div className="mt-8"><Note>{AGENTS.note[0]}<Mark>{AGENTS.note[1]}</Mark>{AGENTS.note[2]}</Note></div>
-        <Source>{AGENTS.source}</Source>
-      </Band>
-
       <Band id="the-overflow" label="When it overflows" lift={3} full>
         <div className="mx-auto max-w-[62ch] text-center">
           <Takeaway>{OVERFLOW.takeaway}</Takeaway>
@@ -184,50 +144,48 @@ export function LandingA() {
           <div data-row><Badge tone="warning">{OVERFLOW.sign[0]}</Badge><p className="t-body-md m-0 mt-3 text-pretty text-page-text-mute">{OVERFLOW.sign[1]}</p></div>
           <div data-row><Badge tone="error">{OVERFLOW.refuse[0]}</Badge><p className="t-body-md m-0 mt-3 text-pretty text-page-text-mute">{OVERFLOW.refuse[1]}</p></div>
         </div>
-        <div className="mx-auto mt-14 max-w-[1200px]">
-          <Takeaway>{SIGNATURE.takeaway}</Takeaway>
-          <Title className="max-w-[22ch]">{hotTitle(SIGNATURE.title)}</Title>
-          <p data-lead className="t-body-lg mt-8 max-w-[62ch] text-pretty text-page-text-mute">{SIGNATURE.lead}</p>
-          <div className="mt-10"><Steps steps={SIGNATURE.steps} /></div>
-          <div className="mt-8"><Note>{SIGNATURE.note[0]}<Mark><span className="t-mono-data">{SIGNATURE.note[1]}</span></Mark>{SIGNATURE.note[2]}</Note></div>
-          <Source>{OVERFLOW.source} {SIGNATURE.source}</Source>
-        </div>
+        <div className="mx-auto max-w-[620px] text-center"><Source>{OVERFLOW.source}</Source></div>
       </Band>
 
-      {/* Stage 3 · the run as a frieze: the one section about time reads along a time axis. */}
+      <Band id="the-agents" label="The agents, and the boundary">
+        <Takeaway>{AGENTS.takeaway}</Takeaway>
+        <Title className="max-w-[24ch]">{AGENTS.title[0]}<Hot>{AGENTS.title[1]}</Hot>{AGENTS.title[2]}<Hot>{AGENTS.title[3]}</Hot>{AGENTS.title[4]}</Title>
+        <p data-lead className="t-body-lg mt-8 max-w-[62ch] text-pretty text-page-text-mute">{AGENTS.lead}</p>
+        <div className="mt-10 grid grid-cols-1 gap-6 xl:grid-cols-2" data-list>
+          <div data-row><Panel lift={2}><Kicker>{AGENTS.bots.kicker}</Kicker><h3 className="t-title-md m-0 text-page-text">{AGENTS.bots.title}</h3><div className="mt-4"><Stats rows={AGENTS.bots.facts} /></div></Panel></div>
+          <div data-row><Panel lift={2}><Kicker>{AGENTS.analyst.kicker}</Kicker><h3 className="t-title-md m-0 text-page-text">{AGENTS.analyst.title}</h3><div className="mt-4"><Stats rows={AGENTS.analyst.facts} /></div></Panel></div>
+        </div>
+        <div className="mt-10" data-wipe><SchemaMap /></div>
+        <div className="mt-8"><Note>{AGENTS.mapNote[0]}<Mark>{AGENTS.mapNote[1]}</Mark>{AGENTS.mapNote[2]}</Note></div>
+        <Source>{AGENTS.source}</Source>
+      </Band>
+
+      {/* Stage 3 · the run as a frieze. */}
       <section id="measured" aria-label="Measured, end to end" className="frieze band" data-frieze>
         <div className="frieze__head glass mx-auto max-w-[1200px]">
           <div className="grid grid-cols-1 gap-8 md:grid-cols-12 md:items-end">
             <div className="md:col-span-7">
               <Takeaway>{MEASURED.takeaway}</Takeaway>
               <Title className="max-w-[16ch]">{hotTitle(MEASURED.title)}</Title>
-              <p data-lead className="t-body-lg mt-6 max-w-[44ch] text-pretty text-page-text-mute">{MEASURED.lead}</p>
+              <p data-lead className="t-body-lg mt-6 max-w-[48ch] text-pretty text-page-text-mute">{MEASURED.lead}</p>
             </div>
             <div className="md:col-span-5 md:text-right"><FriezeClock alerts={MEASURED.alerts} /></div>
           </div>
         </div>
-        <Frieze steps={MEASURED.steps} total={MEASURED.total} />
+        <Frieze steps={MEASURED_STEPS.steps} total={MEASURED.total} />
         <div className="frieze__foot glass mx-auto max-w-[1200px]">
           <Note>{MEASURED.note[0]}<Mark>{MEASURED.note[1]}</Mark>{MEASURED.note[2]}</Note>
           <Source>{MEASURED.source}</Source>
         </div>
       </section>
 
-      <Band id="the-account" label="The account">
-        <Takeaway>{ACCOUNT.takeaway}</Takeaway>
-        <Title className="max-w-[22ch]">{hotTitle(ACCOUNT.title)}</Title>
-        <p data-lead className="t-body-lg mt-8 max-w-[62ch] text-pretty text-page-text-mute">{ACCOUNT.lead}</p>
-        <Rows rows={ACCOUNT.rows} />
-        <div className="mt-8"><Note>{ACCOUNT.note[0]}<Mark>{ACCOUNT.note[1]}</Mark>{ACCOUNT.note[2]}</Note></div>
-        <Source>{ACCOUNT.source}</Source>
-      </Band>
-
       <Band id="findings" label="What we found in their stack" lift={1} full>
         <div className="mx-auto max-w-[1200px]">
           <Takeaway>{FINDINGS.takeaway}</Takeaway>
           <Title className="max-w-[20ch]">{hotTitle(FINDINGS.title)}</Title>
+          <p data-lead className="t-body-lg mt-8 max-w-[62ch] text-pretty text-page-text-mute">{FINDINGS.lead}</p>
           <ul className="findings mt-10" data-list>
-            {FINDINGS.rows.map((r) => (
+            {FINDINGS_ROWS.rows.map((r) => (
               <li key={r.what} className="findings__row" data-row>
                 <div>
                   <p className="t-body-lg m-0 text-page-text">{r.what}</p>
@@ -237,32 +195,19 @@ export function LandingA() {
               </li>
             ))}
           </ul>
+          <p className="t-body-md mt-8 max-w-[72ch] text-pretty text-page-text-mute">{FINDINGS.bricks}</p>
           <Source>{FINDINGS.source}</Source>
         </div>
       </Band>
-
-      <Band id="bricks" label="Four bricks, four roles">
-        <Takeaway>{BRICKS.takeaway}</Takeaway>
-        <Title className="max-w-[18ch]">{hotTitle(BRICKS.title)}</Title>
-        <p data-lead className="t-body-lg mt-8 max-w-[52ch] text-pretty text-page-text-mute">{BRICKS.lead}</p>
-        <div className="mt-10" data-list><Bricks items={BRICKS.items} /></div>
-        <div className="mt-10 max-w-[720px]" data-wipe><Kicker>{PROOFS.kicker}</Kicker><Stats rows={PROOFS.rows} /></div>
-        <Source>{BRICKS.source}</Source>
-      </Band>
-
 
       <Band id="the-call" label="The call" lift={2} full>
         <div className="mx-auto max-w-[1200px]">
           <Takeaway>{CALL.takeaway}</Takeaway>
           <Title size="xl" className="max-w-[14ch]">{hotTitle(CALL.title)}</Title>
-          <p data-lead className="t-body-lg mt-8 max-w-[48ch] text-pretty text-page-text-mute">{CALL.lead}</p>
-          <div className="mt-10 grid grid-cols-1 gap-10 xl:grid-cols-12" data-list>
-            <div className="xl:col-span-7" data-row><Kicker>{SERVICE.keeps.kicker}</Kicker><KV rows={SERVICE.keeps.rows} code={false} /></div>
-            <div className="xl:col-span-5" data-row><Kicker>{SERVICE.holds.kicker}</Kicker><KV rows={SERVICE.holds.rows} code={false} /><p className="t-caption mt-5 max-w-[52ch] text-pretty text-page-text-faint">{SERVICE.caption}</p></div>
-          </div>
+          <p data-lead className="t-body-lg mt-8 max-w-[52ch] text-pretty text-page-text-mute">{CALL.lead}</p>
           <div className="mt-12 flex flex-wrap items-center gap-3">
             <a href={CALL.href} className="btn-ghost btn-ghost--hot t-button-cap">{CALL.cta}</a>
-            <a href={SERVICE.demoHref} className="btn-ghost btn-ghost--quiet t-button-cap">{SERVICE.demo}</a>
+            <a href={CALL.demoHref} className="btn-ghost btn-ghost--quiet t-button-cap">{CALL.demo}</a>
           </div>
           <Source>{CALL.source}</Source>
         </div>

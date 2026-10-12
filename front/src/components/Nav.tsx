@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { linkProps, useRoute, type Route } from '../app/router'
+import { Wordmark } from './Wordmark'
 
 /** The site's name. The device in the hero keeps its own wordmark; this is what the product is called. */
-export const SITE_NAME = 'Porte de sortie'
+export const SITE_NAME = 'Net·Out'
 
 /**
  * Before an account: the pitch, the demo, the door. "The product" is the home, the explanation under the finished scene,
@@ -61,7 +62,7 @@ export function Nav({ hiddenUntilRelease, solid = false, account }: { hiddenUnti
     >
       <div className="flex h-[72px] items-center justify-between px-4 md:px-8">
         <a {...linkProps('/')} className="t-button-cap nav-link -ml-3">
-          {SITE_NAME}
+          <Wordmark>{SITE_NAME}</Wordmark>
         </a>
         <nav aria-label="Main" className="hidden md:block">
           <ul className="m-0 flex list-none items-center gap-2 p-0">

@@ -3,10 +3,10 @@
  * (scripts: design-shots/pass40 → public/poster-home-*.jpg), fixed under the whole page like the canvas is, so
  * the glass sheets have the same thing behind them. Regenerate the stills when the hole changes.
  */
-import { useEffect } from 'react'
+import { useEffect, type ReactNode } from 'react'
 import { HomeHero } from './HomeHero'
 
-export function HomePoster({ title, catchLine, heading = 'Monolith' }: { title?: string; catchLine?: string; heading?: string } = {}) {
+export function HomePoster({ title, catchLine, heading = 'Net·Out' }: { title?: string; catchLine?: ReactNode; heading?: string } = {}) {
   useEffect(() => {
     document.documentElement.setAttribute('data-home', '')
     return () => document.documentElement.removeAttribute('data-home')
@@ -20,7 +20,7 @@ export function HomePoster({ title, catchLine, heading = 'Monolith' }: { title?:
         </picture>
       </div>
       <h1 className="sr-only">{heading}</h1>
-      <HomeHero title={title} catchLine={catchLine} />
+      <HomeHero title={title} catchLine={catchLine} brackets={!title} />
     </section>
   )
 }

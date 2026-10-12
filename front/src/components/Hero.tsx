@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useGSAP } from '@gsap/react'
 import { HeroCanvas, type CanvasControls } from '../scene/HeroCanvas'
 import { HeroPoster } from './HeroPoster'
@@ -20,7 +20,7 @@ export const HOME_PATH = '/home'
 export const isHomePath = () => window.location.pathname.replace(/\/+$/, '') === HOME_PATH
 
 export const HERO_TITLE = 'Begin Your Journey'
-export const PROJECT_NAME = 'Monolith' // provisional working name
+export const PROJECT_NAME = 'Net·Out' // the name: the net value of a position (net), and the way out of it (out)
 
 /** Scene on desktop; under reduced motion the finished scene as a poster (no auto-play); below 768px the arrival poster. */
 type Mode = 'scene' | 'poster-final' | 'poster-arrival'
@@ -34,7 +34,7 @@ const pickMode = (): Mode => {
  * under the page), as a direct load of /home has it — for another page of the same surface (the demo, the door), which
  * then writes its own `title` and `catchLine` in the ring and its own `heading` for assistive tech.
  */
-export type HeroProps = { finished?: boolean; title?: string; catchLine?: string; heading?: string }
+export type HeroProps = { finished?: boolean; title?: string; catchLine?: ReactNode; heading?: string }
 
 export function Hero({ finished = false, title, catchLine, heading }: HeroProps = {}) {
   const [mode, setMode] = useState<Mode>(pickMode)
@@ -218,7 +218,7 @@ function HeroStage({ finished: finishedProp = false, title, catchLine, heading }
       <div className="hero-vignette pointer-events-none absolute inset-0" aria-hidden />
 
       {/* The home's hero: the name and the thesis, over the hole, from the moment the hole is out. */}
-      {home ? <HomeHero delay={0.5} title={title} catchLine={catchLine} /> : null}
+      {home ? <HomeHero delay={0.5} title={title} catchLine={catchLine} brackets={!title} /> : null}
 
       {/* The reader's switch for the scene's sound; gone on the home. */}
       {sound.current && !home ? <SoundToggle sound={sound.current} /> : null}

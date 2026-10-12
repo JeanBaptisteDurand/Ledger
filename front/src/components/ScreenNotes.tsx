@@ -52,11 +52,11 @@ type NoteCopy = { pieces: Piece[] }
 export const NOTE_COPY: Record<number, NoteCopy> = {
   0: {
     pieces: [
-      { t: 'Agent Policies bound what an agent may ' },
+      { t: 'Every agent policy today bounds what an agent may ' },
       { mark: 'spend' },
-      { t: '. Ledger\u2019s own Earn returns the provider, the token, the yield and a deposit link, and ' },
-      { mark: 'zero' },
-      { t: ' fields on the way out.' },
+      { t: '. None bounds what it gets ' },
+      { mark: 'back' },
+      { t: '. Ledger\u2019s own Earn returns four fields for a position, and zero on the way out.' },
     ],
   },
   1: {
@@ -65,14 +65,14 @@ export const NOTE_COPY: Record<number, NoteCopy> = {
       { mark: '0 bps' },
       { t: ' to enter and ' },
       { mark: '', roll: { from: '0', to: 9990, decimals: 0, pad: 0 } },
-      { t: ' to leave. The same hook sets both, and the agent only ever sees the first.' },
+      { t: ' to leave. The same hook sets both prices, and the agent only ever reads the first.' },
     ],
   },
   2: {
     pieces: [
-      { t: 'You sign your limits ' },
+      { t: 'You sign three numbers ' },
       { mark: 'once' },
-      { t: ', on the device. A contract measures the way out inside every transaction, and anything past your limit comes back to you ' },
+      { t: ', on your Ledger. A contract weighs the exit inside every entry. What overflows comes back to you ' },
       { mark: 'with the number' },
       { t: '.' },
     ],
@@ -81,9 +81,9 @@ export const NOTE_COPY: Record<number, NoteCopy> = {
 
 /** The plain sentences, for each hotspot's accessible name and for the poster. */
 export const NOTE_SENTENCE: Record<number, string> = {
-  0: 'Agent Policies bound what an agent may spend. Ledger\u2019s own Earn returns the provider, the token, the yield and a deposit link, and zero fields on the way out.',
-  1: 'Six real pools on Base charge 0 bps to enter and 9\u202f990 to leave. The same hook sets both, and the agent only ever sees the first.',
-  2: 'You sign your limits once, on the device. A contract measures the way out inside every transaction, and anything past your limit comes back to you with the number.',
+  0: 'Every agent policy today bounds what an agent may spend. None bounds what it gets back. Ledger\u2019s own Earn returns four fields for a position, and zero on the way out.',
+  1: 'Six real pools on Base charge 0 bps to enter and 9\u202f990 to leave. The same hook sets both prices, and the agent only ever reads the first.',
+  2: 'You sign three numbers once, on your Ledger. A contract weighs the exit inside every entry. What overflows comes back to you with the number.',
 }
 
 export function ScreenNotes({ notes }: { notes: NotesState }) {

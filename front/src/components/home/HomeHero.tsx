@@ -10,12 +10,16 @@ import { useGSAP } from '@gsap/react'
 import { gsap } from 'gsap'
 import { blurFade, treatTitle } from '../../motion/landing'
 import { motionEnabled } from '../../motion/flags'
+import { Wordmark } from '../Wordmark'
+import { Hot } from '../landing/primitives'
+import type { ReactNode } from 'react'
 
-export const HOME_TITLE = 'MONOLITH'
-export const HOME_CATCH = 'An agent cannot enter a position it does not know how to exit.'
+export const HOME_TITLE = 'NET·OUT'
+/** NET and OUT carry the heat the titles catch with: the two halves of the name, said in the sentence. */
+export const HOME_CATCH: ReactNode = <>The <Hot>NET</Hot> value before you enter. The way <Hot>OUT</Hot>, yours to sign.</>
 
 /** `title` and `catchLine` let another page of the same surface (the demo, the door) write its own name in the ring. */
-export function HomeHero({ delay = 0, title = HOME_TITLE, catchLine = HOME_CATCH }: { delay?: number; title?: string; catchLine?: string }) {
+export function HomeHero({ delay = 0, title = HOME_TITLE, catchLine = HOME_CATCH, brackets = true }: { delay?: number; title?: string; catchLine?: ReactNode; brackets?: boolean }) {
   const root = useRef<HTMLDivElement>(null)
   const animated = motionEnabled()
   useGSAP(
@@ -35,7 +39,11 @@ export function HomeHero({ delay = 0, title = HOME_TITLE, catchLine = HOME_CATCH
   const hidden = animated ? { visibility: 'hidden' as const } : undefined
   return (
     <div ref={root} className="home-hero" data-home-hero>
-      <p data-home-title style={hidden} className="t-display-monolith home-hero__title m-0 text-page-text" aria-hidden>{title}</p>
+      {brackets ? (
+        <Wordmark size="title"><p data-home-title style={hidden} className="t-display-monolith home-hero__title m-0 text-page-text" aria-hidden>{title}</p></Wordmark>
+      ) : (
+        <p data-home-title style={hidden} className="t-display-monolith home-hero__title m-0 text-page-text" aria-hidden>{title}</p>
+      )}
       <p data-home-catch style={hidden} className="home-hero__catch t-title-md m-0 text-page-text-mute">{catchLine}</p>
     </div>
   )
