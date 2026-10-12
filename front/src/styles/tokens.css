@@ -1657,3 +1657,22 @@ svg .map-line.rise-in { transform-box: fill-box; }
 .tare__title { font-size: 16px; }
 .tare__steps { gap: 0; }
 .tare__step .tare__line { font-size: 13px; }
+
+/*
+ * ── The wordmark's brackets, in HTML (2026-10-13, the author) ─────────────
+ * The Flex's lock-screen motif around the name: four right angles, drawn with borders on two pseudo-elements
+ * and two empty <i>, sized in em so the nav and the ring's title share one lockup. The ring's catch line says
+ * the name's two halves in the titles' own heat.
+ */
+.wordmark { position: relative; display: inline-block; --arm: 0.55em; --gap: 0.45em; --stroke: 1px; padding: var(--gap) calc(var(--gap) + 0.1em); }
+.wordmark::before, .wordmark::after, .wordmark__tr, .wordmark__bl { content: ''; position: absolute; width: var(--arm); height: var(--arm); border: 0 solid currentColor; pointer-events: none; }
+.wordmark::before { left: 0; top: 0; border-left-width: var(--stroke); border-top-width: var(--stroke); }
+.wordmark__tr { right: 0; top: 0; border-right-width: var(--stroke); border-top-width: var(--stroke); }
+.wordmark__bl { left: 0; bottom: 0; border-left-width: var(--stroke); border-bottom-width: var(--stroke); }
+.wordmark::after { right: 0; bottom: 0; border-right-width: var(--stroke); border-bottom-width: var(--stroke); }
+.wordmark--nav { --arm: 0.6em; --gap: 0.5em; }
+/* The title's wrapper has no size of its own (the display tier is on the paragraph): the lockup takes the title's clamp. */
+.wordmark--title { font-size: clamp(88px, 11.5vw, 200px); --arm: 0.24em; --gap: 0.12em; --stroke: 3px; color: var(--color-page-text); line-height: 0; }
+.wordmark--title > p { display: block; }
+/* The name's two halves in the catch line: the held heat, in capitals. */
+.home-hero__catch .hot { text-transform: uppercase; letter-spacing: 0.04em; }

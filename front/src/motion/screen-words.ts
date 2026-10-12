@@ -41,7 +41,7 @@ export type ScreenStep = {
 /** At rest, before the first scroll. */
 export const REST_WORD = 'SCROLL UP'
 /** On the landed device, after the morph. */
-export const LANDED_WORD = 'MONOLITH'
+export const LANDED_WORD = 'NET·OUT'
 
 /*
  * The arc is context, problem, response, and the words come from UPDATE.md: what is bounded today, what nobody
@@ -50,7 +50,9 @@ export const LANDED_WORD = 'MONOLITH'
  * ALL THREE MUST RENDER AT ONE SIZE, and that is a measurement, not a hope. The OLED fits each word on its own,
  * from 26 px down, so length decides size. The previous set broke this: OUR SOLUTION fell to 21 px against 26
  * for the other two. Measured with the panel's own fitter (Barlow Condensed 700, 112 px available):
- *   SPENDING 92.2 px · THE EXIT 83.0 px · THE RULE 88.3 px — all at 26 px.
+ *   SPENDING 92.2 px · THE EXIT 83.0 px · SOLUTION 91.2 px, all at 26 px. THE RULE (88.3) was the third word until
+ *   2026-10-12, NET·OUT (79.7) for a day: the name is now kept for the landing, a revelation on the Flex's own
+ *   screen. THE SOLUTION (132.3 px, would fall to 22) was rejected for the size rule.
  * Any replacement word is measured the same way before it is adopted. THE MANDATE (22 px) was rejected for it.
  */
 const ALL_STEPS: ReadonlyArray<ScreenStep> = [
@@ -63,7 +65,7 @@ const ALL_STEPS: ReadonlyArray<ScreenStep> = [
    * toward level here: flat at SPENDING, standing 18 degrees at THE EXIT where the narrative is at its most
    * uncomfortable, and settling to 9 at the response.
    */
-  { enabled: true, word: 'THE RULE', axis: 'pitch', turns: 1, seconds: 1.9, fill: 0.72, standDeg: 9 },
+  { enabled: true, word: 'SOLUTION', axis: 'pitch', turns: 1, seconds: 1.9, fill: 0.72, standDeg: 9 },
 ]
 
 /** The steps actually played in this scope. */
