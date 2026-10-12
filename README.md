@@ -1,7 +1,7 @@
-# UNWIND
+# NETOUT
 
-*Le nom de travail était « Porte de sortie » ; les documents et le banc l'emploient encore. Le produit s'appelle Unwind :
-to unwind a position, sortir d'une position.*
+*Le nom de travail était « Porte de sortie » ; les documents et le banc l'emploient encore. Le produit s'appelle Netout :
+« to net out », solder une position en net, ce qui reste une fois la tare retirée, l'héritier de TARE.*
 
 > **Un agent ne peut pas entrer dans une position dont il ne sait pas sortir.**
 >
@@ -31,7 +31,7 @@ déposant bloquée**, pendant que cinq coffres sur dix refusent même le dépôt
 
 ## In English, on one page
 
-**The sentence.** An agent cannot enter a position it cannot unwind. (Working title: Porte de sortie, the exit door.)
+**The sentence.** An agent cannot enter a position it cannot net out. (Working title: Porte de sortie, the exit door.)
 
 **The gap.** Everything today bounds what an agent *spends* — a daily cap, an allow-list, a maximum slippage;
 Ledger's Agent Policies bound exactly that. Nothing bounds what it can *get back*. A token whose hook blocks
@@ -535,7 +535,7 @@ front/                        le site (Vite + React) : le héros de Florent, l'e
   src/app/                    le client du banc, la Ledger dans la page, le routeur : avant le compte /, /demo, /connexion ; dans le
                               compte /trades (agents, demandes, positions, journal) et /account (fonds signés sur la Ledger, analyste,
                               clé MCP, historique)
-  src/components/demo/        /demo : le rejeu avec les vraies captures de la Flex, la carte vivante allumée par le banc, le cockpit
+  src/components/demo/        /demo : la carte vivante allumée par le banc, la carte NOW, le volet TARE pendant un tour
   scripts/parcours-app.mjs    le parcours complet par les pages du front (Chromium headless)
 scripts/site.sh               le site en une commande (banc, Flex émulée, front ; PORTEUR=1 pour une Flex qui approuve seule)
   scripts/tests-appareil.mjs  refus sur l'appareil, deux onglets du même compte, redémarrage du banc

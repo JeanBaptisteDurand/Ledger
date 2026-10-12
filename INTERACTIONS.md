@@ -31,7 +31,7 @@ Légende des colonnes : **Le site** = la page et le serveur du banc · **Web3** 
 |---|---|---|---|---|
 | Ouvrir `/` | Le héros de Florent (scène 3D, deux modèles Ledger), le pitch en trois temps, la porte « Se connecter » dans la barre | rien | rien | émulateur, 10 oct. |
 | Faire défiler `/` | L'explication entière est sur l'accueil depuis le 12 oct. (Florent) : la revendication, le piège, le principe, **la carte du système** (le nœud Ledger nomme ses quatre gestes), les deux sortes d'agents et les dix outils, une signature pas à pas, le compte, les briques, l'appel | rien | rien | 12 oct. |
-| Ouvrir `/demo` | Trois modes : le **rejeu** (huit scènes, les vraies captures de la Flex), la **carte vivante** (le schéma allumé par le banc, les tiroirs des quatre phases, la Flex en direct), le **cockpit** (trois colonnes pour un projecteur). Sans compte, les deux modes vivants montrent la porte | rien | rien | 12 oct. |
+| Ouvrir `/demo` | la **carte vivante** (le schéma allumé par le banc, la carte NOW qui dit quoi faire, le tiroir de la phase en cours, la Flex en direct, le volet TARE pendant un tour). Sans compte, elle montre la porte | rien | rien | 12 oct. |
 | Cliquer « Sign in » ou ouvrir `/trades` ou `/account` sans être connecté | Renvoi vers `/connexion` ; la page demandée est mémorisée et rouverte après la connexion ; sinon la connexion mène à `/demo#map`, la carte vivante | rien | rien | 12 oct. |
 
 ## 1. L'appareil et la connexion (`/connexion`, la porte ; connecté, elle reste : c'est là qu'on change d'appareil ou de chemin)
@@ -44,7 +44,7 @@ Légende des colonnes : **Le site** = la page et le serveur du banc · **Web3** 
 | **« Sign in with my Ledger »**, chemin navigateur | `GET /api/siwe/nonce` ; la page construit un message EIP-4361 en ASCII pur (sans `statement`, 217 octets) ; après signature, `POST /api/siwe/verify` : le serveur retrouve le signataire (`cast wallet verify`), ouvre la session (cookie), crée `accounts/<adresse>/` au premier passage, puis renvoie vers la page demandée | rien : une signature de message, pas une transaction | Trois écrans : « Review message » (1/3), le texte du message avec l'adresse (2/3), « Sign message ? » et **Hold to sign** (3/3), puis « Message signed » | émulée 10 oct. (24 s avec un porteur lent) |
 | **« Sign in with my Ledger »**, chemins banc | `/api/login_device` : le serveur lit l'adresse sur la Flex émulée et ouvre la session ; si l'émulateur est éteint, il le relance | rien | Rien à approuver, rien de signé : l'adresse est lue | 10 oct. |
 | Refuser la connexion sur l'appareil | La page dit « Refused on the device. » et reste sur `/connexion` | rien | « Reject » puis « Yes, reject », « Message rejected » | émulée (même mécanique que le refus du mandat, testé) |
-| **L'écran de la Flex en direct** (`/connexion`, la carte vivante et le cockpit de `/demo`) | La capture de l'écran de l'émulateur, rafraîchie ; un clic est un appui, un glisser est un balayage, un appui maintenu est un « Hold » : on peut approuver depuis le site | rien | C'est l'écran de Speculos, relayé par le banc (`/speculos/*`) ; il n'existe pas pour une vraie Ledger, qui a son propre écran | 10 oct. (le porteur automatique passe par la même API) |
+| **L'écran de la Flex en direct** (`/connexion` et la carte vivante de `/demo`) | La capture de l'écran de l'émulateur, rafraîchie ; un clic est un appui, un glisser est un balayage, un appui maintenu est un « Hold » : on peut approuver depuis le site | rien | C'est l'écran de Speculos, relayé par le banc (`/speculos/*`) ; il n'existe pas pour une vraie Ledger, qui a son propre écran | 10 oct. (le porteur automatique passe par la même API) |
 | « Sign out » | `/api/logout` : le cookie est effacé ; les fichiers du compte restent | rien | rien | 10 oct. |
 | Changer d'appareil pour la démo | Se déconnecter, changer l'appareil, se reconnecter : une adresse = un compte, donc la vraie Ledger ouvre **un autre compte** que la Flex émulée | rien | rien | émulée ; deux comptes séparés testés le 10 oct. avec une seconde graine |
 
@@ -76,7 +76,7 @@ Légende des colonnes : **Le site** = la page et le serveur du banc · **Web3** 
 | **« Re-probe and exit »** | `/api/watch_sell` : même chose, et on vend ce qui a empiré au-delà du mandat | `sell(…)` sur ton coffre par la clé d'agent, pour les positions qui dépassent | rien : la sortie est dans le mandat | 10 oct. (vendu) |
 | Lire « Positions tenues » | lecture : jeton, quantité, sortie à l'achat, sortie maintenant, quel bot | lecture seule du fork | rien | 10 oct. |
 
-## 4. L'agent d'analyse (`/account`, la conversation entière ; le tiroir « Watch and analyst » et le cockpit de `/demo`, en version compacte)
+## 4. L'agent d'analyse (`/account`, la conversation entière ; le tiroir « Watch and analyst » de `/demo`, en version compacte)
 
 | Geste | Le site | Web3 | Ledger / Speculos | Vérifié |
 |---|---|---|---|---|

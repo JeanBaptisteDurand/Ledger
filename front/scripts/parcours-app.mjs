@@ -46,7 +46,7 @@ const reveal = async () => {
   await sleep(700); await page.evaluate(() => window.scrollTo(0, 0)); await sleep(250)
 }
 const go = async (label) => { await page.getByRole('navigation', { name: 'Main' }).first().getByRole('link', { name: label, exact: true }).click(); await sleep(1200); await reveal(); log(`    page ${page.url().replace(URL, '')} · toasts : ${(await page.locator('.toast').allInnerTexts()).join(' | ') || 'none'}`) }
-const liveMap = async () => { await go('Demo'); await btn('Live map', true).click(); await sleep(1500) }
+const liveMap = async () => { await go('Demo'); await sleep(1500) }   // the demo is the live map (12 October, Florent's v2)
 const shot = async (name, full = true) => { if (full) await reveal(); await page.screenshot({ path: `${OUT}/${name}.png`, fullPage: full }) }
 
 for (let i = 0; i < 120; i++) { try { const r = await fetch(URL + '/speculos/events?currentscreenonly=true'); if (r.ok) break } catch {} await sleep(500) }
@@ -204,8 +204,7 @@ await shot('06-compte')
 
 // 11 · the demo: the live map and the cockpit with everything that happened, then the replay
 await liveMap(); await shot('07-demo-map', false)
-await btn('Cockpit', true).click(); await sleep(1500); await shot('08-demo-cockpit', false)
-await btn('Replay', true).click(); await sleep(1000)
+await page.getByRole('button', { name: /Watch and analyst/ }).first().click(); await sleep(1200); await shot('08-demo-watch', false)
 
 // 12 · log out from the account page, come back through the bench's device: same account, same mandate
 await go('Account')

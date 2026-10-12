@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { linkProps, useRoute, type Route } from '../app/router'
 
 /** The site's name. The device in the hero keeps its own wordmark; this is what the product is called. */
-export const SITE_NAME = 'Unwind'
+export const SITE_NAME = 'Netout'
 
 /**
  * Before an account: the pitch, the demo, the door. "The product" is the home, the explanation under the finished scene,

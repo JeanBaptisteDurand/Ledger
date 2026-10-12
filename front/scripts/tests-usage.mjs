@@ -50,7 +50,7 @@ const go = async (label) => {
   if (await nav.count()) await nav.first().click(); else await page.getByRole('link', { name: label }).first().click()   // the door sits in the header, next to the nav
   await sleep(1200); await reveal()
 }
-const liveMap = async () => { await go('Demo'); await btn('Live map', true).click(); await sleep(1500) }
+const liveMap = async () => { await go('Demo'); await sleep(1500) }   // the demo is the live map (12 October, Florent's v2)
 const has = async (text) => (await page.getByText(text, { exact: false }).count()) > 0
 
 // speculos ready
@@ -172,7 +172,7 @@ if (!(await page.locator('.thread__trace').count())) note('la trace des outils n
 await shot('09-analyste')
 // the same conversation, compact, in the demo's drawer (opened by its head, as a person does)
 await liveMap()
-await page.locator('.drawer__head', { hasText: 'Watch and analyst' }).first().click(); await sleep(600)
+await page.getByRole('button', { name: /Watch and analyst/ }).first().click(); await sleep(800)   // pin the phase in the rail: its drawer opens
 if (!(await page.locator('.drawer[data-open]').getByText('And which one has the most refusals?').count())) note('la carte vivante ne montre pas la conversation avec l’analyste dans son tiroir')
 if (!(await page.locator('.drawer[data-open]').getByLabel('Your question').count())) fail('la carte vivante n’a pas de champ pour parler à l’analyste')
 
