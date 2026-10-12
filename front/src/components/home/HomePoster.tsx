@@ -6,7 +6,7 @@
 import { useEffect } from 'react'
 import { HomeHero } from './HomeHero'
 
-export function HomePoster() {
+export function HomePoster({ title, catchLine, heading = 'Monolith' }: { title?: string; catchLine?: string; heading?: string } = {}) {
   useEffect(() => {
     document.documentElement.setAttribute('data-home', '')
     return () => document.documentElement.removeAttribute('data-home')
@@ -19,8 +19,8 @@ export function HomePoster() {
           <img src="/poster-home-portrait.jpg" alt="" width={780} height={1688} className="absolute inset-0 h-full w-full object-cover object-center" decoding="async" fetchPriority="high" />
         </picture>
       </div>
-      <h1 className="sr-only">Monolith</h1>
-      <HomeHero />
+      <h1 className="sr-only">{heading}</h1>
+      <HomeHero title={title} catchLine={catchLine} />
     </section>
   )
 }

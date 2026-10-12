@@ -14,9 +14,9 @@ export function useLogin() {
     try {
       if (state?.signer === 'browser') {
         const r = await signIn(setStep)
-        if (!r.ok) say(r.msg || 'Connexion refusée.')
+        if (!r.ok) say(r.msg || 'Sign-in refused.')
       } else {
-        setStep('Lecture de l’adresse sur l’appareil du banc…')
+        setStep('Reading the address on the bench device…')
         await act('/login_device')
       }
     } catch (e) {

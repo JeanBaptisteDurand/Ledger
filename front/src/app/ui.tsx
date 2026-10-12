@@ -12,7 +12,7 @@ export function Band({
   return (
     <section id={id} className="app-band">
       <div className="app-column">
-        <p className="t-micro-cap eyebrow m-0">{index ? `${index} — ` : ''}{eyebrow}</p>
+        <p className="t-micro-cap eyebrow m-0">{index ? `${index} · ` : ''}{eyebrow}</p>
         <h2 className="t-display-xl m-0 mt-2 max-w-[24ch] text-balance text-text-050">{title}</h2>
         {lead ? <p className="t-body-lg mt-6 max-w-[58ch] text-pretty text-on-primary-mute">{lead}</p> : null}
         {children ? <div className="mt-12">{children}</div> : null}
@@ -37,7 +37,7 @@ export function Panel({
 export function Mirror({ lines, pending, caption }: { lines: [string, ReactNode][]; pending?: boolean; caption?: ReactNode }) {
   return (
     <div>
-      <p className="t-micro-cap eyebrow m-0 mb-3">Ce que l’appareil affiche</p>
+      <p className="t-micro-cap eyebrow m-0 mb-3">What the device shows</p>
       <div className={`app-mirror t-mono-device ${pending ? 'app-mirror--pending' : ''}`}>
         {lines.map(([label, value], i) => (
           <div className="app-mirror__line" key={i}>
@@ -81,7 +81,7 @@ export function Ghost({ quiet, small, className = '', children, ...rest }: BtnPr
 }
 
 /** button-sign-on-device: the only filled button of the system, once per flow. */
-export function SignOnDevice({ children = 'Signer sur Ledger', className = '', ...rest }: BtnProps) {
+export function SignOnDevice({ children = 'Sign on Ledger', className = '', ...rest }: BtnProps) {
   return (
     <button type="button" className={`btn-sign t-button-cap ${className}`} {...rest}>
       {children}
@@ -171,8 +171,8 @@ export function Toasts() {
   )
 }
 
-export const time = (ts?: number | null) => (ts ? new Date(ts * 1000).toLocaleTimeString('fr-FR') : '—')
-export const dateTime = (ts?: number | null) => (ts ? new Date(ts * 1000).toLocaleString('fr-FR') : '—')
+export const time = (ts?: number | null) => (ts ? new Date(ts * 1000).toLocaleTimeString('en-GB') : '·')
+export const dateTime = (ts?: number | null) => (ts ? new Date(ts * 1000).toLocaleString('en-GB') : '·')
 export const duration = (s: number) => (s < 60 ? `${s} s` : `${Math.round(s / 60)} min`)
 
 /**

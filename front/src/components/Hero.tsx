@@ -29,12 +29,19 @@ const pickMode = (): Mode => {
   return prefersReducedMotion() ? 'poster-final' : 'poster-arrival'
 }
 
-export function Hero() {
+/**
+ * `finished`: the scene in its finished state from the first frame (the hole out of the screen, the canvas fixed
+ * under the page), as a direct load of /home has it — for another page of the same surface (the demo, the door), which
+ * then writes its own `title` and `catchLine` in the ring and its own `heading` for assistive tech.
+ */
+export type HeroProps = { finished?: boolean; title?: string; catchLine?: string; heading?: string }
+
+export function Hero({ finished = false, title, catchLine, heading }: HeroProps = {}) {
   const [mode, setMode] = useState<Mode>(pickMode)
   useEffect(() => onMotionChange(() => setMode(pickMode())), [])
-  if (mode === 'scene') return <HeroStage />
+  if (mode === 'scene') return <HeroStage finished={finished} title={title} catchLine={catchLine} heading={heading} />
   // No canvas: the home is a still of the hole; the landing is the scene's poster.
-  if (isHomePath()) return <HomePoster />
+  if (finished || isHomePath()) return <HomePoster title={title} catchLine={catchLine} heading={heading} />
   return <HeroPoster variant={mode === 'poster-final' ? 'final' : 'arrival'} />
 }
 
@@ -44,7 +51,9 @@ export function Hero() {
  * for assistive tech. The page opens black; once the scene has rendered and the fonts are in, the day rises
  * (motion/dawn.ts), then the scene waits for the first scroll.
  */
-function HeroStage() {
+function HeroStage({ finished: finishedProp = false, title, catchLine, heading }: HeroProps) {
+  // The finished state is asked for by the page (the demo, the door) or by the path (/home).
+  const finished = finishedProp || isHomePath()
   const section = useRef<HTMLElement>(null)
   const sky = useRef<HTMLDivElement>(null)
   const night = useRef<HTMLDivElement>(null)
@@ -115,7 +124,8 @@ function HeroStage() {
             setHome(true)
           }
           if (phase === 'end') {
-            if (!isHomePath()) window.history.replaceState(null, '', HOME_PATH + window.location.search)
+            // The real descent ends on /home; a page that asked for the finished state keeps its own path.
+            if (!finished) window.history.replaceState(null, '', HOME_PATH + window.location.search)
             canvas.current.setFrameloop('always')
           }
         },
@@ -141,10 +151,10 @@ function HeroStage() {
       const override = dawnOverride()
       const jump = progressOverride()
       if (import.meta.env.DEV) (window as unknown as { __dawn?: unknown }).__dawn = { dawn: dawn.current, firstRender: gate.current!.promise }
-      if (override !== null || isHomePath()) {
+      if (override !== null || finished) {
         // A direct load of the home is the finished scene with the descent over: the hole, and the page.
         applyDawnCss(el, override ?? 1)
-        if (isHomePath()) player.jumpTo(1)
+        if (finished) player.jumpTo(1)
         else if (jump !== null && new URLSearchParams(window.location.search).get('land') === '1') player.land()
         else if (jump !== null) player.jumpTo(jump)
         else player.arm()
@@ -161,6 +171,9 @@ function HeroStage() {
         document.removeEventListener('visibilitychange', onVisibility)
         player.destroy()
         sound.current?.stop()
+        // The home's attributes leave with the scene: the next page starts on a bare document.
+        document.documentElement.removeAttribute('data-home')
+        document.documentElement.removeAttribute('data-glass')
       }
     },
     { scope: section },
@@ -179,7 +192,7 @@ function HeroStage() {
       */}
       <div ref={stars} className="hero-stars" aria-hidden />
 
-      <h1 className="sr-only">{HERO_TITLE}</h1>
+      <h1 className="sr-only">{heading ?? HERO_TITLE}</h1>
 
       {/*
         The canvas. Absolute inside the section during the scene; fixed under the whole page once the hole has
@@ -205,7 +218,7 @@ function HeroStage() {
       <div className="hero-vignette pointer-events-none absolute inset-0" aria-hidden />
 
       {/* The home's hero: the name and the thesis, over the hole, from the moment the hole is out. */}
-      {home ? <HomeHero delay={0.5} /> : null}
+      {home ? <HomeHero delay={0.5} title={title} catchLine={catchLine} /> : null}
 
       {/* The reader's switch for the scene's sound; gone on the home. */}
       {sound.current && !home ? <SoundToggle sound={sound.current} /> : null}

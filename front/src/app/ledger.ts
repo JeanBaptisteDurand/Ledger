@@ -36,8 +36,8 @@ export function loadLedger(): Promise<LedgerWeb> {
   loading ??= new Promise<LedgerWeb>((resolve, reject) => {
     const s = document.createElement('script')
     s.src = '/dist/ledger-web.js'
-    s.onload = () => (window.LedgerWeb ? resolve(window.LedgerWeb) : reject(new Error('bundle Ledger vide')))
-    s.onerror = () => { loading = null; reject(new Error('bundle Ledger introuvable : le banc tourne-t-il sur le port 8099 ?')) }
+    s.onload = () => (window.LedgerWeb ? resolve(window.LedgerWeb) : reject(new Error('empty Ledger bundle')))
+    s.onerror = () => { loading = null; reject(new Error('Ledger bundle not found: is the bench running on port 8099?')) }
     document.head.appendChild(s)
   })
   return loading
@@ -59,7 +59,7 @@ export async function setTransport(t: Transport): Promise<void> {
 }
 
 export const errText = (e: unknown): string => {
-  if (!e) return 'erreur'
+  if (!e) return 'error'
   if (e instanceof Error) return e.message
   if (typeof e === 'object') {
     const o = e as { message?: string; _tag?: string }
@@ -72,11 +72,11 @@ const REFUSED = /refus|reject|6985|denied|NoDevice|cancel/i
 
 /** What a device status means to a person. */
 export function explain(message: string): string {
-  if (/6985|reject|refus/i.test(message)) return 'Refusé sur l’appareil.'
-  if (/6980/.test(message)) return 'L’app Ethereum est restée sur un message abandonné : quittez-la et rouvrez-la sur l’appareil.'
-  if (/6901/.test(message)) return 'Un autre client parle à l’appareil : fermez les autres onglets, puis rouvrez l’app Ethereum.'
-  if (/5515|Locked/i.test(message)) return 'L’appareil est verrouillé : déverrouillez-le et ouvrez l’app Ethereum.'
-  if (/NoDevice|not found|No device/i.test(message)) return 'Aucun appareil sélectionné.'
+  if (/6985|reject|refus/i.test(message)) return 'Refused on the device.'
+  if (/6980/.test(message)) return 'The app is stuck after an abandoned message, quit and reopen it on the device.'
+  if (/6901/.test(message)) return 'Another client is talking to the device, close the other tabs, then reopen the Ethereum app.'
+  if (/5515|Locked/i.test(message)) return 'The device is locked: unlock it and open the Ethereum app.'
+  if (/NoDevice|not found|No device/i.test(message)) return 'No device selected.'
   return message
 }
 
@@ -105,14 +105,14 @@ export async function disconnect(): Promise<void> {
  * non-ASCII character and Ledger's Signer Kit 1.18.1 drops the whole message and strands the app (FEEDBACK § 7).
  */
 export async function signIn(onStep?: (text: string) => void): Promise<{ ok: boolean; msg?: string; address?: string }> {
-  onStep?.('Connexion à l’appareil…')
+  onStep?.('Connecting to the device…')
   const address = await connect()
   const n = await (await fetch('/api/siwe/nonce', { cache: 'no-store' })).json()
   const issued = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z')
   const message =
     `${n.domain} wants you to sign in with your Ethereum account:\n${address}\n\n` +
     `URI: ${location.origin}\nVersion: 1\nChain ID: ${n.chainId}\nNonce: ${n.nonce}\nIssued At: ${issued}`
-  onStep?.('Sur l’appareil : lisez le message de connexion, puis signez.')
+  onStep?.('On the device: read the sign-in message, then sign.')
   const lw = await loadLedger()
   let signature: string
   try {
@@ -123,7 +123,7 @@ export async function signIn(onStep?: (text: string) => void): Promise<{ ok: boo
     // after connecting) while the address is still remembered: reconnect once, as signPending does.
     await lw.disconnect().catch(() => {})
     const again = await lw.connect(getTransport(), location.origin + '/speculos')
-    if (again.toLowerCase() !== address.toLowerCase()) throw new Error('L’appareil a changé d’adresse pendant la connexion : reconnectez-vous.')
+    if (again.toLowerCase() !== address.toLowerCase()) throw new Error('The device changed address during sign-in: log in again.')
     ;({ signature } = await lw.signMessage(message))
   }
   const r = await post('/siwe/verify', { message, signature, address })
@@ -139,10 +139,10 @@ export async function signPending(p: Pending, onStep?: (text: string) => void): 
   busy = true
   const step = (iv: Step) => {
     const k = iv.requiredUserInteraction
-    if (k === 'sign-typed-data') onStep?.('Sur l’appareil : lisez chaque champ, puis maintenez « Hold to sign ».')
-    else if (k === 'sign-transaction') onStep?.('Sur l’appareil : le montant, l’adresse de votre coffre, les frais — puis maintenez « Hold to sign ».')
-    else if (k === 'web3-checks-opt-in') onStep?.('L’appareil propose « Transaction Check » : répondez « Maybe later ».')
-    else onStep?.('L’appareil prépare la revue…')
+    if (k === 'sign-typed-data') onStep?.('On the device: read each field, then hold to sign.')
+    else if (k === 'sign-transaction') onStep?.('On the device: the amount, the address of your vault, the fees, then hold to sign.')
+    else if (k === 'web3-checks-opt-in') onStep?.('The device offers “Transaction Check”: answer “Maybe later”.')
+    else onStep?.('The device is preparing the review…')
   }
   try {
     const lw = await loadLedger()
@@ -175,7 +175,7 @@ export async function signPending(p: Pending, onStep?: (text: string) => void): 
         await connect()
         r = await lw.signTypedData(p.typedData, descriptor, step)
       } catch (second) {
-        throw new Error(`${errText(first)} — puis, après reconnexion : ${errText(second)}`)
+        throw new Error(`${errText(first)}, then after reconnecting: ${errText(second)}`)
       }
     }
     await post('/signed', { kind: p.kind, signature: r.signature, owner: r.address, report: r.report })

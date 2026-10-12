@@ -37,7 +37,7 @@ export function HeroPoster({ variant }: { variant: 'arrival' | 'final' }) {
       It is generated from the same table the hero reads, not transcribed: the first version of this block
       had one sentence copied into it by hand, and it still had one when the hero had grown to three.
     */}
-    <section className="bg-canvas-night" aria-label="Séquence">
+    <section className="bg-canvas-night" aria-label="Sequence">
       <ol className="screen-word-list mx-auto max-w-[52ch] px-6 py-16 md:px-8">
         {SCREEN_STEPS.map((step, i) => (
           <li key={step.word}>

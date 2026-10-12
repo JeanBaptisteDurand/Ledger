@@ -3,22 +3,15 @@
  *
  * Before an account — the pitch and the idea, open to anyone:
  *   /                the hero and the pitch (Florent's page), how it works, the door to the account
- *   /schema          who does what, as complete as we can make it
+ *   /demo            the journey on the bench, replayed with the real screens of the Flex
  *   /connexion       choose the Ledger, sign the login message
  *
- * In the account — an address proven by the Ledger (without it, these send you to /connexion):
- *   /app             overview: session and vault, mandate, out-of-bounds requests, positions
- *   /app/agents      my trading agents (the bots): add, stop, restart, history, the journal
- *   /app/analyste    my analysis agent: the conversation, and the MCP calls under each answer
- *   /compte          my account: proven address, MCP key, Claude configuration, what I did
- *   /appareil        my Ledger: which device, where the signature is made, the live screen
+ * Once signed in, the demo is the product: its live modes drive the bench with the holder's own vault.
  */
 import { useEffect, useState } from 'react'
 
-export type Route = '/' | '/schema' | '/connexion' | '/app' | '/app/agents' | '/app/analyste' | '/compte' | '/appareil'
-const ROUTES: Route[] = ['/', '/schema', '/connexion', '/app', '/app/agents', '/app/analyste', '/compte', '/appareil']
-export const PUBLIC_ROUTES: Route[] = ['/', '/schema', '/connexion']
-export const isAccountRoute = (r: Route) => !PUBLIC_ROUTES.includes(r)
+export type Route = '/' | '/demo' | '/connexion'
+const ROUTES: Route[] = ['/', '/demo', '/connexion']
 
 const normalise = (p: string): Route => {
   const clean = (p.replace(/\/+$/, '') || '/') as Route
@@ -35,17 +28,6 @@ export function navigate(to: Route, hash = '', replace = false): void {
   if (!hash) window.scrollTo(0, 0)
 }
 
-/** Where to go once logged in: the account page that sent you to /connexion, or the overview. */
-const NEXT_KEY = 'pdsNext'
-export function rememberNext(r: Route): void {
-  try { sessionStorage.setItem(NEXT_KEY, r) } catch { /* private mode */ }
-}
-export function takeNext(): Route {
-  let r: string | null = null
-  try { r = sessionStorage.getItem(NEXT_KEY); sessionStorage.removeItem(NEXT_KEY) } catch { /* private mode */ }
-  const n = normalise(r ?? '/app')
-  return isAccountRoute(n) ? n : '/app'
-}
 
 export function useRoute(): Route {
   const [route, setRoute] = useState<Route>(() => normalise(location.pathname))

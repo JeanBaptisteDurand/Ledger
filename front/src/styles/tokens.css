@@ -1272,7 +1272,7 @@ html[data-glass='webgl'] .liquid__fill { display: none; }
 .hot { color: var(--color-accent-incandescent); text-shadow: 0 0 14px color-mix(in srgb, var(--color-sky-orange) 30%, transparent); }
 .text-hot { color: var(--color-accent-incandescent); }
 .mirror__hot { color: var(--color-accent-incandescent); text-shadow: 0 0 10px color-mix(in srgb, var(--color-sky-orange) 35%, transparent); }
-.takeaway { display: flex; align-items: center; gap: 10px; margin: 0 0 20px; color: var(--color-accent-incandescent); text-transform: none; letter-spacing: 0.02em; font-size: 13px; }
+.takeaway { display: flex; align-items: baseline; gap: 10px; margin: 0 0 20px; color: var(--color-accent-incandescent); text-transform: none; letter-spacing: 0.02em; font-size: 13px; }
 .takeaway__ember { flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%; background: var(--color-accent-incandescent); box-shadow: 0 0 10px 2px color-mix(in srgb, var(--color-sky-orange) 55%, transparent); }
 .btn-ghost--hot { border-color: var(--color-accent-incandescent); color: var(--color-accent-incandescent); box-shadow: 0 0 22px color-mix(in srgb, var(--color-sky-orange) 22%, transparent); }
 .btn-ghost--hot:hover { background: var(--color-accent-incandescent); color: var(--color-ink); }
@@ -1317,3 +1317,196 @@ html[data-glass='webgl'] .liquid__fill { display: none; }
 @media (prefers-reduced-motion: reduce) { .sound-toggle[data-sound='blocked'] .sound-toggle__dot { animation: none; } }
 #hero[data-mode='background'] .sound-toggle, #hero[data-mode='descending'] .sound-toggle { display: none; }
 @media (max-width: 767px) { .sound-toggle { left: 12px; bottom: 12px; } }
+
+/*
+ * ── The schema on the home's surface (2026-10-11) ────────────────────────
+ * /schema joins the home: the finished scene under it, a sheet per band. Three list shapes the overview needs
+ * and the landing did not have: a principle per row with its facts on the right, a key beside what it names,
+ * and a brick with its role and its line. Hairlines only; nothing moves once it is there.
+ */
+.rows, .bricks-list, .steps { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--color-page-hairline); }
+.rows__row { display: grid; grid-template-columns: 3ch minmax(0, 1fr) minmax(240px, 36%); gap: 16px 32px; align-items: start; padding: 24px 0; border-bottom: 1px solid var(--color-page-hairline); }
+.rows__row > .stats { border-top: 0; }
+.rows__row > .stats .stats__row:first-child { padding-top: 0; }
+.kv { margin: 0; border-top: 1px solid var(--color-page-hairline); }
+.kv__row { display: grid; grid-template-columns: minmax(140px, 30%) minmax(0, 1fr); gap: 8px 24px; align-items: baseline; padding: 10px 0; border-bottom: 1px solid var(--color-page-hairline); }
+.kv__row dt { overflow-wrap: anywhere; }
+.bricks-list__row { display: grid; grid-template-columns: minmax(160px, 22%) minmax(120px, 16%) minmax(0, 1fr); gap: 8px 24px; align-items: baseline; padding: 18px 0; border-bottom: 1px solid var(--color-page-hairline); }
+.steps__row { display: grid; grid-template-columns: 3ch minmax(140px, 26%) minmax(0, 1fr); gap: 8px 24px; align-items: baseline; padding: 16px 0; border-bottom: 1px solid var(--color-page-hairline); }
+@media (max-width: 1279px) {
+  .rows__row { grid-template-columns: 3ch minmax(0, 1fr); }
+  .rows__row > .stats { grid-column: 2; }
+}
+@media (max-width: 767px) {
+  .rows__row { grid-template-columns: 1fr; gap: 10px; }
+  .rows__row > .stats { grid-column: 1; }
+  .kv__row, .bricks-list__row, .steps__row { grid-template-columns: 1fr; gap: 4px; }
+}
+/* The footer stands over the fixed canvas, like the bands: unpositioned, it was painted under it. */
+footer { position: relative; }
+
+/*
+ * ── The demo (2026-10-12) ─────────────────────────────────────────────────
+ * One stage on a sheet: the scenes, the device, the account's panel, one sentence, the controls. Things come on by
+ * blinking (app.css .blink-in), never by fading, and the player only decides when. The progress is a row of ticks,
+ * a scene's first tick taller. Below 1280 px the three columns stack, the device first.
+ */
+.demo { outline: none; }
+.demo__grid { display: grid; grid-template-columns: minmax(0, 4fr) minmax(260px, 3fr) minmax(0, 5fr); gap: 32px; align-items: start; }
+.demo__scenes { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--color-page-hairline); }
+.demo__scene { display: grid; grid-template-columns: 3ch minmax(0, 1fr) auto; gap: 4px 14px; align-items: baseline; width: 100%; min-height: 56px; padding: 12px 0; background: none; border: 0; border-bottom: 1px solid var(--color-page-hairline); text-align: left; color: inherit; font: inherit; cursor: pointer; }
+.demo__scene:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; border-radius: 2px; }
+.demo__scene-index, .demo__scene-duration { color: var(--color-page-text-faint); }
+.demo__scene-title { font-size: 18px; color: var(--color-page-text-mute); }
+.demo__scenes [data-state='live'] .demo__scene-title { color: var(--color-accent-incandescent); text-shadow: 0 0 14px color-mix(in srgb, var(--color-sky-orange) 30%, transparent); }
+.demo__scenes [data-state='live'] .demo__scene-index { color: var(--color-accent-incandescent); }
+.demo__scenes [data-state='done'] .demo__scene-title { color: var(--color-page-text); }
+.demo__device .device-frame { margin: 0 auto; }
+.demo__device .device-frame img { max-width: 240px; }
+.demo__panel .panel { min-height: 320px; }
+.demo__caption { margin-top: 32px; }
+.demo__controls { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--color-page-hairline); }
+.demo__progress { display: flex; align-items: flex-end; gap: 3px; flex: 1 1 200px; min-width: 160px; height: 18px; }
+.demo__tick { flex: 1 1 0; height: 4px; background: var(--color-page-hairline-strong); }
+.demo__tick.is-scene { height: 10px; }
+.demo__tick.is-done { background: var(--color-accent-incandescent); }
+/* The exception's two outcomes: the one the holder chose carries the incandescent outline. */
+.outcomes [data-chosen] { padding-left: 12px; border-left: 1px solid var(--color-accent-incandescent); }
+@media (max-width: 1279px) {
+  .demo__grid { grid-template-columns: 1fr; }
+  .demo__device { order: -1; }
+  .demo__scenes { order: 1; }
+}
+/* Under reduced motion the blink shows its end state at once (the grammar: nothing continuous, nothing fading). */
+@media (prefers-reduced-motion: reduce) { .blink-in, .blink-ack { animation: none; } }
+
+/*
+ * ── The live demo: the map lit, the cockpit, the conductor (2026-10-12) ──
+ * The map's nodes take a tone when they act (incandescent), succeed (green), refuse (red) or ask the holder
+ * (gold); a hot edge is drawn at 2 px in the incandescent with larger dots. The cockpit is three columns for a
+ * projector. The conductor is the journey's steps, each a real action, lit the way the demo's scenes are.
+ */
+.map-node.is-hot rect { stroke: var(--color-accent-incandescent); stroke-width: 1.5; }
+.map-node.is-ok rect { stroke: var(--color-state-success); stroke-width: 1.5; }
+.map-node.is-refused rect { stroke: var(--color-state-error); stroke-width: 1.5; }
+.map-node.is-asks rect { stroke: var(--color-state-warning); stroke-width: 2; }
+.map-edge.is-live { stroke: var(--color-accent-incandescent); stroke-width: 2; }
+.map-dots.is-live { fill: var(--color-accent-incandescent); }
+.live-map__grid { display: grid; grid-template-columns: minmax(280px, 4fr) minmax(0, 4fr) minmax(0, 4fr); gap: 32px; align-items: start; margin-top: 32px; }
+.live-map__flex .device-frame img { max-width: 280px; }
+.live-map__under { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 32px; }
+.live-map .data-scroll svg { min-width: 0 !important; }
+.cockpit .agents__form, .live-map .agents__form { grid-template-columns: 1fr 1fr; }
+.cockpit .agents__form > :first-child, .cockpit .agents__form > :last-child, .live-map .agents__form > :first-child, .live-map .agents__form > :last-child { grid-column: 1 / -1; }
+.live-flex .device-frame { margin: 0 auto; }
+.cockpit__grid { display: grid; grid-template-columns: minmax(0, 4fr) minmax(300px, 4fr) minmax(0, 4fr); gap: 24px; align-items: start; }
+.cockpit__col--flex .device-frame { margin: 0 auto; }
+.cockpit__col--flex .device-frame img { max-width: 360px; }
+.measure--large .measure__exit { font-size: clamp(64px, 7vw, 112px); }
+.conductor { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--color-page-hairline); }
+.conductor__step { display: grid; grid-template-columns: 3ch minmax(0, 1fr) auto; gap: 8px 16px; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--color-page-hairline); }
+.conductor__index { color: var(--color-page-text-faint); }
+.conductor__label { font-family: var(--font-body); font-size: 17px; font-weight: 600; letter-spacing: -0.01em; color: var(--color-page-text-mute); }
+.conductor__step[data-state='live'] .conductor__label, .conductor__step[data-state='pending'] .conductor__label { color: var(--color-accent-incandescent); text-shadow: 0 0 14px color-mix(in srgb, var(--color-sky-orange) 30%, transparent); }
+.conductor__step[data-state='live'] .conductor__index, .conductor__step[data-state='pending'] .conductor__index { color: var(--color-accent-incandescent); }
+.conductor__step[data-state='done'] .conductor__label { color: var(--color-page-text); }
+.conductor__step[data-state='ahead'] { opacity: 0.6; }
+.conductor__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; justify-content: flex-end; }
+.conductor--compact .conductor__step { padding: 10px 0; grid-template-columns: 3ch minmax(0, 1fr); }
+.conductor--compact .conductor__actions { grid-column: 2; justify-content: flex-start; }
+.conductor--compact .conductor__label { font-size: 15px; }
+.agents__list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--color-page-hairline); }
+.agents__row { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; gap: 4px 12px; align-items: baseline; padding: 12px 0; border-bottom: 1px solid var(--color-page-hairline); }
+.agents__row .t-mono-data, .agents__row .t-kicker { grid-column: 2; }
+.agents__row > button { grid-column: 3; grid-row: 1; }
+.agents__row > .t-kicker:last-child { grid-column: 2; }
+.agents__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-page-text-faint); align-self: center; }
+.agents__row[data-state='running'] .agents__dot { background: var(--color-state-success); }
+.agents__row[data-state='live'] .agents__dot { background: var(--color-accent-incandescent); box-shadow: 0 0 10px 2px color-mix(in srgb, var(--color-sky-orange) 55%, transparent); }
+.agents__row[data-state='live'] .agents__name { color: var(--color-accent-incandescent); }
+.agents__form { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1.2fr) minmax(0, 1.2fr) auto; gap: 12px; align-items: end; }
+.measure[data-verdict='asks'] .exit-pair__rule { background: var(--color-state-warning); }
+.measure[data-verdict='refused'] .exit-pair__rule { background: var(--color-state-error); }
+.measure[data-verdict='ok'] .exit-pair__rule { background: var(--color-state-success); }
+@media (max-width: 1279px) {
+  .live-map__grid, .cockpit__grid { grid-template-columns: 1fr; }
+  .live-map__under { grid-template-columns: 1fr; }
+  .cockpit__col--flex { order: -1; }
+  .agents__form { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 767px) {
+  .conductor__step { grid-template-columns: 3ch minmax(0, 1fr); }
+  .conductor__actions { grid-column: 2; justify-content: flex-start; }
+  .agents__form { grid-template-columns: 1fr; }
+}
+
+/*
+ * ── The live stage: one screen, no scroll (2026-10-12) ───────────────────
+ * The stage fills the viewport under the nav. Rows: the rail, the body, the strip. The body is the map (scaled
+ * to its height, zoomed by a transform on its group) beside a side column (the Flex, then the drawers), or the
+ * cockpit's three columns. A drawer is one line while it does not act, and opens as the bench reaches it. Panels
+ * that overflow scroll inside themselves: the page never does. Fullscreen takes the stage alone.
+ */
+.live-band { padding: 0 16px; }
+.glass--stage { padding: 16px 20px; }
+.live-stage { height: calc(100dvh - 88px - 32px - 8px); scroll-margin-top: 88px; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 12px; }
+.live-stage--door { height: auto; min-height: 40dvh; display: block; }
+.live-stage.is-full { height: 100vh; padding: 20px 24px; background: var(--color-canvas-night); }
+.live-stage__rail { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--color-page-hairline); }
+.acts { display: flex; list-style: none; margin: 0; padding: 0; gap: 4px; flex: 1 1 auto; min-width: 0; }
+.acts li { flex: 1 1 0; min-width: 0; }
+.acts__btn { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 10px; align-items: baseline; width: 100%; padding: 8px 12px; background: none; border: 0; border-bottom: 2px solid transparent; text-align: left; color: inherit; font: inherit; cursor: pointer; }
+.acts__btn:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.acts__index { color: var(--color-page-text-faint); }
+.acts__label { font-family: var(--font-body); font-size: 17px; font-weight: 600; letter-spacing: -0.01em; color: var(--color-page-text-mute); white-space: nowrap; }
+.acts__sum { grid-column: 2; color: var(--color-page-text-faint); text-transform: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.acts li[data-state='live'] .acts__btn { border-bottom-color: var(--color-accent-incandescent); }
+.acts li[data-state='live'] .acts__label, .acts li[data-state='live'] .acts__index { color: var(--color-accent-incandescent); text-shadow: 0 0 14px color-mix(in srgb, var(--color-sky-orange) 30%, transparent); }
+.acts li[data-state='done'] .acts__label { color: var(--color-page-text); }
+.live-stage__tools { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
+.live-stage__body { min-height: 0; }
+.live-stage__body--map { display: grid; grid-template-columns: minmax(0, 1fr) clamp(320px, 28vw, 420px); gap: 20px; }
+.live-stage__map { min-height: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.live-stage__map svg { max-height: 100%; }
+.map-view { transition: transform 700ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+@media (prefers-reduced-motion: reduce) { .map-view { transition: none; } }
+.live-stage__side { min-height: 0; display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 12px; }
+.live-stage__flex .device-frame { margin: 0 auto; padding: 10px; }
+.live-stage__flex .device-frame img { max-width: 200px; }
+.live-stage__flex .t-caption, .live-stage__flex .t-micro-cap { display: none; }
+.live-stage__body--cockpit { display: grid; grid-template-columns: minmax(0, 4fr) minmax(300px, 4fr) minmax(0, 4fr); gap: 20px; }
+.live-stage__col { min-height: 0; overflow: auto; }
+.live-stage__col--flex { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.live-stage__col--flex .device-frame img { max-width: min(380px, 36vh * 0.8); }
+.live-stage__strip { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding-top: 10px; border-top: 1px solid var(--color-page-hairline); min-height: 44px; }
+.live-stage__strip > p { flex: 0 1 46ch; text-align: right; }
+.measure-line { display: inline-flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+/* The drawers. */
+.drawers { min-height: 0; display: flex; flex-direction: column; gap: 6px; overflow: auto; }
+.drawer { border: 1px solid var(--color-page-hairline); border-radius: var(--radius-sm); background: color-mix(in srgb, var(--color-page-panel) 82%, transparent); flex: 0 0 auto; }
+.drawer[data-open] { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; border-color: color-mix(in srgb, var(--color-accent-incandescent) 55%, transparent); }
+.drawer__head { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; align-items: baseline; width: 100%; padding: 10px 14px; background: none; border: 0; text-align: left; color: inherit; font: inherit; cursor: pointer; }
+.drawer__head:focus-visible { outline: 2px solid var(--color-accent); outline-offset: -2px; border-radius: var(--radius-sm); }
+.drawer__title { font-family: var(--font-body); font-size: 15px; font-weight: 600; color: var(--color-page-text-mute); white-space: nowrap; }
+.drawer[data-open] .drawer__title { color: var(--color-accent-incandescent); }
+.drawer__sum { color: var(--color-page-text-faint); text-transform: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.drawer__body { padding: 4px 14px 14px; overflow: auto; min-height: 0; }
+.steprow { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--color-page-hairline); }
+.steprow__label { font-family: var(--font-body); font-size: 15px; font-weight: 600; color: var(--color-page-text-mute); }
+.steprow[data-state='live'] .steprow__label, .steprow[data-state='pending'] .steprow__label { color: var(--color-accent-incandescent); }
+.steprow[data-state='done'] .steprow__label { color: var(--color-page-text); }
+.steprow[data-state='ahead'] { opacity: 0.55; }
+.steprow__actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.drawer .agents__form { grid-template-columns: 1fr 1fr; }
+.drawer .agents__form > :first-child, .drawer .agents__form > :last-child { grid-column: 1 / -1; }
+.drawer .agents__row { padding: 8px 0; }
+.drawer .agents__name { font-size: 17px; }
+.live-stage__measure-panel .measure__exit { font-size: clamp(48px, 6vh, 96px); }
+@media (max-width: 1279px) {
+  .live-stage { height: auto; }
+  .live-stage__body--map, .live-stage__body--cockpit { grid-template-columns: 1fr; }
+  .live-stage__map svg { height: auto; }
+  .live-stage__col--flex { order: -1; }
+  .acts { flex-wrap: wrap; }
+  .acts li { flex: 1 1 45%; }
+}

@@ -4,25 +4,15 @@ import { linkProps, useRoute, type Route } from '../app/router'
 /** The site's name. The device in the hero keeps its own wordmark; this is what the product is called. */
 export const SITE_NAME = 'Porte de sortie'
 
-/** Before an account: the pitch, the schema, the door. */
+/** Before an account: the pitch, the demo, the door. */
 const PUBLIC_LINKS: { to: Route; label: string }[] = [
-  { to: '/', label: 'Le produit' },
-  { to: '/schema', label: 'Schéma' },
-]
-
-/** In the account: what is mine. */
-const ACCOUNT_LINKS: { to: Route; label: string }[] = [
-  { to: '/app', label: 'Vue d’ensemble' },
-  { to: '/app/agents', label: 'Agents de trading' },
-  { to: '/app/analyste', label: 'Analyste' },
-  { to: '/compte', label: 'Compte' },
-  { to: '/appareil', label: 'Appareil' },
-  { to: '/schema', label: 'Schéma' },
+  { to: '/', label: 'The product' },
+  { to: '/demo', label: 'Demo' },
 ]
 
 const shortAddress = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`
 
-/** On the landing there is no bench provider: one quiet look at the session, to offer « mon espace » instead of « se connecter ». */
+/** On the landing there is no bench provider: one quiet look at the session, to offer the account instead of the sign-in door. */
 function usePeek(enabled: boolean): string | null {
   const [address, setAddress] = useState<string | null>(null)
   useEffect(() => {
@@ -47,10 +37,10 @@ export function Nav({ hiddenUntilRelease, solid = false, account }: { hiddenUnti
   const route = useRoute()
   const peek = usePeek(account === undefined)
   const address = account === undefined ? peek : account
-  const links = address ? ACCOUNT_LINKS : PUBLIC_LINKS
+  const links = PUBLIC_LINKS
   const door = address
-    ? { to: '/compte' as Route, label: shortAddress(address), title: address, mono: true }
-    : { to: '/connexion' as Route, label: 'Se connecter', title: 'Se connecter avec ma Ledger', mono: false }
+    ? { to: '/connexion' as Route, label: shortAddress(address), title: `${address}: signed in, sign out from the door`, mono: true }
+    : { to: '/connexion' as Route, label: 'Sign in', title: 'Sign in with my Ledger', mono: false }
   const doorClass = door.mono ? 't-mono-data nav-link' : 'btn-ghost btn-ghost--small t-button-cap'
   return (
     <header
@@ -59,10 +49,10 @@ export function Nav({ hiddenUntilRelease, solid = false, account }: { hiddenUnti
       style={hiddenUntilRelease ? { visibility: 'hidden', opacity: 0 } : undefined}
     >
       <div className="flex h-[72px] items-center justify-between px-4 md:px-8">
-        <a {...linkProps(address ? '/app' : '/')} className="t-button-cap nav-link -ml-3">
+        <a {...linkProps('/')} className="t-button-cap nav-link -ml-3">
           {SITE_NAME}
         </a>
-        <nav aria-label="Principale" className="hidden md:block">
+        <nav aria-label="Main" className="hidden md:block">
           <ul className="m-0 flex list-none items-center gap-2 p-0">
             {links.map((l) => (
               <li key={l.to}>
@@ -83,10 +73,10 @@ export function Nav({ hiddenUntilRelease, solid = false, account }: { hiddenUnti
           aria-controls="site-menu"
           onClick={() => setOpen((v) => !v)}
         >
-          {open ? 'Fermer' : 'Menu'}
+          {open ? 'Close' : 'Menu'}
         </button>
       </div>
-      <nav id="site-menu" aria-label="Principale" className="md:hidden" hidden={!open}>
+      <nav id="site-menu" aria-label="Main" className="md:hidden" hidden={!open}>
         <ul className="m-0 flex list-none flex-col border-t border-hairline-on-dark bg-canvas-night px-4 py-2">
           {[...links, ...(address ? [] : [{ to: door.to, label: door.label }])].map((l) => (
             <li key={l.to + l.label}>

@@ -4,18 +4,13 @@ The hero is Florent's and is not touched. Everything the product does lives in `
 built on the tokens of `src/styles/tokens.css` and the rules of `DESIGN.md`.
 
 Like any SaaS: the pitch and the idea before the account, then what is yours once your Ledger has proven your address.
-An account page opened without a session sends you to `/connexion`, then back where you were going.
+Signing in lands on the demo's live map, which drives the bench with the holder's own vault. The account's pages were removed on 12 October (DESIGN.md › Three routes).
 
 | path | who | what |
 |---|---|---|
-| `/` | anyone | the hero and the pitch, how it works, the door to the account |
-| `/schema` | anyone | the whole system on one sheet, then thirteen bands: the principle, the other axis, the agents, the site, the account, one signature step by step, the analyst's ten tools, the bricks, the numbers, the limits, what it needs to run, the findings, the SaaS promise |
-| `/connexion` | anyone | choose the Ledger (USB or the emulated Flex) and the signing path, sign the login message |
-| `/app` | account | overview: session and vault, **deposit and withdrawal signed on the Ledger**, strategy and mandate, the agents at a glance, out-of-bounds requests, positions |
-| `/app/agents` | account | my trading agents (bots): add, live, stopped, restart, the journal; the requests they raise |
-| `/app/analyste` | account | my analysis agent: the conversation, the MCP calls under each answer |
-| `/compte` | account | the address proven by the Ledger, the MCP key and Claude configuration (one-click copy), what was done |
-| `/appareil` | account | my Ledger: which device, where the signature is made, the live screen with a finger |
+| `/` and `/home` | anyone | the scene, then the whole explanation: the claim, the trap, the principle, the agent goes in anyway, one signature, the system on one sheet, two kinds of agents, when it overflows step by step, measured end to end, the account, the findings, the bricks, the limits, the call |
+| `/demo` | anyone | three modes (`#map`, `#cockpit`, none): the journey replayed with the real captures of the Flex (`public/demo/`), the system's map lit live by the bench and zoomed to the acting phase, the presenter's cockpit. Both live modes are one stage that fits the screen (a rail of four phases, drawers that open as the bench reaches them, the Flex live, TARE's last measure in a strip, fullscreen), with the recap under it. They drive the real bench through the account's routes and sign in with the emulated Flex in one click |
+| `/connexion` | anyone | on the home's surface: choose the Ledger (USB or the emulated Flex) and the signing path, sign the login message, the live Flex beside |
 
 ## The funds, signed on the Ledger (10 October)
 

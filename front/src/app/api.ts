@@ -197,33 +197,33 @@ export async function post(path: string, body: unknown = {}): Promise<Reply> {
 
 /** wei (string) → "0.5000 WETH" above 0.001, else wei with thin spaces. */
 export function fmtWei(w: string | number | null | undefined): string {
-  if (w == null || w === '') return '—'
+  if (w == null || w === '') return '·'
   const n = Number(w) / 1e18
   if (n >= 0.001) return n.toFixed(4) + ' WETH'
-  return Number(w).toLocaleString('fr') + ' wei'
+  return Number(w).toLocaleString('en-GB') + ' wei'
 }
 
-export const short = (a?: string | null, head = 6, tail = 4) => (a ? `${a.slice(0, head)}…${a.slice(-tail)}` : '—')
+export const short = (a?: string | null, head = 6, tail = 4) => (a ? `${a.slice(0, head)}…${a.slice(-tail)}` : '·')
 
 export const EVENT_LABELS: Record<string, string> = {
-  login: 'connexion',
-  session: 'session ouverte',
-  strategy: 'stratégie demandée',
-  mandate_signed: 'mandat signé',
-  bot_added: 'bot ajouté',
-  run: 'tour lancé',
-  run_done: 'tour terminé',
-  bot_stopped: 'bot arrêté',
-  bot_restarted: 'bot relancé',
-  bot_done: 'bot terminé',
-  notified: 'prévenu',
-  exception_signed: 'dérogation signée',
-  exception_refused: 'refus maintenu',
-  watch: 'surveillance',
-  analysis: "question à l'analyste",
-  reset: 'remise à zéro',
+  login: 'login',
+  session: 'session opened',
+  strategy: 'strategy requested',
+  mandate_signed: 'mandate signed',
+  bot_added: 'bot added',
+  run: 'round started',
+  run_done: 'round finished',
+  bot_stopped: 'bot stopped',
+  bot_restarted: 'bot restarted',
+  bot_done: 'bot finished',
+  notified: 'notified',
+  exception_signed: 'exception signed',
+  exception_refused: 'left refused',
+  watch: 'watch',
+  analysis: 'question to the analyst',
+  reset: 'reset',
 }
 
 export const STOP_REASONS: Record<string, string> = {
-  'arrêté par le porteur': 'arrêté par vous',
+  'arrêté par le porteur': 'stopped by you',
 }

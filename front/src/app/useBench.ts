@@ -58,7 +58,7 @@ export function BenchProvider({ children }: { children: ReactNode }) {
       try {
         r = await post(path, body)
       } catch {
-        r = { ok: false, msg: 'Le banc ne répond pas (port 8099).' }
+        r = { ok: false, msg: 'The bench is not answering (port 8099).' }
       }
       if (r.pending_token) myToken.current = r.pending_token
       if (!r.ok && r.msg) say(r.msg)
@@ -81,7 +81,7 @@ export function BenchProvider({ children }: { children: ReactNode }) {
     // no token: only a request older than this tab (the asking tab was reloaded), never one born while this tab was already open
     const mine = p.token === myToken.current || (!myToken.current && (p.ts ?? 0) * 1000 < LOADED_AT && document.hasFocus())
     if (!mine) return
-    setDeviceHint('L’appareil prépare la revue…')
+    setDeviceHint('The device is preparing the review…')
     signPending(p, setDeviceHint)
       .catch((e) => say(explain(errText(e))))
       .finally(() => {
@@ -102,7 +102,7 @@ export function BenchProvider({ children }: { children: ReactNode }) {
     if (key && key !== lastEscalation.current && e?.possible) {
       try {
         if ('Notification' in window && Notification.permission === 'granted') {
-          new Notification('Demande hors bornes', { body: (e.bot ? `Bot « ${e.bot.name} » — ` : '') + e.question })
+          new Notification('Out-of-bounds request', { body: (e.bot ? `Bot “${e.bot.name}”: ` : '') + e.question })
         }
       } catch { /* notifications are a courtesy */ }
     }

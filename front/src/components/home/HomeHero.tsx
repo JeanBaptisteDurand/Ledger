@@ -14,7 +14,8 @@ import { motionEnabled } from '../../motion/flags'
 export const HOME_TITLE = 'MONOLITH'
 export const HOME_CATCH = 'An agent cannot enter a position it does not know how to exit.'
 
-export function HomeHero({ delay = 0 }: { delay?: number }) {
+/** `title` and `catchLine` let another page of the same surface (the demo, the door) write its own name in the ring. */
+export function HomeHero({ delay = 0, title = HOME_TITLE, catchLine = HOME_CATCH }: { delay?: number; title?: string; catchLine?: string }) {
   const root = useRef<HTMLDivElement>(null)
   const animated = motionEnabled()
   useGSAP(
@@ -34,8 +35,8 @@ export function HomeHero({ delay = 0 }: { delay?: number }) {
   const hidden = animated ? { visibility: 'hidden' as const } : undefined
   return (
     <div ref={root} className="home-hero" data-home-hero>
-      <p data-home-title style={hidden} className="t-display-monolith home-hero__title m-0 text-page-text" aria-hidden>{HOME_TITLE}</p>
-      <p data-home-catch style={hidden} className="home-hero__catch t-title-md m-0 text-page-text-mute">{HOME_CATCH}</p>
+      <p data-home-title style={hidden} className="t-display-monolith home-hero__title m-0 text-page-text" aria-hidden>{title}</p>
+      <p data-home-catch style={hidden} className="home-hero__catch t-title-md m-0 text-page-text-mute">{catchLine}</p>
     </div>
   )
 }

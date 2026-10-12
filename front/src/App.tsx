@@ -4,15 +4,19 @@ import { Nav } from './components/Nav'
 import { Hero } from './components/Hero'
 import { Landing as Home } from './components/landing/Landing'
 import { Footer } from './components/Footer'
-import { initSmoothScroll, setPageLocked } from './motion/scroll'
+import { initSmoothScroll } from './motion/scroll'
 import { initReveals } from './motion/reveal'
 import { hasWebGL, motionEnabled, onMotionChange } from './motion/flags'
 import { useRoute } from './app/router'
-import { AppShell } from './app/AppShell'
+import { DemoPage } from './components/demo/Demo'
+import { ConnexionPage } from './components/connexion/Connexion'
 
 export default function App() {
   const route = useRoute()
-  return route === '/' ? <Landing /> : <Product route={route} />
+  if (route === '/') return <Landing />
+  // The public pages stand on the home's surface: the finished scene under their sheets.
+  if (route === '/demo') return <DemoPage />
+  return <ConnexionPage />
 }
 
 /** Before an account: the hero and the pitch, how it works, the door. The scene, the player, the reveals. */
@@ -39,25 +43,6 @@ function Landing() {
         <Home />
       </main>
       <Footer />
-    </div>
-  )
-}
-
-/** The product pages: calm, dense, no scene and no locked scroll. They inherit the ramp, the type and the grammar. */
-function Product({ route }: { route: Exclude<ReturnType<typeof useRoute>, '/'> }) {
-  // Leaving the hero mid-sequence must not leave the page locked.
-  useEffect(() => {
-    setPageLocked(false)
-    document.documentElement.style.removeProperty('overflow')
-    document.body.style.removeProperty('overflow')
-    window.scrollTo(0, 0)
-  }, [route])
-  useEffect(() => initSmoothScroll(), [])
-
-  return (
-    <div>
-      <AppShell route={route} nav={(account) => <Nav hiddenUntilRelease={false} solid account={account} />} />
-      <Footer product />
     </div>
   )
 }
