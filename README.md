@@ -1,4 +1,7 @@
-# PORTE DE SORTIE
+# UNWIND
+
+*Le nom de travail était « Porte de sortie » ; les documents et le banc l'emploient encore. Le produit s'appelle Unwind :
+to unwind a position, sortir d'une position.*
 
 > **Un agent ne peut pas entrer dans une position dont il ne sait pas sortir.**
 >
@@ -28,7 +31,7 @@ déposant bloquée**, pendant que cinq coffres sur dix refusent même le dépôt
 
 ## In English, on one page
 
-**The sentence.** An agent cannot enter a position it does not know how to exit.
+**The sentence.** An agent cannot enter a position it cannot unwind. (Working title: Porte de sortie, the exit door.)
 
 **The gap.** Everything today bounds what an agent *spends* — a daily cap, an allow-list, a maximum slippage;
 Ledger's Agent Policies bound exactly that. Nothing bounds what it can *get back*. A token whose hook blocks

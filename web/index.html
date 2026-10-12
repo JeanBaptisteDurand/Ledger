@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Porte de sortie</title>
+<title>Unwind</title>
 <style>
   :root{
     --bg:#0b0e14; --panel:#131822; --line:#232c3b; --ink:#e8eef6; --dim:#8b97a8;
@@ -107,7 +107,7 @@
 <body>
 
 <header>
-  <h1>Porte de sortie</h1>
+  <h1>Unwind</h1>
   <span class="tag">un agent ne peut pas entrer dans une position dont il ne sait pas sortir</span>
   <span class="spacer"></span>
   <div class="account"><span class="dot" id="dot"></span><span id="acct">aucun compte</span></div>
@@ -443,7 +443,7 @@ async function refresh(){
   const bn = $('#banner');
   if (escQ){ bn.hidden = false; bn.textContent = 'hors bornes — ' + escQ + ' (carte « ta décision », au centre)';
     if (window.__lastEsc !== escQ){ window.__lastEsc = escQ;
-      try { if (Notification.permission === 'granted') new Notification('Porte de sortie — hors bornes', {body: escQ}); } catch(e){} } }
+      try { if (Notification.permission === 'granted') new Notification('Unwind — hors bornes', {body: escQ}); } catch(e){} } }
   else bn.hidden = true;
   const ls = st.ledger_stack || {};
   $('#f-stack').textContent = [

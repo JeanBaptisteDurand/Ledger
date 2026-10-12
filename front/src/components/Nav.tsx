@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { linkProps, useRoute, type Route } from '../app/router'
 
 /** The site's name. The device in the hero keeps its own wordmark; this is what the product is called. */
-export const SITE_NAME = 'Porte de sortie'
+export const SITE_NAME = 'Unwind'
 
 /** Before an account: the pitch, the demo, the door. */
 const PUBLIC_LINKS: { to: Route; label: string }[] = [
