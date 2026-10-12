@@ -196,7 +196,7 @@ typography:
     letterSpacing: "0.16em"
     textTransform: uppercase
     note: "What the DEVICE writes. Drawn into a 480x600 canvas texture with corner brackets; Inter stands in for Ledger's unlicensable brand faces."
-  # SPECIFIED, NOT YET BUILT — the tiers the app needs.
+  # The tiers the app needs (built in src/styles/app.css).
   body-sm:
     fontFamily: "Barlow, Arial, Verdana, sans-serif"
     fontSize: 14px
@@ -860,7 +860,7 @@ Everything here is a departure that is **in the code or in the decision record t
 - **The limits band left the home.** The watcher's sentence it carried (a door can close after the purchase, re-probe, exit while you still can) moved into the bots' text in the agents band; the keys table is gone from the site (README.md keeps it).
 - **The account's pages are deleted**: `/app`, `/app/agents`, `/app/analyste`, `/compte`, `/appareil`, their shell and their nav links. Their explanatory text was already the home's (the mandate, the bots, out of bounds, the analyst, the account, the bricks) or the door's (which device, where the signature is made). What they did is done by the demo's live modes, which drive the bench with the holder's own vault. What is not done anywhere on the site any more: the deposit and the withdrawal signed on the Ledger, the MCP key reveal and the Claude configuration to paste, the bots' history and restart, the analyst's free question, the account reset. The bench's own page (`web/index.html`) still does all of it.
 - **The site is three routes**: `/` (the scene, which descends to `/home`), `/demo`, `/connexion`. Signing in lands on the demo's live map. Signed in, the nav shows the address, which leads back to the door where one signs out. The live screen and the three signing paths live in `src/app/device.tsx`.
-- **The journey scripts** (`scripts/parcours-app.mjs`, `tests-usage.mjs`, `tests-appareil.mjs`) address the deleted routes and must be rewritten against the demo.
+- **The journey scripts** (`scripts/parcours-app.mjs`, `tests-usage.mjs`, `tests-appareil.mjs`) were rewritten the same evening against the demo and the two account pages (see « Five routes » below); the full journey passes on them.
 
 ### Five routes (2026-10-12, evening, the co-author: put the product back inside the surface, keep the direction)
 

@@ -59,6 +59,11 @@ ledger/speculos.sh up && python3 web/server.py          # http://127.0.0.1:8099
 npm install && npm run dev                               # http://127.0.0.1:5173
 ```
 
+Or everything in one command from the repository root: `scripts/site.sh` (the fork, the emulated Flex, the server, this front,
+and the door opened in the browser); `PORTEUR=1 scripts/site.sh` adds an automatic holder that approves every screen of
+the emulated Flex after 2 s, for a demonstration without a device. `scripts/site.sh stop` stops the front, the server and
+the holder.
+
 With a real Ledger: Chrome, Edge or Brave; Ledger Wallet closed; device unlocked with the Ethereum app open (the
 test-key build, see `../ledger/build/`). On `/connexion`, choose **Real Ledger (USB)**, then **My Ledger · this browser**.
 To switch during a demo: log out, change the device, log in again — one address, one account.
@@ -89,15 +94,14 @@ accepted reset. It prints its usability remarks at the end (240 s on 11 October,
 node scripts/tests-usage.mjs
 ```
 
-Last run (12 October, late evening, on the pages above, with Florent's branch merged): sign-in, deposit of 0.5 ETH signed on
-the device, bounds (Claude, 42 s), mandate clear-signed (`isBlindSign=false`), pools bot 2 buys / 8 refusals, exception with a
-queue of 3, « leave refused », re-probe and exit (one position sold at 310 → 600 bps), withdrawal of 0.1 WETH authorised on the
-device, vaults bot (Moonwell at 2 691 bps) stopped from the live table and its exception signed, the analyst through `bots` in
-33 s, the account (80 gestures, the key, the configuration), the live map and the cockpit, logout and reconnection on the same
-state through the bench device, the SaaS door — **634 s, no failure**. The machine was heavily loaded that evening (load
-average 58, a dozen other Docker containers starving the emulator's VM): every hold-to-sign on the emulated Flex took 30 to 90 s
-instead of 8, which is where the time went. The scripts now run headless without WebGL (the hero shows its poster), and the
-same run on a quiet machine, 10 and 11 October, took 120 to 146 s.
+Last run (12 October, on the pages above, with Florent's branch merged), every step passed: sign-in, deposit of 0.5 ETH
+signed on the device, bounds (Claude), mandate clear-signed (`isBlindSign=false`), pools bot 2 buys / 8 refusals, exception
+with a queue of 3, « leave refused », re-probe and exit (one position sold at 310 → 600 bps), withdrawal of 0.1 WETH
+authorised on the device, vaults bot (Moonwell at 2 691 bps) stopped from the live table and its exception signed, the
+analyst through `bots` in 33 s, the account (80 gestures, the key, the configuration), the live map and the cockpit, logout
+and reconnection on the same state through the bench device, the SaaS door. The reference timings are the 10 and 11 October
+runs below (the 12 October host was shared with other workloads, which slows the emulator, not the product). The scripts run
+headless without WebGL: the hero shows its poster, everything else is the product.
 
 Previous run (10 October, late evening, on Florent's merged home): login signed in the page 7 s, **deposit of 0.5 ETH signed on
 the device 8.5 s** (kept as WETH), mandate clear-signed 7.3 s (`isBlindSign=false`), pools bot 2 buys / 8 refusals, exception

@@ -533,6 +533,7 @@ front/                        le site (Vite + React) : le héros de Florent, l'e
                               clé MCP, historique)
   src/components/demo/        /demo : le rejeu avec les vraies captures de la Flex, la carte vivante allumée par le banc, le cockpit
   scripts/parcours-app.mjs    le parcours complet par les pages du front (Chromium headless)
+scripts/site.sh               le site en une commande (banc, Flex émulée, front ; PORTEUR=1 pour une Flex qui approuve seule)
   scripts/tests-appareil.mjs  refus sur l'appareil, deux onglets du même compte, redémarrage du banc
   scripts/tests-usage.mjs     tout ce qu'une personne peut cliquer, dans l'ordre où elle le rencontre, avec les mauvaises saisies
   scripts/fetch-models.sh     les deux modèles 3D du héros (assets officiels de Ledger, non commités)
@@ -639,6 +640,8 @@ lance ensuite avec un avertissement « non vérifiée ». Chargé le 2 octobre s
 
   ```bash
   (cd front && npm ci && scripts/fetch-models.sh && npm run dev)     # -> http://127.0.0.1:5173, proxy vers le banc :8099
+  scripts/site.sh                # ou tout en une commande : fork, Flex émulée, serveur, front, et la porte ouverte dans le navigateur
+  PORTEUR=1 scripts/site.sh      # idem, avec une Flex émulée qui approuve seule chaque écran (démo sans appareil)
   ```
 
 ## Ce que ça n'attrape pas — dit avant qu'on nous le demande

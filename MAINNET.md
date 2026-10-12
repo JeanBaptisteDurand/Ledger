@@ -57,13 +57,13 @@ python3 ledger/sign_mandate.py --usb --vault "$VAULT" --agent <adresse de l'agen
 Ensuite : un achat réel accepté (un pool sain), un refus réel (un pool piège : le coffre revert, rien n'est dépensé),
 une sortie réelle. Ces trois gestes passent par l'agent — voir ci-dessous.
 
-## Ce qui reste à faire dans le code
+## Où en est le code
 
 - **Le mode réseau** (10 oct.) : `PDS_NETWORK=live` avec `BASE_RPC_URL` (Base Sepolia d'abord, Base ensuite : le même
   code, l'autre RPC), `PDS_DEPLOYER_KEY`, `PDS_AGENT_KEY`, `PDS_AGENT_ADDRESS`. En « live » le banc ne lance pas anvil,
-  ne crédite rien, et refuse d'avancer sans ces clés. Il reste à faire lire `PDS_AGENT_KEY` aux bots
-  (`agent/agent.py`, `agent/vaults.py`, `agent/watch.py`, qui écrivent encore la clé n° 1 d'anvil) et à refuser une clé
-  d'anvil hors d'un fork.
+  ne crédite rien, et refuse d'avancer sans ces clés. Les bots lisent `PDS_AGENT_KEY` (`agent/agent.py`,
+  `agent/vaults.py`, `agent/watch.py` ; la clé n° 1 d'anvil n'est que le repli du fork). Un garde-fou possible : refuser une
+  clé d'anvil hors d'un fork.
 - **Le financement est désormais un geste de la Ledger, dans la page** (10 oct.) : le dépôt est un envoi d'ETH au
   coffre signé sur l'appareil (le coffre le garde en WETH), le retrait une autorisation EIP-712 lue en clair et exécutée
   par le banc. Sur le fork, le banc crédite encore 5 WETH de démonstration au coffre et 5 ETH fictifs au porteur

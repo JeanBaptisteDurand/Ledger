@@ -251,7 +251,7 @@ renvoyer à la précédente.
 
 ### 3.9 · Le reste
 
-- **Schéma** : une page statique (`/schema.html`) qui montre qui fait quoi — à refaire dans le style du front.
+- **Schéma** : la carte du système et l'explication sont sur l'accueil du site (`/`, bandes « The whole system on one sheet » et suivantes) ; le banc garde sa page statique `/schema.html`.
 - **Journal du banc** (`state.log[]`, chaînes) : le fil technique de tout ce qui se passe (utile en démo et en
   débogage ; peut être un panneau repliable).
 - **Réinitialiser** (`POST /api/reset`) : confirmation obligatoire.
@@ -348,7 +348,7 @@ Les événements du compte (`GET /api/account`) : `{ts, kind, …détails}` (§ 
 
 ---
 
-## 7 · Ce que le front peut préparer, mais que le serveur n'a pas encore
+## 7 · Ce que le front peut préparer, et ce que le serveur sert
 
 - **Déposer et reprendre ses fonds : fait le 10 oct.** `POST /api/deposit {amount_eth}` → une demande `pending` de
   genre `deposit` avec `tx` (l'enveloppe EIP-1559 : chainId, nonce, frais, gaz, destinataire = le coffre, montant) que la
@@ -356,9 +356,10 @@ Les événements du compte (`GET /api/account`) : `{ts, kind, …détails}` (§ 
   /api/withdraw {amount | "tout"}` → une demande `pending` de genre `withdraw` (EIP-712 `ExitWithdrawal`, descripteur
   `/api/descriptor?kind=withdraw`) signée comme le mandat. L'état porte `owner_eth` (l'ETH du porteur) à côté de `weth`.
   Reste **révoquer le mandat** avant son échéance (le contrat a `revoke`, pas de bouton).
-- **Une clé de session par compte** (aujourd'hui tous les comptes partagent la clé d'agent du banc).
-- **Du SSE** à la place du polling ; **des filtres** sur le journal ; **une page par bot** ; **mobile**.
-- **Plusieurs comptes** dans un même navigateur (un cookie = un compte aujourd'hui).
+- **Les filtres du journal** (tout, entrées, refus, et par bot) et **le mobile** (toutes les pages à 390 px) : faits, sur
+  `/trades` et `/account` (12 oct.).
+- Pistes ouvertes : **une clé de session par compte** (aujourd'hui tous les comptes partagent la clé d'agent du banc), **du
+  SSE** à la place du polling, **une page par bot**, **plusieurs comptes** dans un même navigateur (un cookie = un compte).
 
 ---
 
