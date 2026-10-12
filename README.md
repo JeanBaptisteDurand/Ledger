@@ -526,11 +526,15 @@ MAINNET.md                    du fork au réseau réel : ce qui change, dans que
 upstream/                     les PR et issues qu'on doit à Ledger, prêtes à ouvrir (textes, patchs, `open.sh`) — rien d'ouvert encore
 captures/                     ce que l'appareil a affiché, page par page (dmk/ : par le Signer Kit, nos descripteurs — accueil, revue, contrat, bornes,
                               signature, et un mandat dont le budget est en USDC ; app-officielle/ : l'app de série, en brut)
-front/                        le site (Vite + React) : le héros de Florent et le pitch, puis l'espace du compte — front/APP.md
-  src/app/                    un SaaS : avant le compte /, /schema, /connexion ; dans le compte /app, /app/agents (agents de
-                              trading), /app/analyste (agent d'analyse), /compte, /appareil ; le client du banc, la Ledger dans la page
+front/                        le site (Vite + React) : le héros de Florent, l'explication entière et le schéma sur l'accueil, la démo,
+                              la porte, puis l'espace du compte — front/APP.md
+  src/app/                    le client du banc, la Ledger dans la page, le routeur : avant le compte /, /demo, /connexion ; dans le
+                              compte /trades (agents, demandes, positions, journal) et /account (fonds signés sur la Ledger, analyste,
+                              clé MCP, historique)
+  src/components/demo/        /demo : le rejeu avec les vraies captures de la Flex, la carte vivante allumée par le banc, le cockpit
   scripts/parcours-app.mjs    le parcours complet par les pages du front (Chromium headless)
   scripts/tests-appareil.mjs  refus sur l'appareil, deux onglets du même compte, redémarrage du banc
+  scripts/tests-usage.mjs     tout ce qu'une personne peut cliquer, dans l'ordre où elle le rencontre, avec les mauvaises saisies
   scripts/fetch-models.sh     les deux modèles 3D du héros (assets officiels de Ledger, non commités)
 ```
 
@@ -594,6 +598,10 @@ lance ensuite avec un avertissement « non vérifiée ». Chargé le 2 octobre s
   git clone https://github.com/JeanBaptisteDurand/ETH_Online_2026 ../ETH_Online_2026
   cd ../ETH_Online_2026 && cp .env.example .env    # puis BASE_RPC_URL=<ton RPC Base>
   ```
+
+  Un vrai clone, **pas un lien vers un dossier iCloud** (ni Documents, ni Bureau sur un Mac qui « optimise le stockage ») :
+  iCloud évince les gros fichiers, et un bot qui lit `docs/hooklist-live-*.json` reste alors figé dans un `read()` sans
+  erreur, à 0 tour et 0 % de CPU (vu le 12 octobre : `ls -lO` dit `dataless`). Même règle pour ce dépôt-ci.
 
 - **L'app Ethereum avec la clé de test** — une seule compilation sert l'émulateur et une vraie Flex :
 

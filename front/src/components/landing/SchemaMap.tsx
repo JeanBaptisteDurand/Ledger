@@ -11,7 +11,7 @@ const W = 1200
 const H = 820
 
 const NODES: Node[] = [
-  { id: 'ledger', x: 440, y: 20, w: 320, h: 104, tone: 'signer', kicker: 'The holder · Signer', title: 'Ledger Flex', lines: ['sign-in, mandate (once),', 'each exception. Never a purchase', 'BUDGET · MAX LOSS · EXPIRES'] },
+  { id: 'ledger', x: 440, y: 20, w: 320, h: 124, tone: 'signer', kicker: 'The holder · Signer · four gestures, never a purchase', title: 'Ledger Flex', lines: ['1 · sign-in: the address + a SIWE message', '2 · deposit: one ETH transfer, signed', '3 · mandate, exception: EIP-712 in clear', '4 · withdrawal: an EIP-712 authorisation'] },
   { id: 'ring', x: 860, y: 20, w: 300, h: 104, tone: 'ring', kicker: 'Ring CLI · keep a secret', title: 'Ledger Key Ring', lines: ['seals the master secret', 'the MCP keys derive from', 'once, a Flex over USB'] },
   { id: 'browser', x: 40, y: 190, w: 300, h: 104, tone: 'signer', kicker: 'In the client’s browser', title: 'Signer Kit · DMK', lines: ['WebHID (real Ledger) or Speculos', 'our descriptors, signed by us', 'the server never sees the device'] },
   { id: 'bench', x: 440, y: 190, w: 320, h: 118, kicker: 'The site', title: 'Account · bots · scheduler', lines: ['an account = a proven address', 'named bots, one round at a time', 'out-of-bounds requests queued'] },
@@ -93,7 +93,9 @@ const TONE: Record<NonNullable<Node['tone']> | 'default', string> = {
  * parts blink on again (the hero's pulse table, in CSS steps), never fade.
  */
 export type LiveTone = 'hot' | 'ok' | 'refused' | 'asks'
-export type LiveNode = { tone?: LiveTone; lines?: string[] }
+export type MapSlot = { name: string; state: 'live' | 'running' | 'stopped' | 'done' }
+/** `hot` lights one of the node's lines (the Ledger's gesture in progress); `slots` draws the agents' places, filled as they come. */
+export type LiveNode = { tone?: LiveTone; lines?: string[]; hot?: number; slots?: MapSlot[] }
 export type MapLive = { nodes: Record<string, LiveNode>; edges: string[]; stamp: string }
 
 /** A region of the map, in its own units, the live stage zooms to: the group is scaled and translated to fit it. */
@@ -119,12 +121,30 @@ export function SchemaMap({ live, focus, fit = false }: { live?: MapLive; focus?
           const l = live?.nodes[n.id]
           const lines = l?.lines ?? n.lines
           return (
-            <g key={l?.tone ? `${n.id}-${live!.stamp}` : n.id} className={l?.tone ? `map-node is-${l.tone} blink-in` : 'map-node'} data-node={n.id}>
+            <g key={l?.tone || l?.hot != null ? `${n.id}-${live!.stamp}` : n.id} className={l?.tone ? `map-node is-${l.tone} blink-in` : l?.hot != null ? 'map-node blink-in' : 'map-node'} data-node={n.id}>
               <rect x={n.x} y={n.y} width={n.w} height={n.h} rx={8} fill="var(--color-page-panel)" stroke={TONE[n.tone ?? 'default']} strokeWidth={1} />
               <text x={n.x + 16} y={n.y + 20} fill="var(--color-page-text-faint)" style={{ fontFamily: 'var(--font-body)', fontSize: 10, letterSpacing: 0.9, textTransform: 'uppercase' }}>{n.kicker.toUpperCase()}</text>
               <text x={n.x + 16} y={n.y + 44} fill="var(--color-text-050)" style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase' }}>{n.title.toUpperCase()}</text>
-              {lines.slice(0, 3).map((t, i) => (
-                <text key={i} x={n.x + 16} y={n.y + 64 + i * 16} fill={l?.lines ? 'var(--color-text-050)' : 'var(--color-page-text-mute)'} style={{ fontFamily: 'var(--font-mono)', fontSize: 11.5 }}>{t.length > 38 ? t.slice(0, 37) + '…' : t}</text>
+              {l?.slots ? (
+                <g className="map-slots">
+                  {Array.from({ length: 4 }, (_, i) => {
+                    const slots = l.slots!
+                    const more = i === 3 && slots.length > 4 ? slots.length - 3 : 0
+                    const sl = slots[i]
+                    const sx = n.x + 16 + (i % 2) * 138
+                    const sy = n.y + 54 + Math.floor(i / 2) * 28
+                    const colour = !sl ? 'var(--color-page-hairline)' : more ? 'var(--color-page-hairline-strong)' : sl.state === 'live' ? 'var(--color-accent-incandescent)' : sl.state === 'running' ? 'var(--color-state-success)' : 'var(--color-page-hairline-strong)'
+                    return (
+                      <g key={i} className={`map-slot ${sl ? `is-${more ? 'more' : sl.state}` : 'is-empty'}`}>
+                        <rect x={sx} y={sy} width={130} height={22} rx={4} fill={sl ? 'var(--color-page-surface-lift)' : 'none'} stroke={colour} strokeWidth={sl && sl.state === 'live' ? 1.5 : 1} strokeDasharray={sl ? undefined : '3 3'} />
+                        {sl && !more ? <circle cx={sx + 10} cy={sy + 11} r={3} fill={sl.state === 'live' ? 'var(--color-accent-incandescent)' : sl.state === 'running' ? 'var(--color-state-success)' : 'var(--color-page-text-faint)'} /> : null}
+                        <text x={sx + (sl && !more ? 19 : 8)} y={sy + 15} fill={sl ? 'var(--color-text-050)' : 'var(--color-page-text-faint)'} style={{ fontFamily: 'var(--font-mono)', fontSize: 10.5 }}>{more ? `+${more} more` : sl ? sl.name.slice(0, 15) : `slot ${i + 1}`}</text>
+                      </g>
+                    )
+                  })}
+                </g>
+              ) : lines.slice(0, 4).map((t, i) => (
+                <text key={i} x={n.x + 16} y={n.y + 64 + i * 16} fill={l?.hot === i ? 'var(--color-accent-incandescent)' : l?.hot != null ? 'var(--color-page-text-faint)' : l?.lines ? 'var(--color-text-050)' : 'var(--color-page-text-mute)'} style={{ fontFamily: 'var(--font-mono)', fontSize: 11.5, fontWeight: l?.hot === i ? 700 : 400 }}>{t}</text>
               ))}
             </g>
           )

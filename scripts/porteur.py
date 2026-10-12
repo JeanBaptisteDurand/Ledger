@@ -35,7 +35,7 @@ while time.time()-T0 < LIMIT:
             print(time.strftime("%H:%M:%S"), f"| (porteur lent : {SLOW:.0f} s de lecture)", flush=True); time.sleep(SLOW)
             e2=ev(); hit=[x for x in e2 if "hold to sign" in (x.get("text") or "").lower()]
             if not hit: print(time.strftime("%H:%M:%S"), "| (l'écran a changé pendant la lecture : pas de signature)", flush=True); continue
-        tap(240, hit[0]["y"]+10, hold=2.2); continue
+        tap(240, hit[0]["y"]+10, hold=3.2); continue   # 3,2 s : sur une machine chargée, l'émulateur traite le doigt en retard
     hit=[x for x in e if "reject transaction" in (x.get("text") or "").lower()]   # « cannot be clear-signed » : on refuse
     if hit: tap(240, hit[0]["y"]+10); continue
     hit=[x for x in e if "accept risk" in (x.get("text") or "").lower()]

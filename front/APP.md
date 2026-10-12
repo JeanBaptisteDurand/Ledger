@@ -4,13 +4,22 @@ The hero is Florent's and is not touched. Everything the product does lives in `
 built on the tokens of `src/styles/tokens.css` and the rules of `DESIGN.md`.
 
 Like any SaaS: the pitch and the idea before the account, then what is yours once your Ledger has proven your address.
-Signing in lands on the demo's live map, which drives the bench with the holder's own vault. The account's pages were removed on 12 October (DESIGN.md › Three routes).
+Signing in lands on the demo's live map, which drives the bench with the holder's own vault. Two account pages stand next
+to it on the same surface (12 October, evening): the trades and the account. An account page opened without a session
+sends you to `/connexion`, then back where you were going.
 
 | path | who | what |
 |---|---|---|
 | `/` and `/home` | anyone | the scene, then the whole explanation: the claim, the trap, the principle, the agent goes in anyway, one signature, the system on one sheet, two kinds of agents, when it overflows step by step, measured end to end, the account, the findings, the bricks, the limits, the call |
 | `/demo` | anyone | three modes (`#map`, `#cockpit`, none): the journey replayed with the real captures of the Flex (`public/demo/`), the system's map lit live by the bench and zoomed to the acting phase, the presenter's cockpit. Both live modes are one stage that fits the screen (a rail of four phases, drawers that open as the bench reaches them, the Flex live, TARE's last measure in a strip, fullscreen), with the recap under it. They drive the real bench through the account's routes and sign in with the emulated Flex in one click |
-| `/connexion` | anyone | on the home's surface: choose the Ledger (USB or the emulated Flex) and the signing path, sign the login message, the live Flex beside |
+| `/connexion` | anyone | on the home's surface: choose the Ledger (USB or the emulated Flex) and the signing path, sign the login message, the live Flex beside. Signed in, the door stays: it is where the device and the path are changed |
+| `/trades` | account | my trading agents (add, live, stopped, restart), the out-of-bounds requests they raise (read and sign on the Ledger, or leave refused, the device mirror beside), the positions and their re-probe, the journal decision by decision with its filters |
+| `/account` | account | my funds signed on the Ledger (the vault, **a deposit from the device, a withdrawal to it**), my analyst (the whole conversation, the tool cited under every answer), the address, the MCP key and the Claude configuration (one-click copy), what I did, the bench's log |
+
+The demo's live map and cockpit carry the same gestures in their drawers: the sentence for the bounds, the funds, the
+agents (with the map's slots filling as bots are launched), the request, the re-probe and a compact analyst. The map's
+Ledger node names the four gestures the device makes, never a purchase: the sign-in, the deposit, the mandate and the
+exceptions, the withdrawal; the one in progress lights up.
 
 ## The funds, signed on the Ledger (10 October)
 
@@ -51,8 +60,8 @@ npm install && npm run dev                               # http://127.0.0.1:5173
 ```
 
 With a real Ledger: Chrome, Edge or Brave; Ledger Wallet closed; device unlocked with the Ethereum app open (the
-test-key build, see `../ledger/build/`). On `/appareil`, choose **Ma Ledger · ce navigateur**, then
-**Vraie Ledger (USB)**. To switch during a demo: log out, change the device, log in again — one address, one account.
+test-key build, see `../ledger/build/`). On `/connexion`, choose **Real Ledger (USB)**, then **My Ledger · this browser**.
+To switch during a demo: log out, change the device, log in again — one address, one account.
 
 ## Check everything end to end
 
@@ -80,7 +89,17 @@ accepted reset. It prints its usability remarks at the end (240 s on 11 October,
 node scripts/tests-usage.mjs
 ```
 
-Last run (10 October, late evening, on Florent's merged home): login signed in the page 7 s, **deposit of 0.5 ETH signed on
+Last run (12 October, late evening, on the pages above, with Florent's branch merged): sign-in, deposit of 0.5 ETH signed on
+the device, bounds (Claude, 42 s), mandate clear-signed (`isBlindSign=false`), pools bot 2 buys / 8 refusals, exception with a
+queue of 3, « leave refused », re-probe and exit (one position sold at 310 → 600 bps), withdrawal of 0.1 WETH authorised on the
+device, vaults bot (Moonwell at 2 691 bps) stopped from the live table and its exception signed, the analyst through `bots` in
+33 s, the account (80 gestures, the key, the configuration), the live map and the cockpit, logout and reconnection on the same
+state through the bench device, the SaaS door — **634 s, no failure**. The machine was heavily loaded that evening (load
+average 58, a dozen other Docker containers starving the emulator's VM): every hold-to-sign on the emulated Flex took 30 to 90 s
+instead of 8, which is where the time went. The scripts now run headless without WebGL (the hero shows its poster), and the
+same run on a quiet machine, 10 and 11 October, took 120 to 146 s.
+
+Previous run (10 October, late evening, on Florent's merged home): login signed in the page 7 s, **deposit of 0.5 ETH signed on
 the device 8.5 s** (kept as WETH), mandate clear-signed 7.3 s (`isBlindSign=false`), pools bot 2 buys / 8 refusals, exception
 9.9 s with a queue of 3, « laisser refusé », watch and sell, **withdrawal of 0.1 WETH authorised on the device 8.6 s**, vaults
 bot and Moonwell exception, the analyst through `bots` in 20 s, the account, logout and reconnection on the same state —
@@ -92,4 +111,7 @@ bot and Moonwell exception, the analyst through `bots` in 20 s, the account, log
 - `src/app/useBench.ts` — the polled state, actions, the rule "only the tab that asked signs"
 - `src/app/ledger.ts` — the Ledger in the browser: connect, Sign-In with Ethereum, signing a pending mandate or exception
 - `src/app/ui.tsx` — the components of `DESIGN.md` as React
-- `src/app/*Page.tsx` — the four pages
+- `src/components/account/shell.tsx` — the account pages' shell on the home's surface: the gate, the hero in its finished state, the sheet motion
+- `src/components/account/Account.tsx`, `src/components/account/analyst.tsx`, `src/components/trades/Trades.tsx` — the two account pages and the analyst's thread (full on the account, compact in the demo)
+- `src/components/demo/` — the demo: the replay (`content.ts`, `Demo.tsx`), the live stage (`Stage.tsx`, `live.tsx`)
+- `scripts/shots-pages.mjs` — every page signed in, at 1440 and 390 px, with the page errors and overflows reported

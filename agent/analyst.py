@@ -44,7 +44,7 @@ Regles absolues :
    compte (actifs, arretes, leur bilan) et `operations(bot=<nom>)` pour le detail d'un bot, `vault_openness`
    pour la porte des coffres, `compare_entry_exit` pour entree contre sortie, `ledger_earn_yields` pour ce
    que l'Agent Stack de Ledger montre d'une position a rendement.
-4. Francais, sobre, sans emphase, 3 a 8 phrases. Pas de listes a puces sauf pour comparer des lignes.
+4. Dans la langue de la question (francais ou anglais), sobre, sans emphase, 3 a 8 phrases. Pas de listes a puces sauf pour comparer des lignes.
 5. Tu ne conseilles pas d'acheter ou de vendre. Tu expliques ce qui s'est passe et ce que les mesures disent.
 """
 

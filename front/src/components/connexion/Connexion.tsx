@@ -17,7 +17,7 @@ import { LiveScreen, PATHS } from '../../app/device'
 import { Segments, Skeleton, Toasts } from '../../app/ui'
 import { short, type Signer } from '../../app/api'
 import { connect, disconnect, errText, explain, getTransport, setTransport, webHidAvailable, type Transport } from '../../app/ledger'
-import { navigate } from '../../app/router'
+import { linkProps, navigate, takeNext } from '../../app/router'
 import type { HotTitle } from '../landing/content'
 
 const HERO = { title: 'SIGN IN', catch: 'No e-mail, no password. Your Ledger is your account.', heading: 'Sign in with your Ledger' }
@@ -63,7 +63,13 @@ function Sections() {
   const root = useRef<HTMLDivElement>(null)
   const { state } = useBench()
   const address = state?.address
-  useEffect(() => { if (address) navigate('/demo', '#map', true) }, [address])
+  // Signed in HERE (the page saw you signed out first): back to the account page that sent you, or to the demo's live
+  // map. Already signed in on arrival, the door stays: it is where the device and the signing path are changed.
+  const wasOut = useRef(false)
+  useEffect(() => {
+    if (state && !address) wasOut.current = true
+    if (address && wasOut.current) { wasOut.current = false; const next = takeNext(); if (next) navigate(next, '', true); else navigate('/demo', '#map', true) }
+  }, [state, address])
   useGSAP(
     () => {
       const scope = root.current!
@@ -150,8 +156,12 @@ function Door() {
           <Kicker>3 · Sign in</Kicker>
           {state.address ? (
             <>
-              <p className="t-body-md m-0 text-page-text">Signed in as <span className="t-mono-data">{short(state.address, 10, 8)}</span>. Taking you to the demo.</p>
-              <div className="mt-5"><button type="button" className="btn-ghost btn-ghost--quiet btn-ghost--small t-button-cap" onClick={logout}>Sign out</button></div>
+              <p className="t-body-md m-0 text-page-text">Signed in as <span className="t-mono-data">{short(state.address, 10, 8)}</span>. The device and the signing path above apply to your next signatures.</p>
+              <div className="mt-5 flex flex-wrap items-center gap-3">
+                <a {...linkProps('/demo', '#map')} className="btn-ghost btn-ghost--hot btn-ghost--small t-button-cap">The live map</a>
+                <a {...linkProps('/account')} className="btn-ghost btn-ghost--quiet btn-ghost--small t-button-cap">My account</a>
+                <button type="button" className="btn-ghost btn-ghost--quiet btn-ghost--small t-button-cap" onClick={logout}>Sign out</button>
+              </div>
             </>
           ) : (
             <>

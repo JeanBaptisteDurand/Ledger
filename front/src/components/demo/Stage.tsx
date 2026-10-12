@@ -8,12 +8,14 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useBench } from '../../app/useBench'
 import { LiveScreen } from '../../app/device'
+import { Field } from '../../app/ui'
 import { fmtWei, short, type BenchState } from '../../app/api'
 import { linkProps } from '../../app/router'
 import { prefersReducedMotion } from '../../motion/flags'
-import { Badge } from '../landing/primitives'
+import { Badge, Kicker } from '../landing/primitives'
 import { SchemaMap, type MapFocus } from '../landing/SchemaMap'
-import { activity, Agents, Door, mapLive, Measure, useSteps, type Activity, type Phase } from './live'
+import { AnalystThread } from '../account/analyst'
+import { activity, Agents, Door, Funds, mapLive, Measure, STRATEGY, STRATEGY_IDEAS, useSteps, type Activity, type Phase } from './live'
 
 export type StageMode = 'map' | 'cockpit'
 type Act = 'setup' | 'agents' | 'request' | 'watch'
@@ -31,9 +33,13 @@ const FOCUS: Record<Act, MapFocus> = {
 }
 const actOf = (p: Phase): Act => ACTS.find((a) => a.phases.includes(p))!.id
 
+/** What the setup drawer needs from the stage: the holder's sentence, and the way to send it. */
+type Setup = { sentence: string; setSentence: (v: string) => void; ask: (text?: string) => Promise<void>; asking: boolean }
+
 export function Stage({ mode }: { mode: StageMode }) {
   const [asking, setAsking] = useState(false)
-  const { steps, a, s } = useSteps({ asking, setAsking })
+  const [sentence, setSentence] = useState(STRATEGY)
+  const { steps, a, s, ask } = useSteps({ asking, setAsking, sentence })
   const [pinned, setPinned] = useState<Act | null>(null)
   const stage = useRef<HTMLDivElement>(null)
   const [full, setFull] = useState(false)
@@ -48,6 +54,7 @@ export function Stage({ mode }: { mode: StageMode }) {
   const auto = actOf(a.phase)
   const act = pinned ?? auto
   const live = mapLive(s, a)
+  const setup: Setup = { sentence, setSentence, ask, asking }
   const toggleFull = () => { if (document.fullscreenElement) document.exitFullscreen(); else stage.current?.requestFullscreen?.() }
   return (
     <div ref={stage} className={`live-stage ${full ? 'is-full' : ''}`} data-mode={mode} data-act={act}>
@@ -77,13 +84,13 @@ export function Stage({ mode }: { mode: StageMode }) {
           <div className="live-stage__map"><SchemaMap live={live} focus={FOCUS[act]} fit /></div>
           <div className="live-stage__side">
             <div className="live-stage__flex"><LiveScreen live={s.speculos} signing={s.signing} real={false} /></div>
-            <Drawers act={act} s={s} a={a} steps={steps} onOpen={(x) => setPinned(x === auto ? null : x)} />
+            <Drawers act={act} s={s} a={a} steps={steps} setup={setup} onOpen={(x) => setPinned(x === auto ? null : x)} />
           </div>
         </div>
       ) : (
         <div className="live-stage__body live-stage__body--cockpit">
           <div className="live-stage__col">
-            <Drawers act={act} s={s} a={a} steps={steps} onOpen={(x) => setPinned(x === auto ? null : x)} />
+            <Drawers act={act} s={s} a={a} steps={steps} setup={setup} onOpen={(x) => setPinned(x === auto ? null : x)} />
           </div>
           <div className="live-stage__col live-stage__col--flex">
             <LiveScreen live={s.speculos} signing={s.signing} real={false} />
@@ -91,6 +98,7 @@ export function Stage({ mode }: { mode: StageMode }) {
           <div className="live-stage__col">
             <div className="panel panel--lift-2 live-stage__measure-panel"><Measure s={s} a={a} /></div>
             <div className="panel panel--lift-2 mt-4"><Agents s={s} /></div>
+            <div className="panel panel--lift-2 mt-4"><Kicker>The analyst · read only</Kicker><AnalystThread s={s} compact /></div>
           </div>
         </div>
       )}
@@ -112,7 +120,7 @@ function summary(act: Act, s: BenchState): string {
 }
 
 /** The four drawers: the active one open, the others one line. Clicking a folded one opens it (pins it). */
-function Drawers({ act, s, a, steps, onOpen }: { act: Act; s: BenchState; a: Activity; steps: ReturnType<typeof useSteps>['steps']; onOpen: (x: Act) => void }) {
+function Drawers({ act, s, a, steps, setup, onOpen }: { act: Act; s: BenchState; a: Activity; steps: ReturnType<typeof useSteps>['steps']; setup: Setup; onOpen: (x: Act) => void }) {
   return (
     <div className="drawers">
       {ACTS.map((x) => {
@@ -123,7 +131,7 @@ function Drawers({ act, s, a, steps, onOpen }: { act: Act; s: BenchState; a: Act
               <span className="drawer__title">{x.label}</span>
               <span className="t-kicker drawer__sum">{summary(x.id, s)}</span>
             </button>
-            {open ? <div className="drawer__body">{x.id === 'setup' ? <SetupDrawer s={s} steps={steps} /> : x.id === 'agents' ? <AgentsDrawer s={s} a={a} steps={steps} /> : x.id === 'request' ? <RequestDrawer s={s} steps={steps} /> : <WatchDrawer s={s} steps={steps} />}</div> : null}
+            {open ? <div className="drawer__body">{x.id === 'setup' ? <SetupDrawer s={s} steps={steps} setup={setup} /> : x.id === 'agents' ? <AgentsDrawer s={s} a={a} steps={steps} /> : x.id === 'request' ? <RequestDrawer s={s} steps={steps} /> : <WatchDrawer s={s} steps={steps} />}</div> : null}
           </section>
         )
       })}
@@ -148,13 +156,23 @@ function StepRow({ st }: { st: Steps[number] }) {
   )
 }
 
-function SetupDrawer({ s, steps }: { s: BenchState; steps: Steps }) {
+function SetupDrawer({ s, steps, setup }: { s: BenchState; steps: Steps; setup: Setup }) {
   const m = s.mandate, p = s.proposal
   const lines: [string, string][] = m || p ? [['Budget', `${m ? Number(m.mandate.budgetAmount) / 1e18 : p!.budget_weth} WETH`], ['Max round-trip loss', `${m ? m.mandate.maxRoundTripLossBps : p!.max_round_trip_loss_bps} bps`], ['Expires', m ? new Date(m.mandate.expiry * 1000).toISOString().slice(0, 10) : `in ${p!.days} days`]] : []
+  const last = s.chat.length ? s.chat[s.chat.length - 1] : null
   return (
     <>
       <StepRow st={step(steps, 'session')} />
       <StepRow st={step(steps, 'bounds')} />
+      {s.vault && !s.signed ? (
+        <form className="mt-2" onSubmit={(e) => { e.preventDefault(); setup.ask() }}>
+          <Field label="In one sentence" value={setup.sentence} onChange={(e) => setup.setSentence(e.target.value)} placeholder={STRATEGY} autoComplete="off" disabled={setup.asking} />
+          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+            {STRATEGY_IDEAS.map((t) => <button key={t} type="button" className="segment t-caption text-left" onClick={() => { setup.setSentence(t); setup.ask(t) }} disabled={setup.asking}>{t}</button>)}
+          </div>
+        </form>
+      ) : null}
+      {last && last.role === 'assistant' && !s.signed ? <p className="t-caption m-0 mt-2 max-w-[48ch] text-pretty text-page-text-faint">{last.text}{last.warning ? ` Not protected: ${last.warning}` : ''}</p> : null}
       <StepRow st={step(steps, 'mandate')} />
       {lines.length ? (
         <div className={`mirror t-mono-device mt-3 ${s.signing === 'mandate' ? 'app-mirror--pending' : ''}`}>
@@ -163,9 +181,7 @@ function SetupDrawer({ s, steps }: { s: BenchState; steps: Steps }) {
           {s.signed && s.last_report ? <p className="t-kicker m-0 mt-3 text-state-success">isBlindSign={String(s.last_report.isBlindSign)} · {s.last_report.clearSigningType ?? ''}</p> : null}
         </div>
       ) : null}
-      <dl className="kv mt-3">
-        <div className="kv__row"><dt className="t-mono-data text-page-text">Vault</dt><dd className="t-body-md m-0 text-page-text-mute">{s.vault ? `${short(s.vault, 8, 6)} · ${fmtWei(s.weth)}` : 'not opened'}</dd></div>
-      </dl>
+      <div className="mt-4"><Funds s={s} /></div>
     </>
   )
 }
@@ -209,7 +225,6 @@ function RequestDrawer({ s, steps }: { s: BenchState; steps: Steps }) {
 
 function WatchDrawer({ s, steps }: { s: BenchState; steps: Steps }) {
   const rows = (s.watch?.rows ?? []).slice(0, 3)
-  const last = s.analyses.length ? s.analyses[s.analyses.length - 1] : null
   return (
     <>
       <StepRow st={step(steps, 'watch')} />
@@ -219,12 +234,7 @@ function WatchDrawer({ s, steps }: { s: BenchState; steps: Steps }) {
         </dl>
       ) : null}
       <StepRow st={step(steps, 'analyst')} />
-      {last ? (
-        <div className="thread__them t-body-md mt-2">
-          {last.pending ? <span className="text-page-text-faint">It is querying the tools…</span> : <span>{(last.answer || `No answer: ${last.error ?? ''}`).slice(0, 220)}…</span>}
-          {!last.pending ? <span className="thread__trace t-kicker">MCP → {last.tools_used.map((t) => t.tool).join(' · ') || 'no tool called'}</span> : null}
-        </div>
-      ) : null}
+      <div className="mt-2"><AnalystThread s={s} compact /></div>
     </>
   )
 }
@@ -260,9 +270,9 @@ export function Recap({ children }: { children?: ReactNode }) {
         <div className="xl:col-span-5"><div className="panel panel--lift-2"><Measure s={s} a={act} /></div></div>
         <div className="xl:col-span-7">
           <dl className="kv">
-            <div className="kv__row"><dt className="t-mono-data text-page-text">Account</dt><dd className="t-body-md m-0 text-page-text-mute">{s.address} · <a {...linkProps('/connexion')} className="underline">sign out</a></dd></div>
+            <div className="kv__row"><dt className="t-mono-data text-page-text">Account</dt><dd className="t-body-md m-0 text-page-text-mute">{s.address} · <a {...linkProps('/account')} className="underline">the account page</a></dd></div>
             <div className="kv__row"><dt className="t-mono-data text-page-text">Vault</dt><dd className="t-body-md m-0 text-page-text-mute">{s.vault ? `${s.vault} · ${fmtWei(s.weth)} available · ${fmtWei(s.spent)} spent` : 'not opened'}</dd></div>
-            <div className="kv__row"><dt className="t-mono-data text-page-text">Bots</dt><dd className="t-body-md m-0 text-page-text-mute">{s.bots.length ? s.bots.map((b) => `${b.name} (${b.universe}, ${b.executed} in, ${b.refused} refused)`).join(' · ') : 'none'}</dd></div>
+            <div className="kv__row"><dt className="t-mono-data text-page-text">Bots</dt><dd className="t-body-md m-0 text-page-text-mute">{s.bots.length ? s.bots.map((b) => `${b.name} (${b.universe}, ${b.executed} in, ${b.refused} refused)`).join(' · ') : 'none'} · <a {...linkProps('/trades')} className="underline">the trades page</a></dd></div>
             <div className="kv__row"><dt className="t-mono-data text-page-text">Exceptions</dt><dd className="t-body-md m-0 text-page-text-mute">{s.exception_buys.length} signed · {s.refused_escalations.length} left refused</dd></div>
           </dl>
         </div>

@@ -195,3 +195,15 @@ Classé par ce que le jury retient en une minute, puis par coût.
 12. **Le reste du français.** Ce que le serveur envoie s'affiche tel quel : « appareil du banc (adresse lue sur la
     Ledger) » sur la page du compte et dans l'historique, les messages des POST, le stratège, l'analyste, les motifs
     d'arrêt des bots. À traduire dans `web/server.py`, `web/strategist.py`, `web/accounts.py` et `agent/*.py`.
+
+---
+
+## 11 · Le 12 octobre au soir (Jean-Baptiste)
+
+La branche est fusionnée telle quelle. Ce qui manquait au produit a été remis dans ta charte, sans toucher à la scène, à
+l'accueil ni à la démo : `/trades` (les agents avec toutes leurs options, les demandes hors bornes, les positions, le
+journal) et `/account` (le dépôt et le retrait signés sur la Ledger, l'analyste au complet, la clé MCP, l'historique).
+Sur la carte, le nœud Ledger nomme ses quatre gestes et s'allume sur celui en cours ; le nœud des bots a quatre
+emplacements qui se remplissent. Les tiroirs de la carte vivante portent la phrase des bornes, les fonds, les tranches,
+l'analyste. La porte reste quand on est connecté (c'est là qu'on change d'appareil). Tout est rejoué sur la Flex
+émulée : `front/APP.md`.

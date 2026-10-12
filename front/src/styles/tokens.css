@@ -1424,7 +1424,7 @@ footer { position: relative; }
 .agents__row[data-state='running'] .agents__dot { background: var(--color-state-success); }
 .agents__row[data-state='live'] .agents__dot { background: var(--color-accent-incandescent); box-shadow: 0 0 10px 2px color-mix(in srgb, var(--color-sky-orange) 55%, transparent); }
 .agents__row[data-state='live'] .agents__name { color: var(--color-accent-incandescent); }
-.agents__form { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1.2fr) minmax(0, 1.2fr) auto; gap: 12px; align-items: end; }
+.agents__form { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1.2fr) minmax(0, 1.2fr) minmax(0, 0.8fr) auto; gap: 12px; align-items: end; }
 .measure[data-verdict='asks'] .exit-pair__rule { background: var(--color-state-warning); }
 .measure[data-verdict='refused'] .exit-pair__rule { background: var(--color-state-error); }
 .measure[data-verdict='ok'] .exit-pair__rule { background: var(--color-state-success); }
@@ -1499,6 +1499,7 @@ footer { position: relative; }
 .steprow__actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
 .drawer .agents__form { grid-template-columns: 1fr 1fr; }
 .drawer .agents__form > :first-child, .drawer .agents__form > :last-child { grid-column: 1 / -1; }
+.drawer .agents__form > :nth-child(4) { grid-column: 1 / -1; }
 .drawer .agents__row { padding: 8px 0; }
 .drawer .agents__name { font-size: 17px; }
 .live-stage__measure-panel .measure__exit { font-size: clamp(48px, 6vh, 96px); }

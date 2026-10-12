@@ -34,8 +34,8 @@ Réponds UNIQUEMENT par un objet JSON, sans texte autour, avec exactement ces cl
  "min_depth_sizes": <entier, 3 a 8>,                // exigence de profondeur de mesure
  "require_registry": <true|false>,                  // n'acheter que des hooks connus du registre Uniswap
  "risk": "prudent" | "equilibre" | "offensif",
- "rationale": "<deux phrases en francais, sobres, qui expliquent CES bornes>",
- "warning": "<une phrase sur ce que ces bornes ne protegent PAS>"
+ "rationale": "<deux phrases sobres, dans la langue de l'intention, qui expliquent CES bornes>",
+ "warning": "<une phrase, dans la langue de l'intention, sur ce que ces bornes ne protegent PAS>"
 }
 
 Reperes utiles : un pool ordinaire coute 100 a 250 bps d'aller-retour ; en dessous de 100 bps de
@@ -48,6 +48,10 @@ FALLBACK_WORDS = {
     "sur": ("prudent", 150, 4), "conservateur": ("prudent", 150, 4), "doucement": ("prudent", 150, 4),
     "offensif": ("offensif", 600, 8), "agressif": ("offensif", 600, 8), "risqué": ("offensif", 600, 8),
     "risque": ("offensif", 600, 8), "memecoin": ("offensif", 600, 8), "memecoins": ("offensif", 600, 8),
+    # the same words in English, for the site's sentences
+    "cautious": ("prudent", 150, 4), "careful": ("prudent", 150, 4), "safe": ("prudent", 150, 4),
+    "conservative": ("prudent", 150, 4), "gently": ("prudent", 150, 4),
+    "aggressive": ("offensif", 600, 8), "risky": ("offensif", 600, 8), "offensive": ("offensif", 600, 8),
 }
 
 

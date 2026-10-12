@@ -10,6 +10,13 @@ const PUBLIC_LINKS: { to: Route; label: string }[] = [
   { to: '/demo', label: 'Demo' },
 ]
 
+/** In the account: the same two, then what is mine. */
+const ACCOUNT_LINKS: { to: Route; label: string }[] = [
+  ...PUBLIC_LINKS,
+  { to: '/trades', label: 'Trades' },
+  { to: '/account', label: 'Account' },
+]
+
 const shortAddress = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`
 
 /** On the landing there is no bench provider: one quiet look at the session, to offer the account instead of the sign-in door. */
@@ -37,9 +44,9 @@ export function Nav({ hiddenUntilRelease, solid = false, account }: { hiddenUnti
   const route = useRoute()
   const peek = usePeek(account === undefined)
   const address = account === undefined ? peek : account
-  const links = PUBLIC_LINKS
+  const links = address ? ACCOUNT_LINKS : PUBLIC_LINKS
   const door = address
-    ? { to: '/connexion' as Route, label: shortAddress(address), title: `${address}: signed in, sign out from the door`, mono: true }
+    ? { to: '/account' as Route, label: shortAddress(address), title: `${address}: signed in with the Ledger`, mono: true }
     : { to: '/connexion' as Route, label: 'Sign in', title: 'Sign in with my Ledger', mono: false }
   const doorClass = door.mono ? 't-mono-data nav-link' : 'btn-ghost btn-ghost--small t-button-cap'
   return (

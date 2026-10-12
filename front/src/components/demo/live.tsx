@@ -13,6 +13,7 @@ import { Badge, Kicker } from '../landing/primitives'
 import type { MapLive } from '../landing/SchemaMap'
 
 export const STRATEGY = '0.5 WETH cautiously on the long tail of Base, I do not want to get stuck'
+export const STRATEGY_IDEAS = [STRATEGY, '1 WETH, aggressive profile, 10 slices', '0.5 WETH on yield vaults, cautiously']
 export const QUESTION = 'Which of my bots was refused, and why?'
 
 /* ─── what is happening, read off the state ─── */
@@ -28,7 +29,12 @@ export type Activity = {
 
 export function activity(s: BenchState, local: { asking: boolean }): Activity {
   const lastRow = s.journal.length ? s.journal[s.journal.length - 1] : null
-  if (s.signing) return { phase: s.signing === 'mandate' ? 'mandate' : 'request', now: `The Flex is waiting for you: ${s.signing === 'mandate' ? 'the mandate' : s.signing === 'exception' ? 'the exception' : s.signing}. Read, swipe, hold to sign.`, signing: true, lastRow }
+  if (s.signing) {
+    // The four gestures of the Ledger: the deposit and the withdrawal belong to the setup, the mandate and the exception have their own phase.
+    const what = s.signing === 'mandate' ? 'the mandate' : s.signing === 'exception' ? 'the exception, with the number' : s.signing === 'deposit' ? 'the deposit, one ETH transfer to your vault' : 'the withdrawal authorisation'
+    const phase: Phase = s.signing === 'mandate' ? 'mandate' : s.signing === 'exception' ? 'request' : 'session'
+    return { phase, now: `The Flex is waiting for you: ${what}. Read, swipe, hold to sign.`, signing: true, lastRow }
+  }
   if (s.analysis?.pending) return { phase: 'analyst', now: 'The analyst is querying the MCP tools, read only.', signing: false, lastRow }
   if (s.watching) return { phase: 'watch', now: 'TARE re-probes every held position. The exit is measured again, now.', signing: false, lastRow }
   if (s.running) return { phase: 'agents', now: `Bot “${s.bots.find((b) => b.id === s.bot_running)?.name ?? 'round'}” is choosing. TARE measures, the vault decides.`, signing: false, lastRow }
@@ -51,15 +57,22 @@ export function mapLive(s: BenchState, a: Activity): MapLive {
   const r = a.lastRow
   const tareLines = r ? [`${r.name ?? r.pool.slice(0, 12)}`, r.kind === 'vault' ? `door ${r.stuck_bps ?? r.exit ?? '·'} bps` : `hook in ${r.hook_in ?? r.entry} · out ${r.hook_out ?? r.exit ?? '·'} bps`, r.decision === 'EXECUTED' ? 'entered' : `refused: ${r.why.slice(0, 22)}`] : undefined
   const bots = s.bots.filter((b) => b.status === 'running')
-  const botLines = s.bots.length ? s.bots.slice(-3).map((b) => `${b.name} · ${b.universe} · ${b.status === 'running' ? 'live' : b.status}`) : undefined
   if (s.address) nodes.bench = { lines: [`account ${short(s.address, 6, 4)}`, s.vault ? `vault ${short(s.vault, 6, 4)}` : 'no vault yet', `${bots.length} bot${bots.length > 1 ? 's' : ''} running · ${s.positions.length} positions`] }
-  if (botLines) nodes.bots = { lines: botLines }
+  // The agents' slots: one per bot you launched, filled as they come, lit while one runs.
+  nodes.bots = { slots: s.bots.map((b) => ({ name: b.name, state: b.status === 'running' ? (s.bot_running === b.id ? 'live' : 'running') : b.status })) }
   if (mandateLines) nodes.vault = { lines: mandateLines }
   if (tareLines) nodes.tare = { lines: tareLines }
   nodes.pools = { lines: [`${s.positions.filter((p) => p.kind === 'pool').length} held`, `${s.journal.filter((x) => x.kind === 'pool' && x.decision !== 'EXECUTED').length} refused`, '0 → 9 990 bps'] }
   nodes.vaults = { lines: [`${s.positions.filter((p) => p.kind === 'vault').length} held`, `${s.journal.filter((x) => x.kind === 'vault' && x.decision !== 'EXECUTED').length} refused`, 'Moonwell: 27 % closed'] }
   switch (a.phase) {
-    case 'session': nodes.bench = { ...nodes.bench, tone: 'hot' }; break
+    case 'session':
+      nodes.bench = { ...nodes.bench, tone: 'hot' }
+      if (s.signing === 'deposit' || s.signing === 'withdraw') {
+        // The second and fourth gestures of the Ledger: the deposit (a transaction) and the withdrawal (an EIP-712 authorisation).
+        nodes.ledger = { tone: 'asks', hot: s.signing === 'deposit' ? 1 : 3 }
+        edges.push(s.signer === 'browser' ? 'ledger>browser' : 'ledger>bench', 'bench>vault')
+      }
+      break
     case 'bounds': nodes.bench = { ...nodes.bench, tone: 'hot', lines: ['the strategist, once', 'a sentence → three bounds', 'it buys nothing'] }; break
     case 'mandate':
       nodes.ledger = { tone: a.signing ? 'asks' : 'hot', lines: a.signing ? ['REVIEW TYPED MESSAGE', 'BUDGET · MAX LOSS · EXPIRES', 'hold to sign'] : ['the mandate is ready', 'three numbers, read in clear', 'sign once'] }
@@ -75,7 +88,7 @@ export function mapLive(s: BenchState, a: Activity): MapLive {
     case 'watch': nodes.tare = { ...nodes.tare, tone: 'hot', lines: s.watching ? ['re-probing every position', 'the exit, measured now', 'exits while it still can'] : nodes.tare?.lines }; edges.push('tare>pools', 'bots>tare'); break
     case 'analyst': nodes.mcp = { tone: 'hot', lines: s.analysis?.pending ? ['querying…', 'ten tools, read only', 'your key, your data'] : undefined }; nodes.analyst = { tone: 'hot', lines: s.analyses.length && !s.analysis?.pending ? ['answered, tools cited', s.analyses[s.analyses.length - 1].tools_used.map((t) => t.tool).join(' · ').slice(0, 36) || 'no tool called', 'cannot sign, send, stop'] : undefined }; edges.push('bench>mcp', 'mcp>analyst', 'walletcli>analyst'); break
   }
-  const stamp = `${a.phase}-${s.signing ?? ''}-${s.running}-${s.watching}-${s.analysis?.pending}-${s.journal.length}-${s.escalation?.pool_id ?? ''}`
+  const stamp = `${a.phase}-${s.signing ?? ''}-${s.running}-${s.watching}-${s.analysis?.pending}-${s.journal.length}-${s.escalation?.pool_id ?? ''}-${s.bots.length}`
   return { nodes, edges, stamp }
 }
 
@@ -110,22 +123,28 @@ export function Door({ children }: { children?: ReactNode }) {
 
 type StepState = 'done' | 'live' | 'ahead' | 'pending'
 type StepDef = { id: Phase; label: string; hint: string; state: StepState; action?: () => void; actionLabel?: string; second?: () => void; secondLabel?: string }
+export type StepsLocal = { asking: boolean; setAsking: (v: boolean) => void; sentence?: string }
 
-export function useSteps(local: { asking: boolean; setAsking: (v: boolean) => void }): { steps: StepDef[]; a: Activity; s: BenchState | null } {
+export function useSteps(local: StepsLocal): { steps: StepDef[]; a: Activity; s: BenchState | null; ask: (text?: string) => Promise<void> } {
   const { state: s, act } = useBench()
-  if (!s) return { steps: [], a: { phase: 'session', now: '', signing: false, lastRow: null }, s: null }
+  const ask = async (text?: string) => {
+    const prompt = (text ?? local.sentence ?? '').trim() || STRATEGY
+    local.setAsking(true)
+    await act('/chat', { prompt })
+    local.setAsking(false)
+  }
+  if (!s) return { steps: [], a: { phase: 'session', now: '', signing: false, lastRow: null }, s: null, ask }
   const a = activity(s, local)
-  const ask = async () => { local.setAsking(true); await act('/chat', { prompt: STRATEGY }); local.setAsking(false) }
   const steps: StepDef[] = [
     { id: 'session', label: 'Open the session', hint: 'a Base fork, the emulated Flex, a vault in your name', state: s.vault ? 'done' : 'live', action: s.vault ? undefined : () => act('/boot'), actionLabel: 'Open' },
-    { id: 'bounds', label: 'Ask for bounds', hint: STRATEGY, state: s.signed || s.proposal ? 'done' : s.vault ? (local.asking ? 'pending' : 'live') : 'ahead', action: s.vault && !s.proposal && !s.signed && !local.asking ? ask : undefined, actionLabel: 'Ask' },
+    { id: 'bounds', label: 'Ask for bounds', hint: local.sentence?.trim() || STRATEGY, state: s.signed || s.proposal ? 'done' : s.vault ? (local.asking ? 'pending' : 'live') : 'ahead', action: s.vault && !s.signed && !local.asking ? () => ask() : undefined, actionLabel: s.proposal ? 'Ask again' : 'Ask' },
     { id: 'mandate', label: 'Sign the mandate on the Flex', hint: 'budget, max round-trip loss, expiry: read, then hold to sign', state: s.signed ? 'done' : s.signing === 'mandate' ? 'pending' : s.proposal ? 'live' : 'ahead', action: s.proposal && !s.signed && !s.signing ? () => act('/sign_mandate') : undefined, actionLabel: 'Sign on Ledger' },
     { id: 'agents', label: 'Let the agents in', hint: 'add a bot, or run one round: TARE measures, the vault decides', state: s.running ? 'pending' : s.journal.length ? 'done' : s.signed ? 'live' : 'ahead', action: s.signed && !s.running ? async () => { await act('/universe', { universe: s.universe }); await act('/run') } : undefined, actionLabel: 'Run one round' },
     { id: 'request', label: 'Answer the request on the Flex', hint: 'read the number, sign the exception, or leave it refused', state: s.signing === 'exception' ? 'pending' : s.escalation?.possible ? 'live' : s.exception_buys.length || s.refused_escalations.length ? 'done' : 'ahead', action: s.escalation?.possible && !s.signing ? () => act('/escalate') : undefined, actionLabel: 'Read and sign', second: s.escalation?.possible && !s.signing ? () => act('/escalate_no') : undefined, secondLabel: 'Leave refused' },
     { id: 'watch', label: 'Re-probe, exit while you can', hint: 'TARE measures the exit again on every held position', state: s.watch ? 'done' : s.watching ? 'pending' : s.positions.length ? 'live' : 'ahead', action: s.positions.length && !s.watching ? () => act('/watch') : undefined, actionLabel: 'Re-probe', second: s.positions.length && !s.watching ? () => act('/watch_sell') : undefined, secondLabel: 'Re-probe and exit' },
-    { id: 'analyst', label: 'Ask the analyst', hint: QUESTION, state: s.analyses.length && !s.analysis?.pending ? 'done' : s.analysis?.pending ? 'pending' : s.journal.length ? 'live' : 'ahead', action: s.journal.length && !s.analysis?.pending ? () => act('/analyze', { question: QUESTION }) : undefined, actionLabel: 'Ask' },
+    { id: 'analyst', label: 'Ask the analyst', hint: QUESTION, state: s.analyses.length && !s.analysis?.pending ? 'done' : s.analysis?.pending ? 'pending' : s.journal.length ? 'live' : 'ahead', action: s.journal.length && !s.analysis?.pending ? () => act('/analyze', { question: QUESTION }) : undefined, actionLabel: 'Ask why' },
   ]
-  return { steps, a, s }
+  return { steps, a, s, ask }
 }
 
 export function Conductor({ steps, compact = false }: { steps: StepDef[]; compact?: boolean }) {
@@ -161,6 +180,31 @@ export function Flex({ s, a }: { s: BenchState; a: Activity }) {
   )
 }
 
+/* ─── the funds, signed on the Ledger: a deposit (one ETH transfer), a withdrawal (an EIP-712 authorisation) ─── */
+
+export function Funds({ s }: { s: BenchState }) {
+  const { act } = useBench()
+  const [dep, setDep] = useState('0.5')
+  const waiting = !!s.signing || !!s.pending
+  const browser = s.signer === 'browser'
+  const deposit = async (e: FormEvent) => { e.preventDefault(); await act('/deposit', { amount_eth: dep }) }
+  return (
+    <div className="funds">
+      <Kicker>Funds · signed on the Ledger</Kicker>
+      <dl className="kv">
+        <div className="kv__row"><dt className="t-mono-data text-page-text">Vault</dt><dd className="t-body-md m-0 text-page-text-mute">{s.vault ? `${fmtWei(s.weth)} available · ${fmtWei(s.spent)} spent` : 'not opened'}</dd></div>
+        <div className="kv__row"><dt className="t-mono-data text-page-text">Your address</dt><dd className="t-body-md m-0 text-page-text-mute">{(Number(s.owner_eth || '0') / 1e18).toFixed(4)} ETH</dd></div>
+      </dl>
+      <form className="mt-3 flex flex-wrap items-end gap-3" onSubmit={deposit}>
+        <div style={{ flex: '0 1 130px' }}><Field label="Deposit (ETH)" type="number" step="any" min={0} inputMode="decimal" value={dep} onChange={(e) => setDep(e.target.value)} disabled={waiting || !s.vault} /></div>
+        <button type="submit" className="btn-ghost btn-ghost--hot btn-ghost--small t-button-cap" disabled={waiting || !browser || !s.vault}>Deposit from my Ledger</button>
+        <button type="button" className="btn-ghost btn-ghost--quiet btn-ghost--small t-button-cap" onClick={() => act('/withdraw', { amount: 'tout' })} disabled={waiting || !s.vault || Number(s.weth) <= 0}>Withdraw all to my Ledger</button>
+      </form>
+      {!browser ? <p className="t-caption m-0 mt-2 text-page-text-faint">The deposit is signed in this page: choose “My Ledger · this browser” at the door.</p> : <p className="t-caption m-0 mt-2 text-page-text-faint">The only transaction the device signs, and an authorisation read in clear. <a {...linkProps('/account')} className="underline">More on the account page</a>.</p>}
+    </div>
+  )
+}
+
 /* ─── the agents: who runs, add one, the one-round shortcut ─── */
 
 export function Agents({ s }: { s: BenchState }) {
@@ -168,11 +212,12 @@ export function Agents({ s }: { s: BenchState }) {
   const [name, setName] = useState('')
   const [universe, setUniverse] = useState<Universe>(s.universe)
   const [interval, setIntervalS] = useState('0')
+  const [ticks, setTicks] = useState('3')
   const [busy, setBusy] = useState(false)
   const add = async (e: FormEvent) => {
     e.preventDefault()
     setBusy(true)
-    const r = await act('/bots', { name: name.trim() || (universe === 'vaults' ? 'Yield' : 'DCA'), universe, ticks: 3, interval_s: Number(interval) || 0 })
+    const r = await act('/bots', { name: name.trim() || (universe === 'vaults' ? 'Yield' : 'DCA'), universe, ticks: Math.max(1, Math.min(12, Number(ticks) || 3)), interval_s: Number(interval) || 0 })
     if (r.ok) setName('')
     setBusy(false)
   }
@@ -187,7 +232,7 @@ export function Agents({ s }: { s: BenchState }) {
               <span className="t-title-md agents__name">{b.name}</span>
               <span className="t-kicker text-page-text-faint">{b.universe === 'vaults' ? '4626 vaults' : 'v4 pools'} · {b.interval_s ? `every ${b.interval_s} s` : 'one round'}</span>
               <span className="t-mono-data text-page-text-mute">{b.rounds} rounds · <span className="is-success">{b.executed}</span> in · <span className="is-error">{b.refused}</span> refused{b.exceptions ? ` · ${b.exceptions} exc.` : ''}</span>
-              {b.status === 'running' ? <button type="button" className="btn-ghost btn-ghost--quiet btn-ghost--small t-button-cap" onClick={() => act('/bots/stop', { id: b.id })}>Stop</button> : <span className="t-kicker text-page-text-faint">{b.stop_reason ?? b.status}</span>}
+              {b.status === 'running' ? <button type="button" className="btn-ghost btn-ghost--quiet btn-ghost--small t-button-cap" onClick={() => act('/bots/stop', { id: b.id })}>Stop</button> : <button type="button" className="btn-ghost btn-ghost--quiet btn-ghost--small t-button-cap" onClick={() => act('/bots/restart', { id: b.id })} title={b.stop_reason ?? b.status}>Restart</button>}
             </li>
           ))}
         </ul>
@@ -202,10 +247,12 @@ export function Agents({ s }: { s: BenchState }) {
           <option value="0">One round</option>
           <option value="30">Every 30 s</option>
           <option value="60">Every 60 s</option>
+          <option value="300">Every 5 min</option>
         </Select>
+        <Field label="Slices" type="number" min={1} max={12} value={ticks} onChange={(e) => setTicks(e.target.value)} disabled={!s.signed} />
         <button type="submit" className="btn-ghost btn-ghost--small t-button-cap" disabled={busy || !s.signed}>{busy ? 'Launching…' : 'Add and launch'}</button>
       </form>
-      {!s.signed ? <p className="t-caption m-0 mt-3 text-page-text-faint">Locked until the mandate is signed: a bot can only act inside a rule you read.</p> : null}
+      {!s.signed ? <p className="t-caption m-0 mt-3 text-page-text-faint">Locked until the mandate is signed: a bot can only act inside a rule you read.</p> : <p className="t-caption m-0 mt-3 text-page-text-faint">The history, the journal and the positions: <a {...linkProps('/trades')} className="underline">the trades page</a>.</p>}
     </div>
   )
 }
@@ -213,16 +260,17 @@ export function Agents({ s }: { s: BenchState }) {
 /* ─── TARE: the measure of the last decision, the security level ─── */
 
 export function Measure({ s, a }: { s: BenchState; a: Activity }) {
-  const r = a.lastRow
   const e = s.escalation?.possible ? s.escalation : null
+  // The measure shown is the request's when one waits on the Flex (its own journal row), else the last decision's.
+  const r = e ? (s.journal.slice().reverse().find((x) => x.pool.toLowerCase() === e.pool_id.toLowerCase()) ?? a.lastRow) : a.lastRow
   const allows = s.mandate?.mandate.maxRoundTripLossBps ?? s.proposal?.max_round_trip_loss_bps ?? null
-  const vault = r?.kind === 'vault'
+  const vault = e ? (e.kind ?? r?.kind) === 'vault' : r?.kind === 'vault'
   const exit = e ? e.seen_exit_bps : r ? (vault ? (r.stuck_bps ?? r.exit) : r.exit) : null
   const entry = r ? (vault ? (r.apy_pct != null ? `${r.apy_pct} %` : '·') : `${r.hook_in ?? r.entry}`) : null
   const verdict = e ? 'asks' : r ? (r.decision === 'EXECUTED' ? 'ok' : 'refused') : null
   return (
     <div className="measure" data-verdict={verdict ?? 'none'}>
-      <Kicker>TARE · what the hook takes, measured in the transaction</Kicker>
+      <Kicker>TARE · {vault ? 'the door, measured in the transaction' : 'what the hook takes, measured in the transaction'}</Kicker>
       {r || e ? (
         <>
           <p className="t-body-md m-0 text-page-text">{e ? (e.name ?? short(e.pool_id, 10, 6)) : (r!.name ?? short(r!.pool, 10, 6))} <span className="text-page-text-faint">· {e ? 'out of bounds' : vault ? 'ERC-4626 vault' : 'Uniswap v4 pool'}</span></p>
@@ -238,7 +286,7 @@ export function Measure({ s, a }: { s: BenchState; a: Activity }) {
           {r && !e ? <p className="t-caption m-0 mt-3 max-w-[48ch] text-pretty text-page-text-faint">{r.why}</p> : null}
         </>
       ) : (
-        <p className="t-body-md m-0 text-page-text-mute">No decision yet. When a bot picks a position, the hook is swapped for 89 inert bytes, the pool is quoted twice, and the gap is what the hook takes. That figure lands here.</p>
+        <p className="t-body-md m-0 text-page-text-mute">No decision yet. When a bot picks a pool, the hook is swapped for 89 inert bytes, the pool is quoted twice, and the gap is what the hook takes. For a vault, a real deposit and withdrawal, undone, and the largest depositor’s door. That figure lands here.</p>
       )}
     </div>
   )

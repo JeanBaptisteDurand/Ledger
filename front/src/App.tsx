@@ -10,12 +10,16 @@ import { hasWebGL, motionEnabled, onMotionChange } from './motion/flags'
 import { useRoute } from './app/router'
 import { DemoPage } from './components/demo/Demo'
 import { ConnexionPage } from './components/connexion/Connexion'
+import { TradesPage } from './components/trades/Trades'
+import { AccountPage } from './components/account/Account'
 
 export default function App() {
   const route = useRoute()
   if (route === '/') return <Landing />
-  // The public pages stand on the home's surface: the finished scene under their sheets.
+  // The public pages stand on the home's surface: the finished scene under their sheets. So do the account's.
   if (route === '/demo') return <DemoPage />
+  if (route === '/trades') return <TradesPage />
+  if (route === '/account') return <AccountPage />
   return <ConnexionPage />
 }
 
