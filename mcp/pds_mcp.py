@@ -52,9 +52,17 @@ import walletcli  # noqa: E402
 # --------------------------------------------------------------------- la clé
 
 _KEY_SOURCE = "?"
+_KEY: str | None = None   # lue une fois par processus : un `ring decrypt` passe par le réseau
 
 
 def load_key() -> str:
+    global _KEY
+    if _KEY is None:
+        _KEY = _load_key()
+    return _KEY
+
+
+def _load_key() -> str:
     """La clé du serveur — de préférence déchiffrée du Ledger Key Ring, sinon le fichier en clair.
 
     `scripts/ring-seal.sh` scelle `.mcp-key` en `.mcp-key.ring` avec `wallet-cli ring encrypt` : la

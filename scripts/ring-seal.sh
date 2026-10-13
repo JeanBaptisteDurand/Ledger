@@ -24,11 +24,20 @@ RING_KEY_NAME="${RING_KEY_NAME:-porte-de-sortie-mcp}"   # doit être le même qu
 
 [[ -x "$W" ]] || { echo "wallet-cli introuvable ($W) — cd ledger/dmk && npm i"; exit 1; }
 
+# `ring keys` rend {"ok":false,"error":…} tant que le ring n'existe pas, puis le payload nu
+# {"status":"success","keys":[…]} une fois initialisé : on accepte les deux formes.
+ring_ready() {
+  "$W" ring keys --output json 2>/dev/null | python3 -c '
+import sys, json
+d = json.load(sys.stdin)
+sys.exit(0 if d.get("ok") or d.get("status") == "success" else 1)'
+}
+
 status() {
   "$W" ring keys --output json 2>/dev/null | python3 -c '
 import sys, json
 d = json.load(sys.stdin)
-if d.get("ok"): print("ring : initialisé —", json.dumps(d.get("data")))
+if d.get("ok") or d.get("status") == "success": print("ring : initialisé — clés :", json.dumps(d.get("keys", d.get("data"))))
 else: print("ring :", d.get("error", {}).get("message", "?"))'
   [[ -f "$SEALED" ]] && echo "clé scellée : $SEALED" || echo "clé scellée : absente"
   [[ -f "$KEY" ]] && echo "clé en clair : $KEY" || echo "clé en clair : absente"
@@ -42,7 +51,7 @@ esac
 [[ -f "$KEY" ]] || { . "$ROOT/.venv/bin/activate" 2>/dev/null || true; python3 "$ROOT/mcp/pds_mcp.py" --print-key >/dev/null; }
 
 # 1. le ring, une fois, avec l'appareil
-if ! "$W" ring keys --output json >/dev/null 2>&1 || ! "$W" ring keys --output json 2>/dev/null | grep -q '"ok":true'; then
+if ! ring_ready; then
   echo "[ring] non initialisé : branche le Ledger, déverrouille-le, et suis l'appareil (une fois)."
   "$W" ring init --name "porte-de-sortie-$(hostname -s)"
 fi

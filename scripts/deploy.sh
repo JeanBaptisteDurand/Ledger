@@ -32,6 +32,7 @@ ledger/build/
 accounts/
 mandate.json
 mcp/.mcp-key
+mcp/.mcp-key.ring
 agent/watch.jsonl
 agent/notifications.jsonl
 .env
