@@ -115,17 +115,20 @@ export function mapLive(s: BenchState, a: Activity): MapLive {
 
 /* ─── the door: one click on the bench Flex ─── */
 
+/** The bench is absent: what the online site says, and the one command that brings it back on a machine that has it. */
+export function BenchOffline() {
+  return (
+    <div className="live-door">
+      <p className="t-body-lg m-0 max-w-[52ch] text-pretty text-page-text-mute">The bench is not running behind this page. On a machine with the bench, one command at the root of the repository starts it; the page resumes on its own.</p>
+      <pre className="t-mono-data m-0 mt-6 is-info">{'scripts/site.sh'}</pre>
+    </div>
+  )
+}
+
 export function Door({ children }: { children?: ReactNode }) {
   const { state, offline, act } = useBench()
   const [busy, setBusy] = useState(false)
-  if (offline || !state) {
-    return (
-      <div className="live-door">
-        <p className="t-body-lg m-0 max-w-[52ch] text-pretty text-page-text-mute">The bench is not running behind this page. On a machine with the bench, one command at the root of the repository starts it; the page resumes on its own.</p>
-        <pre className="t-mono-data m-0 mt-6 is-info">{'scripts/site.sh'}</pre>
-      </div>
-    )
-  }
+  if (offline || !state) return <BenchOffline />
   const enter = async () => { setBusy(true); await act('/login_device'); setBusy(false) }
   return (
     <div className="live-door">

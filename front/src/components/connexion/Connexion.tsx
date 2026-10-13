@@ -12,6 +12,7 @@ import { initSmoothScroll, setPageLocked } from '../../motion/scroll'
 import { blurFade, focusSheets, treatTitle } from '../../motion/landing'
 import { Badge, Band, hotTitle, Kicker, Mark, Note, Panel, Source, Stats, Takeaway, Title } from '../landing/primitives'
 import { BenchProvider, useBench } from '../../app/useBench'
+import { BenchOffline } from '../demo/live'
 import { useLogin } from '../../app/session'
 import { LiveScreen, PATHS } from '../../app/device'
 import { Segments, Skeleton, Toasts } from '../../app/ui'
@@ -107,11 +108,12 @@ function Sections() {
 
 /** The door itself: which device, where the signature is made, the sign-in. The live Flex beside it. */
 function Door() {
-  const { state, act, say, refresh } = useBench()
+  const { state, offline, act, say, refresh } = useBench()
   const { login, logout, busy, step } = useLogin()
   const [transport, setT] = useState<Transport>(() => getTransport())
   const [connected, setConnected] = useState<string | null>(() => window.LedgerWeb?.address() ?? null)
   const [testing, setTesting] = useState(false)
+  if (offline) return <BenchOffline />
   if (!state) return <Skeleton rows={5} />
   const browser = state.signer === 'browser'
   const real = browser && transport === 'webhid'
