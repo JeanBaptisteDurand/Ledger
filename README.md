@@ -8,17 +8,17 @@ Built by **Jean-Baptiste Durand** and **Florent Belotti** · 42Blockchain, Écol
 
 **The video:** <https://youtu.be/8AGHwGirckI>
 
-The whole site, with the bench behind it: a Base fork pinned at block 50,614,000, an emulated Ledger Flex (Speculos,
-running the Ethereum app built with the test key) and the account server. **Sign in with the emulated Flex** connects
-in one click. The Flex appears next to the page whenever it waits for a signature, and you sign on it with the mouse: a
-click taps, a drag to the left turns the page, a long press signs. Then the live map: the vault, the deposit, the
-mandate, the bots, the requests out of bounds, the TARE panel, the withdrawal. [Route by route](#the-site-route-by-route)
+Plug in your **real Ledger** over USB (Chrome, Edge or Brave): it signs in, deposits, signs the mandate, each exception
+and the withdrawal, everything read in clear on the device. No Ledger at hand? The site also ships a Ledger Flex right in
+the browser (Speculos, running the same Ethereum app), so anyone can try the full flow in one click: **Sign in with the
+emulated Flex**. It appears next to the page whenever a signature is due, and you sign on it with the mouse: a click
+taps, a drag to the left turns the page, a long press signs. Behind it, a fork of Base mainnet pinned at block
+50,614,000. Then the live map: the vault, the deposit, the mandate, the bots, the requests out of bounds, the TARE
+panel, the withdrawal. [Route by route](#the-site-route-by-route)
 · how it is served: [`DEPLOY.md`](DEPLOY.md).
 
-What this domain does not give is one Flex per visitor. There is one, emulated and shared: everyone who picks it is the
-same holder, it signs one thing at a time, and a screen abandoned mid-review is rejected by the bench after three
-minutes. A real Ledger over USB (Chrome, Edge or Brave) opens its own account, if it runs the Ethereum app built with the
-test key ([prerequisites](#prérequis), in French). That path was replayed online on 13 October, photos below.
+The in-browser Flex is shared by every visitor, so it signs one thing at a time; your own Ledger opens your own
+account. The real-device path was replayed online on 13 October, photos below ([prerequisites](#prérequis), in French).
 
 Locally, one command does the same: `scripts/site.sh`, then **<http://127.0.0.1:5173>**. `PORTEUR=1 scripts/site.sh`
 adds a Flex that approves every screen by itself, for a demo without a device. Every claim in this file has a command
@@ -231,8 +231,6 @@ flare of `lensflare-threejs-vanilla`, and the two sounds of the hero.
 
 ## Documentation complète, en français
 
-*« Porte de sortie » est le nom de travail : les documents, le banc et les identifiants techniques l'emploient encore.*
-
 [Le problème](#le-problème) · [Le mécanisme](#le-mécanisme) · [Le banc, dans le navigateur](#le-banc-dans-le-navigateur) ·
 [L'agent, et pourquoi il se fait piéger](#lagent-et-pourquoi-il-se-fait-piéger) ·
 [La seconde instance](#la-seconde-instance--dix-coffres-erc-4626-réels-même-mandat-même-refus) ·
@@ -300,7 +298,7 @@ Cinq gestes, dans l'ordre :
    transaction que ta Ledger signe, lisible par n'importe quelle app Ethereum (montant, destinataire, frais). Le
    coffre le garde en WETH. Tu reprends tes fonds de la même carte : une **autorisation de retrait** EIP-712, lue en
    clair sur l'écran (montant, destinataire, échéance), que le banc exécute en payant le gaz, sans pouvoir y changer
-   un chiffre (`withdrawWithAuthorization`, 6 tests). Sur le fork, le banc t'a mis 5 ETH fictifs, et 5 WETH de
+   un chiffre (`withdrawWithAuthorization`, 6 tests). Sur le fork, le banc t'a mis 5 ETH de test, et 5 WETH de
    démonstration dans le coffre ; sur un vrai réseau, rien n'est crédité.
 2. **Demande une stratégie, en une phrase.** Le CLI `claude`, ou l'API d'OpenAI en ligne, traduit ton intention en **bornes** :
    budget, coût de sortie toléré, taille de tranche, échéance. Il n'achète rien, ne choisit aucun
