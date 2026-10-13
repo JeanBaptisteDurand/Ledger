@@ -12,7 +12,7 @@ vers `netout.tech`.
 | ce qui tourne | où | comment |
 |---|---|---|
 | le front (Vite, construit) | `/home/ubuntu/netout/dist`, monté en lecture seule dans le conteneur Caddy | servi tel quel, toute route renvoyée vers `index.html` |
-| le serveur du banc (`web/server.py`) | `127.0.0.1:8199` sur l'hôte | service systemd `netout-banc`, plafonné à 2,2 Go |
+| le serveur du banc (`web/server.py`) | `127.0.0.1:8199` sur l'hôte | service systemd `netout-banc`, plafonné à 2,2 Go ; chemin du client par défaut (`PDS_SIGNER=browser`) |
 | le relais Caddy → banc | prise Unix `/home/ubuntu/netout/sock/banc.sock` | `netout-banc-proxy.socket` et `systemd-socket-proxyd` |
 | le fork de Base (anvil) | `127.0.0.1:8545` | lancé par le serveur à l'ouverture de la première session |
 | la Flex émulée (Speculos) | `127.0.0.1:5013`, dans Docker | `ledger/speculos.sh up` ; le banc la relaie sous `/speculos` |
