@@ -8,7 +8,7 @@ export const CLAIM = {
   title: ['Every agent policy bounds what it spends. ', 'Nobody weighs what it gets back.', ''] as HotTitle,
   takeaway: 'Spend is bounded. Recovery is not.',
   lead: 'A daily cap, an allow-list, a maximum slippage. All of it bounds the entry. A token whose hook blocks the resale, a vault you only leave after a queue: the same closed door, and nothing at the entry says so.',
-  source: 'README.md, “The gap”.',
+  source: 'README.md, “The problem”.',
 }
 
 export const TRAP = {
@@ -26,7 +26,7 @@ export const TRAP = {
     ['Vaults that refuse the deposit', '5 of 10', 'hot'],
   ] as const,
   standard: ['The standard writes the trap in: ', 'previewRedeem', ' must ignore withdrawal limits. The door is read from ', 'maxWithdraw', '.'] as const,
-  source: 'README.md, “The gap” and “What is proven”, measured on a Base fork at block 50 614 000.',
+  source: 'README.md, “The problem” and “What is proven”, measured on a Base fork at block 50 614 000.',
 }
 
 export const PRODUCT = {
@@ -38,7 +38,7 @@ export const PRODUCT = {
     { word: 'Sign', kicker: 'Your Ledger · once', title: 'Three numbers, read in clear', text: 'A budget, a maximum round-trip loss, an expiry. Clear-signed on your Ledger, with our ERC-7730 descriptors, isBlindSign=false. The contract holds that rule at every position. The device never signs a purchase.', facts: [['Signed', 'budget · max loss · expiry', ''], ['Never', 'a purchase', ''], ['Report', 'isBlindSign=false · eip7730', 'hot']] },
     { word: 'Out', kicker: 'The way out · yours', title: 'Refused, watched, or back on the device', text: 'An exit past your bound is refused in the same transaction. A door that closes after the purchase is re-probed, and the position sold while it still can be. A negotiable refusal comes back to the Flex with the number: you sign a one-time exception, or leave it refused.', facts: [['Refused', 'CannotExit(lossBps, maxBps)', ''], ['Watched', 'watch.py re-probes, exits', ''], ['Yours', 'read and sign, or leave refused', 'hot']] },
   ] as const,
-  source: 'README.md, “The mechanism”, “Ce que le hook prend vraiment”, “L’escalade”.',
+  source: 'README.md, “What it does” and “The measure: TARE”.',
 }
 
 export const RULE = {
@@ -50,7 +50,7 @@ export const RULE = {
   mirrorTitle: 'Exit mandate',
   mirror: [['Network', 'Base'], ['Agent', '0x7099…79C8'], ['Budget', '0.5 WETH'], ['Max round trip loss (bps)', '150'], ['Expires', '2026-10-02 18:00 UTC']] as const,
   caption: 'Read on the device, then hold to sign. Once.',
-  source: 'README.md, “The mechanism”. Clear-signed on a real Flex over USB, ecrecover matches.',
+  source: 'README.md, “What it does”. Clear-signed on a real Flex over USB, ecrecover matches.',
 }
 
 export const OVERFLOW = {
@@ -62,7 +62,7 @@ export const OVERFLOW = {
   mirror: [['Position', 'Moonwell Flagship ETH'], ['Amount', '0.05 WETH'], ['EXIT COST (bps)', '2693'], ['Valid until', '2026-09-25 19:12 UTC']] as const,
   sign: ['read and sign', 'Once, for this position, this amount and the number you just read. If the exit worsens before it lands, the exception is worth nothing.'] as const,
   refuse: ['leave refused', 'The refusal is kept. No bot asks for that position again.'] as const,
-  source: 'README.md, “L’escalade”.',
+  source: 'README.md, “What it does”.',
 }
 
 export const AGENTS = {
@@ -72,7 +72,7 @@ export const AGENTS = {
   bots: { kicker: 'They act · no language model', title: 'The bots', facts: [['Universes', 'Uniswap v4 pools · ERC-4626 vaults', ''], ['Key', 'a session key, the vault only', 'hot'], ['Sees', 'depth, entry, yield. Never the exit', '']] as ReadonlyArray<readonly [string, string, '' | 'hot']> },
   analyst: { kicker: 'It understands · Agent Stack', title: 'The analyst', facts: [['Tools', '10, read only, through our MCP', 'hot'], ['Key', 'derived from your address, written nowhere', ''], ['Can', 'answer, and cite', '']] as ReadonlyArray<readonly [string, string, '' | 'hot']> },
   mapNote: ['One path leads to a purchase: a bot, its session key, ', 'the vault', '. Everything else reads, measures or signs a rule.'] as const,
-  source: 'README.md, “The agents”. mcp/pds_mcp.py.',
+  source: 'README.md, “The agents, and the line between them”. mcp/pds_mcp.py.',
 }
 
 export const MEASURED = {
@@ -82,7 +82,7 @@ export const MEASURED = {
   total: 124,
   alerts: 0,
   note: ['Every refusal on the way is the contract measuring the exit inside the transaction and reverting with the reason, ', 'CannotExit(lossBps, maxBps)', '. The agent reads why.'] as const,
-  source: 'The 25 September 2026 run. front/APP.md for the latest, 146 s with the deposit and the withdrawal signed on the device.',
+  source: 'A full run in a real browser. front/APP.md for the latest, 146 s with the deposit and the withdrawal signed on the device.',
 }
 
 export const FINDINGS = {
@@ -101,5 +101,5 @@ export const CALL = {
   href: '/connexion',
   demo: 'See the demo',
   demoHref: '/demo',
-  source: 'README.md, “As a service”.',
+  source: 'README.md, “What it does” and “The site”.',
 }

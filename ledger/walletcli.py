@@ -19,7 +19,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 LOCAL = ROOT / "ledger" / "dmk" / "node_modules" / "@ledgerhq" / "wallet-cli" / "bin" / "wallet-cli"
-RING_KEY_NAME = "porte-de-sortie-mcp"
+RING_KEY_NAME = "netout-mcp"
 
 
 def binary() -> Path | None:

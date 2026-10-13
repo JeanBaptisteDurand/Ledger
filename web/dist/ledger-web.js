@@ -53772,7 +53772,7 @@ ${ge(n42)}`;
             return [];
           },
           async getFieldContext() {
-            return { type: "error", error: new Error("porte-de-sortie: no field context") };
+            return { type: "error", error: new Error("netout: no field context") };
           },
           async getTypedDataFilters(ctx) {
             if (!descriptor) return { type: "error", error: new Error("no descriptor") };

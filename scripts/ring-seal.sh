@@ -20,7 +20,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 W="${WALLET_CLI:-$ROOT/ledger/dmk/node_modules/@ledgerhq/wallet-cli/bin/wallet-cli}"
 KEY="$ROOT/mcp/.mcp-key"
 SEALED="$ROOT/mcp/.mcp-key.ring"
-RING_KEY_NAME="${RING_KEY_NAME:-porte-de-sortie-mcp}"   # doit être le même que dans ledger/walletcli.py
+RING_KEY_NAME="${RING_KEY_NAME:-netout-mcp}"   # doit être le même que dans ledger/walletcli.py
 
 [[ -x "$W" ]] || { echo "wallet-cli introuvable ($W) — cd ledger/dmk && npm i"; exit 1; }
 
@@ -53,7 +53,7 @@ esac
 # 1. le ring, une fois, avec l'appareil
 if ! ring_ready; then
   echo "[ring] non initialisé : branche le Ledger, déverrouille-le, et suis l'appareil (une fois)."
-  "$W" ring init --name "porte-de-sortie-$(hostname -s)"
+  "$W" ring init --name "netout-$(hostname -s)"
 fi
 
 # 2. sceller

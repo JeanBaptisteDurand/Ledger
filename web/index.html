@@ -713,7 +713,7 @@ async function fetchAccount(force){
   $('#c-account').hidden = false;
   $('#ac-addr').textContent = a.profile.address;
   const since = a.profile.created ? new Date(a.profile.created*1000).toLocaleString('fr') : '—';
-  $('#ac-meta').textContent = `${since} · ${a.profile.logins || 1} connexion(s) · ${a.dir.replace(/^.*\/porte-de-sortie\//,'')}`;
+  $('#ac-meta').textContent = `${since} · ${a.profile.logins || 1} connexion(s) · ${a.dir.replace(/^.*\/(?=accounts\/)/,'')}`;
   $('#ac-key').textContent = a.mcp_key;
   const bl = (st.bots || []).filter(b => b.status === 'running'), bo = (st.bots || []).filter(b => b.status !== 'running');
   $('#ac-bots').textContent = (st.bots || []).length

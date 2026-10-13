@@ -1,135 +1,134 @@
-# Mettre Net·Out en ligne
+# Deploying Net·Out
 
-**<https://netout.tech>** sert le site entier et le banc derrière lui : la même chose que `scripts/site.sh` en local,
-sur un serveur. Ce fichier dit comment c'est servi, ce qui a été vérifié de l'extérieur, et ce qui ne l'est pas.
+**<https://netout.tech>** serves the whole site and the bench behind it: the same as `scripts/site.sh` locally, on a
+server. This file covers how it is served, what was verified from outside, and the known limits.
 
-## Où on en est (13 octobre 2026)
+## Current setup (13 October 2026)
 
-Le domaine pointe sur un VPS OVH (Ubuntu 26.04, 6 cœurs, 11 Go) que d'autres sites partagent déjà, derrière leur Caddy
-en conteneur. Le certificat est celui de Let's Encrypt, obtenu et renouvelé par ce Caddy ; `www.netout.tech` redirige
-vers `netout.tech`.
+The domain points to an OVH VPS (Ubuntu 26.04, 6 cores, 11 GB) that other sites already share, behind their Caddy
+container. The certificate is from Let's Encrypt, obtained and renewed by that Caddy; `www.netout.tech` redirects to
+`netout.tech`.
 
-| ce qui tourne | où | comment |
+| what runs | where | how |
 |---|---|---|
-| le front (Vite, construit) | `/home/ubuntu/netout/dist`, monté en lecture seule dans le conteneur Caddy | servi tel quel, toute route renvoyée vers `index.html` |
-| le serveur du banc (`web/server.py`) | `127.0.0.1:8199` sur l'hôte | service systemd `netout-banc`, plafonné à 2,2 Go ; chemin du client par défaut (`PDS_SIGNER=browser`) |
-| le relais Caddy → banc | prise Unix `/home/ubuntu/netout/sock/banc.sock` | `netout-banc-proxy.socket` et `systemd-socket-proxyd` |
-| le fork de Base (anvil) | `127.0.0.1:8545` | lancé par le serveur à l'ouverture de la première session |
-| la Flex émulée (Speculos) | `127.0.0.1:5013`, dans Docker | `ledger/speculos.sh up` ; le banc la relaie sous `/speculos` |
-| le porteur automatique | rien, par défaut | `netout-porteur`, à démarrer pour une vidéo ou une démo sans personne |
-| l'analyste et le stratège | l'API d'OpenAI, `gpt-4o-mini` | `PDS_LLM=openai` dans le service ; la clé dans `/home/ubuntu/netout/openai.env` (600), hors du dépôt |
+| the front end (Vite build) | `/home/ubuntu/netout/dist`, mounted read-only in the Caddy container | served as is, every route falls back to `index.html` |
+| the bench server (`web/server.py`) | `127.0.0.1:8199` on the host | systemd service `netout-banc`, capped at 2.2 GB; client-side signing by default (`PDS_SIGNER=browser`) |
+| the Caddy → bench relay | Unix socket `/home/ubuntu/netout/sock/banc.sock` | `netout-banc-proxy.socket` and `systemd-socket-proxyd` |
+| the Base fork (anvil) | `127.0.0.1:8545` | started by the server when the first session opens |
+| the emulated Flex (Speculos) | `127.0.0.1:5013`, in Docker | `ledger/speculos.sh up`; the bench relays it under `/speculos` |
+| the automatic holder | off by default | `netout-porteur`, started for a video or an unattended demo |
+| the analyst and the strategist | the OpenAI API, `gpt-4o-mini` | `PDS_LLM=openai` in the service; the key in `/home/ubuntu/netout/openai.env` (600), outside the repo |
 
-Caddy envoie `/api/*`, `/speculos/*` et `/dist/*` au banc, le reste au front. **Aucun port n'est ouvert pour Net·Out**
-et le pare-feu du serveur n'a pas été touché : Caddy joint le banc par un fichier, pas par le réseau. L'émulateur
-n'écoute que sur la machine ; Internet ne le joint que par le relais du banc.
+Caddy sends `/api/*`, `/speculos/*` and `/dist/*` to the bench, everything else to the front end. **No port is opened
+for Net·Out** and the server's firewall is untouched: Caddy reaches the bench through a file, not over the network.
+The emulator listens on the machine only; the Internet reaches it only through the bench's relay.
 
-## Ce qui a été vérifié, de l'extérieur
+## What was verified from outside
 
-Depuis une autre machine, sur `https://netout.tech`, avec Chromium headless :
+From another machine, on `https://netout.tech`, with headless Chromium:
 
-- **Le parcours complet** (`FRONT_URL=https://netout.tech node front/scripts/parcours-app.mjs`, un porteur qui tape la
-  Flex émulée à travers le relais `/speculos` du site) : connexion SIWE, coffre, dépôt signé sur l'appareil, bornes,
-  mandat, un bot de pools, une dérogation signée et une laissée refusée, resondage et sortie, retrait, un bot de
-  coffres arrêté, le volet Bots, déconnexion et retour, la porte des pages du compte. **Tout passe en 179 s**, sauf
-  l'analyste (plus bas).
-- **Le même parcours, à la main** (`APPROVER=page`) : aucun porteur ; chaque approbation est un geste de souris sur
-  l'image de la Flex que la page montre, comme un juré la ferait. **Tout passe en 220 s, en 29 gestes**, sauf
-  l'analyste. C'est ce test qui a montré que `/account` et `/trades` faisaient signer sans montrer la Flex : elle s'y
-  affiche désormais, en bas à gauche, dès qu'une signature l'attend.
-- **Les suites d'usage et d'appareil** (`FRONT_URL=https://netout.tech BENCH_SSH=vps-ovh`) : les trois chemins de
-  signature, un refus sur l'appareil, deux onglets du même compte, le banc puis l'émulateur redémarrés sous la page,
-  les mauvaises saisies, le menu sur téléphone, la remise à zéro. Tout passe, sauf les questions à l'analyste.
-- **Les fonds seuls, à la main** (`PARCOURS=fonds APPROVER=page`) : connexion, dépôt, mandat, retrait. Tout passe en
-  91 s, en 17 gestes.
+- **The full journey** (`FRONT_URL=https://netout.tech node front/scripts/parcours-app.mjs`, an automated holder
+  tapping the emulated Flex through the site's `/speculos` relay): SIWE sign-in, vault, deposit signed on the device,
+  bounds, mandate, a pool bot, one exception signed and one left refused, re-probe and exit, withdrawal, a vault bot
+  stopped, the Bots panel, sign-out and back in, the sign-in gate on the account pages. **Everything passes in 179 s**,
+  except the analyst (see below).
+- **The same journey, by hand** (`APPROVER=page`): no automated holder; each approval is a mouse gesture on the image
+  of the Flex shown by the page, as a judge would do it. **Everything passes in 220 s, in 29 gestures**, except the
+  analyst. This test showed that `/account` and `/trades` requested signatures without showing the Flex: it now
+  appears there, bottom left, as soon as a signature is waiting for it.
+- **The usage and device suites** (`FRONT_URL=https://netout.tech BENCH_SSH=vps-ovh`): the three signing paths, a
+  rejection on the device, two tabs on the same account, the bench then the emulator restarted under an open page,
+  invalid inputs, the menu on a phone, the reset. Everything passes, except the questions to the analyst.
+- **Funds only, by hand** (`PARCOURS=fonds APPROVER=page`): sign-in, deposit, mandate, withdrawal. Everything passes
+  in 91 s, in 17 gestures.
 
-## Une commande
+## One command
 
 ```bash
-scripts/deploy.sh          # construit le front, le copie, copie le code du banc, relance le banc, vérifie le site
-scripts/deploy.sh front    # le front seul : le banc ne s'arrête pas
+scripts/deploy.sh          # builds the front end, copies it, copies the bench code, restarts the bench, checks the site
+scripts/deploy.sh front    # front end only: the bench keeps running
 ```
 
-Le script ne copie jamais l'état du banc (comptes, sessions, clé MCP, journaux) ni un secret, et n'efface rien côté
-serveur hors du dossier du front. Les fichiers que le serveur porte une fois pour toutes sont dans [`deploy/`](deploy/).
+The script never copies the bench state (accounts, sessions, MCP key, logs) or any secret, and deletes nothing on the
+server outside the front-end folder. The one-time server files are in [`deploy/`](deploy/).
 
-## La première installation
+## Initial setup
 
-Ce qui a été fait sur le serveur, dans l'ordre, avec ce que le dépôt fournit :
+What was done on the server, in order, with what the repo provides:
 
 ```bash
-# les outils : uv et Python 3.12 (le système a 3.14), foundry, node 22, l'image Speculos
+# the tools: uv and Python 3.12 (the system has 3.14), foundry, node 22, the Speculos image
 python3 -m venv ~/uvenv && ~/uvenv/bin/pip install uv && ~/uvenv/bin/uv python install 3.12
 mkdir -p ~/.foundry/bin && curl -sL https://github.com/foundry-rs/foundry/releases/download/stable/foundry_stable_linux_amd64.tar.gz | tar xz -C ~/.foundry/bin
 sudo apt-get install -y nodejs npm python3-venv && docker pull ghcr.io/ledgerhq/speculos:latest
 
-# le code : ce dépôt (scripts/deploy.sh), TARE à côté (le corpus des mesures), le client de l'app Ethereum épinglé
-git clone https://github.com/JeanBaptisteDurand/ETH_Online_2026 ~/ETH_Online_2026   # + .env : BASE_RPC_URL seul, chmod 600
-# + infra/speculos/apps/ethereum-flex-testkey.elf, l'app compilée avec la clé de test (ledger/build/build-flex.sh)
+# the code: this repo (scripts/deploy.sh), TARE next to it (the measurement corpus), the pinned Ethereum app client
+git clone https://github.com/JeanBaptisteDurand/ETH_Online_2026 ~/ETH_Online_2026   # + .env: BASE_RPC_URL only, chmod 600
+# + infra/speculos/apps/ethereum-flex-testkey.elf, the app built with the test key (ledger/build/build-flex.sh)
 cd ~/Ledger/ledger/build && git clone --depth 1 -b stax_1.10.1_1.22.4_sdk_v26.6.2 https://github.com/LedgerHQ/app-ethereum.git
 cd ~/Ledger && ~/uvenv/bin/uv venv --python 3.12 .venv
 ~/uvenv/bin/uv pip install --python .venv/bin/python ./ledger/build/app-ethereum/client -r ledger/requirements.txt
-# puis les versions exactes du banc local (uv pip freeze), moins PyQt6, pygame et speculos : l'émulateur tourne dans Docker
+# then the exact versions from the local bench (uv pip freeze), minus PyQt6, pygame and speculos: the emulator runs in Docker
 (cd ledger/dmk && npm ci)
 
-# le banc, sa prise, le porteur ; puis le bloc Caddy (deploy/Caddyfile.netout) et deux montages dans le conteneur Caddy :
-#   /home/ubuntu/netout/dist:/usr/share/caddy:ro   et   /home/ubuntu/netout/sock:/run/netout
+# the bench, its socket, the holder; then the Caddy block (deploy/Caddyfile.netout) and two mounts in the Caddy container:
+#   /home/ubuntu/netout/dist:/usr/share/caddy:ro   and   /home/ubuntu/netout/sock:/run/netout
 mkdir -p ~/netout/bin ~/netout/sock && cp deploy/banc.sh ~/netout/ && cp deploy/bin/claude ~/netout/bin/
 sudo cp deploy/*.service deploy/*.socket /etc/systemd/system/ && sudo systemctl daemon-reload
 sudo systemctl enable --now netout-banc netout-banc-proxy.socket
 ```
 
-`deploy/banc.sh` lance le serveur avec le bon `PATH` : foundry, node, et en tête `deploy/bin/claude`, qui passe la main
-au vrai CLI `claude` s'il est connecté sur le serveur, et le dit en une phrase sinon. En ligne, `PDS_LLM=openai` fait
-passer l'analyste et le stratège par l'API d'OpenAI : la clé se pose dans `/home/ubuntu/netout/openai.env`
-(`OPENAI_API_KEY=…`, droits 600), que le service lit.
+`deploy/banc.sh` starts the server with the right `PATH`: foundry, node, and first `deploy/bin/claude`, which hands
+over to the real `claude` CLI if it is signed in on the server, and otherwise says so in one sentence. On the live
+server, `PDS_LLM=openai` routes the analyst and the strategist through the OpenAI API: the key goes in
+`/home/ubuntu/netout/openai.env` (`OPENAI_API_KEY=…`, mode 600), which the service reads.
 
-## Six pièges déjà payés
+## Six pitfalls and their fixes
 
-1. **Le conteneur Caddy a un système de fichiers en lecture seule.** Un montage sur un point qui n'existe pas dans
-   l'image (`/srv/netout`) empêche le conteneur de démarrer, et les autres sites tombent avec lui. Le front est donc
-   monté sur `/usr/share/caddy`, qui existe dans l'image ; recréé, le conteneur servait de nouveau les autres sites en 5 s.
-2. **Le pare-feu du serveur (ufw, politique DROP) bloque un conteneur qui appelle l'hôte.** `host.docker.internal`
-   donnait une 502. Plutôt que d'ouvrir un port, le banc est joint par une prise Unix montée dans le conteneur.
-3. **Docker publie ses ports par-dessus ufw.** Speculos publié sur `0.0.0.0:5013` était joignable d'Internet ;
-   `ledger/speculos.sh` le publie désormais sur `127.0.0.1` (`BIND` pour changer).
-4. **Le port 8099 de l'hôte était pris** par un autre service : le banc écoute sur 8199 (`PORT`).
-5. **`pkill -f` reconnaît sa propre ligne de commande** quand on le passe par `ssh` : la session s'est coupée en
-   pleine installation. Un motif comme `[a]nvil` ne se reconnaît pas lui-même.
-6. **Le banc et l'émulateur se disputaient `PORT`.** Le service fixe `PORT=8199` pour le banc, et `speculos.sh` lisait
-   la même variable : relancé par le banc juste après un redémarrage, il visait 8199, supprimait le bon conteneur sur
-   5013 et échouait. Le port de l'émulateur s'appelle désormais `SPECULOS_PORT` (5013 par défaut).
+1. **The Caddy container has a read-only file system.** A mount on a path that does not exist in the image
+   (`/srv/netout`) stops the container from starting, and the other sites go down with it. So the front end is mounted
+   on `/usr/share/caddy`, which exists in the image; once recreated, the container served the other sites again in 5 s.
+2. **The server's firewall (ufw, DROP policy) blocks a container that calls the host.** `host.docker.internal`
+   returned a 502. No port was opened: the bench is reached through a Unix socket mounted in the container.
+3. **Docker's published ports bypass ufw.** Speculos published on `0.0.0.0:5013` was reachable from the Internet;
+   `ledger/speculos.sh` now publishes it on `127.0.0.1` (`BIND` to change it).
+4. **Port 8099 on the host was taken** by another service: the bench listens on 8199 (`PORT`).
+5. **`pkill -f` matches its own command line** when passed through `ssh`: the session dropped mid-install. A pattern
+   like `[a]nvil` does not match itself.
+6. **The bench and the emulator clashed over `PORT`.** The service sets `PORT=8199` for the bench, and `speculos.sh`
+   read the same variable: relaunched by the bench right after a restart, it targeted 8199, removed the healthy
+   container on 5013 and failed. The emulator's port is now `SPECULOS_PORT` (5013 by default).
 
-## Vérifier de l'extérieur
+## Checking from outside
 
 ```bash
 curl -sI https://netout.tech | head -1                                         # HTTP/2 200
-curl -s https://netout.tech/api/state | head -c 120                            # l'état du banc, en JSON
-curl -s 'https://netout.tech/speculos/events?currentscreenonly=true' | head -c 120   # l'écran de la Flex émulée
-FRONT_URL=https://netout.tech BENCH_SSH=vps-ovh node front/scripts/tests-usage.mjs  # les suites, en ligne
+curl -s https://netout.tech/api/state | head -c 120                            # the bench state, as JSON
+curl -s 'https://netout.tech/speculos/events?currentscreenonly=true' | head -c 120   # the emulated Flex's screen
+FRONT_URL=https://netout.tech BENCH_SSH=vps-ovh node front/scripts/tests-usage.mjs  # the suites, on the live site
 ```
 
-Pour une vidéo sans personne à la souris : `sudo systemctl start netout-porteur` sur le serveur, puis `stop`.
+For a video with nobody at the mouse: `sudo systemctl start netout-porteur` on the server, then `stop`.
 
-Pour repartir d'un fork neuf, aux nombres du README (Moonwell à 2 693 : chaque passage le fait baisser d'un ou deux
-points) : « Start over » sur `/demo`, puis
+To start again from a fresh fork, with the README's numbers (Moonwell at 2,693: each run lowers it by one or two
+points): "Start over" on `/demo`, then
 
 ```bash
 ssh vps-ovh 'pkill -u ubuntu -f "[a]nvil --fork-url"; sudo systemctl restart netout-banc'
 ```
 
-La prochaine ouverture de session relance le fork au bloc 50 614 000.
+The next session to open restarts the fork at block 50,614,000.
 
-## Ce qui n'est pas fait
+## Operating notes
 
-- **Une Flex par visiteur.** Il n'y en a qu'une, émulée : tous ceux qui la choisissent partagent le même porteur, donc
-  le même compte, et elle signe une chose à la fois. Une vraie Ledger ouvre son propre compte. Une signature abandonnée
-  en pleine revue ne la bloque plus : un écran resté trois minutes sans un geste ni une commande est refusé sur
-  l'appareil par le banc (`PDS_STALE_SCREEN_S`), et la connexion en un clic dit, en attendant, que la Flex est occupée.
-- **La vraie Ledger en ligne** a été rejouée sur ce domaine le 13 octobre, dans Chrome : la connexion et une dérogation,
-  en photos ([`captures/ledger-reelle/`](captures/ledger-reelle/)) ; le mandat du même compte, signé par la même Flex,
-  est sur la carte. Le dépôt et le retrait n'ont pas été filmés. Elle demande Chrome, Edge ou Brave (WebHID) et l'app
-  Ethereum compilée avec la clé de test. Le dépôt qu'elle signe est une vraie transaction Base, que le banc ne publie
-  que sur le fork : elle resterait valable sur le réseau principal au même nonce. Tester avec une adresse sans ETH sur Base.
-- **L'analyste et le stratège coûtent** : ils tournent sur la clé OpenAI posée sur le serveur, et chaque question d'un
-  visiteur est payée par elle. Rien ne les plafonne encore. Sans clé, le stratège passe en repli déterministe et
-  l'analyste dit qu'il ne peut pas tourner.
+- **The emulated Flex is shared.** There is only one: everyone who picks it shares the same holder, hence the same
+  account, and it signs one thing at a time. A real Ledger opens its own account. A signature abandoned mid-review no
+  longer blocks it: a screen left three minutes without a gesture or a command is rejected on the device by the bench
+  (`PDS_STALE_SCREEN_S`), and meanwhile the one-click sign-in says the Flex is busy.
+- **The real Ledger online**: replayed on this domain on 13 October, in Chrome. The sign-in and an exception are in
+  photos ([`captures/ledger-reelle/`](captures/ledger-reelle/)); the mandate of the same account, signed by the same
+  Flex, is on the map. It needs Chrome, Edge or Brave (WebHID) and the
+  Ethereum app built with the test key. The deposit it signs is a real Base transaction, which the bench broadcasts
+  only on the fork: it would remain valid on mainnet at the same nonce. Test with an address that holds no ETH on Base.
+- **The analyst and the strategist** run on the OpenAI key set on the server, and every visitor question is billed
+  to it. Without a key, the strategist falls back to a deterministic mode and the analyst says it cannot run.

@@ -27,7 +27,7 @@ const DOOR = {
   takeaway: 'A real Ledger over USB, or the emulated Flex · one message to sign · nothing else authorised',
   lead: 'You sign a message on your device. The address it proves becomes your account, with your vault, your agents and your data.',
   note: ['The sign-in proves ', 'an address', ', not a device: any wallet can sign that message. The Ledger makes the difference at the mandate, read in clear on its screen.'] as const,
-  source: 'FRONT.md § 2.3. README.md, “The bench, in the browser”, step 0.',
+  source: 'FRONT.md § 2.3.',
 }
 const YOURS = {
   title: ['Behind the door, ', 'what is yours.', ''] as HotTitle,

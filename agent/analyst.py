@@ -35,7 +35,7 @@ SYSTEM = """You are the analyst of Net·Out: an on-chain vault that lets an agen
 an ERC-4626 vault) only if the exit fits within the mandate the holder signed on their Ledger.
 
 Absolute rules:
-1. You answer ONLY from the results of the `porte-de-sortie` MCP tools. Never from memory, never an estimate. If a
+1. You answer ONLY from the results of the `netout` MCP tools. Never from memory, never an estimate. If a
    tool does not give the data, say so in one sentence and stop there.
 2. Every number you quote comes from a field of a tool result; name the tool in brackets the first time, for example
    "2 693 bps (vault_openness)".
@@ -157,9 +157,9 @@ def ask(question: str, timeout: int = 240, max_turns: int = 12, history: list[di
         answer, tools_used, turns, error = _ask_openai(question, env, key, timeout, max_turns)
         model = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
         return {"question": question, "answer": answer, "tools_used": tools_used, "turns": turns, "error": error,
-                "source": f"OpenAI {model} (function calling) + MCP porte-de-sortie, read only"}
+                "source": f"OpenAI {model} (function calling) + MCP netout, read only"}
     # le MCP tourne avec l'environnement du COMPTE : ses fichiers, sa cle (derivee, jamais stockee)
-    cfg = {"mcpServers": {"porte-de-sortie": {"command": sys.executable, "args": [str(MCP)],
+    cfg = {"mcpServers": {"netout": {"command": sys.executable, "args": [str(MCP)],
                                               "env": {**env, "PDS_MCP_KEY": key,
                                                       "ANVIL_URL": os.environ.get("ANVIL_URL", "http://127.0.0.1:8545")}}}}
     with tempfile.NamedTemporaryFile("w", suffix=".mcp.json", delete=False) as f:
@@ -167,7 +167,7 @@ def ask(question: str, timeout: int = 240, max_turns: int = 12, history: list[di
         cfg_path = f.name
     cmd = ["claude", "-p", "--output-format", "stream-json", "--verbose",
            "--mcp-config", cfg_path, "--strict-mcp-config",
-           "--allowedTools", "mcp__porte-de-sortie__*",
+           "--allowedTools", "mcp__netout__*",
            "--disallowedTools", "Bash,Edit,Write,Read,Glob,Grep,WebFetch,WebSearch,Agent,NotebookEdit",
            "--max-turns", str(max_turns),
            "--append-system-prompt", SYSTEM, question]
@@ -187,8 +187,8 @@ def ask(question: str, timeout: int = 240, max_turns: int = 12, history: list[di
                 turns += 1
                 for blk in (ev.get("message") or {}).get("content", []):
                     # on ne retient que NOS outils : le chargement de leurs schemas (ToolSearch) n'est pas une lecture
-                    if blk.get("type") == "tool_use" and blk.get("name", "").startswith("mcp__porte-de-sortie__"):
-                        tools_used.append({"tool": blk["name"].replace("mcp__porte-de-sortie__", ""),
+                    if blk.get("type") == "tool_use" and blk.get("name", "").startswith("mcp__netout__"):
+                        tools_used.append({"tool": blk["name"].replace("mcp__netout__", ""),
                                            "args": {k: v for k, v in (blk.get("input") or {}).items() if k != "key"}})
             elif ev.get("type") == "result":
                 answer = ev.get("result") or ""
@@ -206,7 +206,7 @@ def ask(question: str, timeout: int = 240, max_turns: int = 12, history: list[di
         except OSError:
             pass
     return {"question": question, "answer": answer.strip(), "tools_used": tools_used, "turns": turns,
-            "error": error, "source": "claude CLI (Claude Agent SDK) + MCP porte-de-sortie, read only, --strict-mcp-config"}
+            "error": error, "source": "claude CLI (Claude Agent SDK) + MCP netout, read only, --strict-mcp-config"}
 
 
 if __name__ == "__main__":

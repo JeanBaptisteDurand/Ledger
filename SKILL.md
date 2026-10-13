@@ -1,9 +1,9 @@
 ---
-name: porte-de-sortie
-description: Exit-bounded mandates for autonomous agents — an agent may take any position it cannot be trapped in, on Uniswap v4 pools and on ERC-4626 vaults (real Morpho WETH vaults on Base). Ask the analyst (answers only from read-only MCP tools), read what the agent decided and why, check whether each position can still be exited (the vault door: maxWithdraw vs position), propose a mandate from a sentence, and have the owner read and sign it on a Ledger through the Signer Kit (DMK) or the official APDU client. Use alongside `ledger-wallet-cli`: wallet-cli shows the way in (yields, balances, deposit); porte-de-sortie measures the way out.
+name: netout
+description: Exit-bounded mandates for autonomous agents — an agent may take any position it cannot be trapped in, on Uniswap v4 pools and on ERC-4626 vaults (real Morpho WETH vaults on Base). Ask the analyst (answers only from read-only MCP tools), read what the agent decided and why, check whether each position can still be exited (the vault door: maxWithdraw vs position), propose a mandate from a sentence, and have the owner read and sign it on a Ledger through the Signer Kit (DMK) or the official APDU client. Use alongside `ledger-wallet-cli`: wallet-cli shows the way in (yields, balances, deposit); Net·Out measures the way out.
 ---
 
-# porte-de-sortie
+# netout
 
 Uniswap v4 on Base (pinned fork, block 50 614 000). Device: Ledger Flex — Speculos for the bench, USB for the real thing.
 
@@ -15,7 +15,7 @@ Run from repo root. Python tools need `. .venv/bin/activate`; Ledger JS tools li
 > `Authorization: Bearer <key>`: `claude mcp add --transport http netout https://netout.tech/api/mcp --header "Authorization: Bearer <key>"`.
 > The master key is read from the Ledger Key Ring when sealed (`scripts/ring-seal.sh`), else from `mcp/.mcp-key`;
 > **each account has its own key**, derived (`HMAC-SHA256(master, address)`), never stored, that opens only that
-> account's files (`PDS_ACCOUNT`, `PDS_JOURNAL`, `PDS_MANDATE`, `PDS_BOTS`) — the bench hands it out under **mon compte**.
+> account's files (`PDS_ACCOUNT`, `PDS_JOURNAL`, `PDS_MANDATE`, `PDS_BOTS`) — the bench hands it out under **my account**.
 
 > **The device decides, not the agent.** The agent holds a session key and can only call the vault. The vault enforces
 > the mandate the owner signed on the Ledger: budget, maximum round-trip loss, expiry. Anything outside comes back to
@@ -23,8 +23,8 @@ Run from repo root. Python tools need `. .venv/bin/activate`; Ledger JS tools li
 
 > **Device contention.** One client at a time — a browser tab of the bench counts as one (FEEDBACK § 8). Never run two device commands in parallel (Signer Kit, `sign_mandate.py`, `wallet-cli`
 > device commands). Run sequentially. `--auto` drives the **Speculos** screen only; on USB the owner taps.
-> A **live DMK session keeps a heartbeat** (`b001000000` every few seconds): an open bench page in "ma Ledger ·
-> navigateur" mode, or any other DMK client, will corrupt a server-side signing in flight (status `0x6901`
+> A **live DMK session keeps a heartbeat** (`b001000000` every few seconds): an open bench page in "my Ledger ·
+> browser" mode, or any other DMK client, will corrupt a server-side signing in flight (status `0x6901`
 > observed). The page disconnects its session when the signer is server-side; do the same in your own tools.
 
 > **Ambiguous requests — ask, don't guess.** No budget, no tolerance, no duration → ask. A mandate is signed once and
@@ -51,13 +51,13 @@ Run from repo root. Python tools need `. .venv/bin/activate`; Ledger JS tools li
 | "ask the analyst", "why was tick 2 refused", "explain what happened" | `python3 agent/analyst.py "<question>"` — answers **only** from MCP tool results, names the tool behind each number |
 | "which vaults have a closed door today", "can Moonwell's depositors exit" | MCP `vault_openness` (ten real Morpho WETH vaults on Base: real round trip + top-holder door) |
 | "run the yield agent on ERC-4626 vaults" | `python3 agent/vaults.py --ticks 4` (picks by advertised APY/size/listing — never sees the door) |
-| "add a bot", "start a bot every minute", "stop that bot", "what did my bots do" | bench → **mes bots**: name, universe (pools / coffres), ticks per round, rhythm (one round, 30 s, 60 s, 5 min) → **ajouter et lancer**; **arrêter** on a live bot, **relancer** on a stopped one; the history keeps every stopped bot with its outcome. API: `POST /api/bots {name, universe, ticks, interval_s}`, `/api/bots/stop {id}`, `/api/bots/restart {id}`. All bots of an account share the vault and the signed mandate; rounds run one at a time per account (one session key, one journal); every journal line carries the bot |
-| "leave it refused", "no, don't sign that one" | bench → **laisser refusé** on the out-of-bounds card (`POST /api/escalate_no`): the request is closed without a signature, the refusal is remembered (no bot re-proposes that position), and the next queued request, if any, takes its place |
+| "add a bot", "start a bot every minute", "stop that bot", "what did my bots do" | bench → **my bots**: name, universe (pools / vaults), ticks per round, rhythm (one round, 30 s, 60 s, 5 min) → **add and launch**; **stop** on a live bot, **restart** on a stopped one; the history keeps every stopped bot with its outcome. API: `POST /api/bots {name, universe, ticks, interval_s}`, `/api/bots/stop {id}`, `/api/bots/restart {id}`. All bots of an account share the vault and the signed mandate; rounds run one at a time per account (one session key, one journal); every journal line carries the bot |
+| "leave it refused", "no, don't sign that one" | bench → **leave refused** on the out-of-bounds card (`POST /api/escalate_no`): the request is closed without a signature, the refusal is remembered (no bot re-proposes that position), and the next queued request, if any, takes its place |
 | "which bot took this position", "show me the bots" (MCP) | tools `bots` (live and stopped, rounds, buys/refusals, exceptions, spend, refusal reasons, positions) and `operations(bot=<name>)`; `positions` rows carry `bot` |
-| "log in with my Ledger", "connect my Ledger to the site" | bench header → **se connecter avec ma Ledger** (EIP-4361 Sign-In with Ethereum, signed in the browser via the Signer Kit + WebHID; the server verifies with `cast wallet verify`) — or, with a bench-side signer, the address read on the device (`/api/login_device`). One account = one proven address = `accounts/<address>/` (profile, mandate, journal, notifications, events) |
+| "log in with my Ledger", "connect my Ledger to the site" | bench header → **sign in with my Ledger** (EIP-4361 Sign-In with Ethereum, signed in the browser via the Signer Kit + WebHID; the server verifies with `cast wallet verify`) — or, with a bench-side signer, the address read on the device (`/api/login_device`). One account = one proven address = `accounts/<address>/` (profile, mandate, journal, notifications, events) |
 | "my MCP key", "the config to paste into Claude", "plug my own agent in", "what did I do on the site" | site → **/account**: the derived key, the `claude mcp add --transport http` command and the JSON for `/api/mcp` (served by the site, nothing to install); bench → `/api/account` (`?reveal=1` for the key): derived key, ready-to-paste stdio `mcpServers` config bound to that account's files, and the event log (login, session, strategy, mandate_signed, run, run_done, notified, exception_signed, watch, analysis) |
 | "who does what", "show me the architecture" | http://127.0.0.1:8099/schema.html — the agents, the tools, and the three bricks of the brief on one page |
-| "sign on MY Ledger, in my browser" (SaaS path) | bench → **ma Ledger · navigateur**, then **USB (WebHID)** (a real Ledger, Chromium browsers) or **émulée (banc)** (the emulator through the `/speculos/*` same-origin proxy); the page signs what the server parks in `pending` and posts it to `/api/signed` |
+| "sign on MY Ledger, in my browser" (SaaS path) | bench → **my Ledger · browser**, then **USB (WebHID)** (a real Ledger, Chromium browsers) or **emulated (bench)** (the emulator through the `/speculos/*` same-origin proxy); the page signs what the server parks in `pending` and posts it to `/api/signed` |
 | "rebuild the browser bundle" | `cd ledger/dmk && npm run build:web` → `web/dist/ledger-web.js` |
 | "notify me when a buy is out of bounds" | start the bench with `PDS_NOTIFY_URL=<webhook>`; every escalation is POSTed there and appended to `agent/notifications.jsonl` |
 | "the device says 0x6980 / nothing signs anymore" | the Ethereum app is stuck in `SIGNING_MESSAGE` after an aborted `signMessage` (FEEDBACK § 7): Speculos → `FORCE=1 ledger/speculos.sh up`; real Flex → quit and reopen the app |

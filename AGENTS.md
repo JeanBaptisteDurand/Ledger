@@ -1,4 +1,4 @@
-# AGENTS.md — porte-de-sortie
+# AGENTS.md — Net·Out
 
 For coding agents working in this repository. The user-facing skill is [SKILL.md](SKILL.md) (Ledger `skill` format).
 
@@ -31,14 +31,14 @@ deposit/redeem round trip, plus the top depositor's door `maxWithdraw` vs `conve
 | `mcp/pds_mcp.py` | read-only MCP (stdio JSON-RPC 2.0; the bench also serves it over HTTP at `POST /api/mcp`, bearer = the account key, one process per request with that account's environment), 10 tools (incl. `bots`; `operations(bot=…)`, `decision(seq\|tick,kind)`); master key from Key Ring or file, **per-account key** = `HMAC-SHA256(master, address)` when `PDS_ACCOUNT` is set (`PDS_JOURNAL`, `PDS_MANDATE`, `PDS_BOTS` point at that account's files) |
 | `web/server.py`, `web/index.html`, `web/strategist.py` | the bench on :8099, **one state per account** (cookie session → `accounts/<address>/`); strategist = `claude -p`; three signing paths (`dmk`, `python`, `browser`); login by SIWE (`/api/siwe/*`) or by the bench device (`/api/login_device`); `/api/account` (profile, derived key, MCP config, events); `/api/mcp` (the MCP over HTTP, `Authorization: Bearer <account key>`, unknown key → 403); `/api/descriptor`, `/api/signed` (each pending signature carries a `token`: only the tab that asked signs it); same-origin Speculos proxy `/speculos/*` (SSE relayed; `PDS_PROXY_LOG=<file>` traces every APDU); webhook `PDS_NOTIFY_URL` |
 | `web/accounts.py` | accounts: address → directory, derived MCP key, profile, event log (`events.jsonl`), sessions |
-| `web/server.py` (bots) | named execution bots per account: `bots.json`, one scheduler thread per account (`ensure_scheduler`) running rounds **one at a time** (one session key, one journal; never while a signature is pending), `run_round` → `agent.py`/`vaults.py` with `PDS_BOT`, routes `POST /api/bots`, `/api/bots/stop`, `/api/bots/restart`; a bot ends by itself after one round (`interval_s = 0`), when the budget is spent, the mandate expired, or nothing new is left to try. Out-of-bounds requests from several bots queue (`escalation_queue`), one on the device at a time; `escalate_no` (« laisser refusé ») closes the current one and remembers the refusal (`refused_escalations`, rebuilt from `events.jsonl`) so no bot re-proposes that position |
+| `web/server.py` (bots) | named execution bots per account: `bots.json`, one scheduler thread per account (`ensure_scheduler`) running rounds **one at a time** (one session key, one journal; never while a signature is pending), `run_round` → `agent.py`/`vaults.py` with `PDS_BOT`, routes `POST /api/bots`, `/api/bots/stop`, `/api/bots/restart`; a bot ends by itself after one round (`interval_s = 0`), when the budget is spent, the mandate expired, or nothing new is left to try. Out-of-bounds requests from several bots queue (`escalation_queue`), one on the device at a time; `escalate_no` ("leave refused") closes the current one and remembers the refusal (`refused_escalations`, rebuilt from `events.jsonl`) so no bot re-proposes that position |
 | `web/schema.html` | one page: the agents, the tools, the three bricks of the brief (`/schema.html`) |
 | `scripts/parcours.mjs` | the whole browser journey, end to end, in headless Chromium (SIWE → vault → mandate → pools → exception → watch → vaults → exception → analyst → account → device login) |
 | `ledger/dmk/src/ledger-web.js` → `web/dist/ledger-web.js` | the Signer Kit **in the browser** (DMK + WebHID or Speculos-through-proxy, our context module); `npm run build:web` (esbuild) |
 | `ledger/dmk/repro_signmessage_bug.cjs` | reproduces FEEDBACK § 7: `signMessage` with any non-ASCII character → header-only APDU, app stranded in `SIGNING_MESSAGE` |
 | `scripts/demo.sh`, `scripts/ring-seal.sh` | full CLI demo; seal the MCP key in the Ledger Key Ring |
 | `FEEDBACK.md` | DX feedback for Ledger Dev Rel, every claim with a file and a line |
-| `FRONT.md` | the front-end brief (French): every screen, element, state, route and data shape — the contract a new front must honour |
+| `FRONT.md` | the front-end contract: every screen, element, state, route and data shape a new front must honour |
 
 ## Commands
 
@@ -58,13 +58,12 @@ cd contracts && forge test --fork-url $BASE_RPC_URL --fork-block-number 50614000
 - **One device client at a time.** Speculos and USB devices reject interleaved APDUs, and a second client during a
   pending command strands the app (`0x6901`, FEEDBACK § 8). A bench tab left open in *any* browser — including the
   Playwright MCP's Chrome — is a client: close it before device tests.
-- **Do not widen the vault.** One vault per agent; no `depositAndSetMandate`, no 7702 — these are deliberately
-  parked (see `ledger/FINAL-STACK.md` in the parent notes).
+- **Do not widen the vault.** One vault per agent; no `depositAndSetMandate`, no 7702 — both are deliberately
+  out of scope.
 - **Keep the MCP read-only.** No tool may sign, send, or launch a process that changes chain state — it lists bots, it
   never starts or stops one.
 - **One round at a time per account.** Bots share one session key and one journal: rounds are serialized by the
   account's scheduler and never overlap a pending signature. Agents skip what the account already holds and what
   the same bot already tried (`PDS_BOT`), so a bot advances through its universe instead of retrying a refusal.
-- **French in user-facing text and comments, English in `FEEDBACK.md`, `SKILL.md`, `AGENTS.md`** (their readers are
-  Ledger Dev Rel and coding agents). No non-ASCII in Solidity string literals.
-- **Git**: author/committer is the repository owner only; do not add tool trailers. Commit only when asked.
+- **English in user-facing text and in every Markdown file.** No non-ASCII in Solidity string literals.
+- **Git**: commits carry the team's names only; do not add tool trailers. Commit only when asked.

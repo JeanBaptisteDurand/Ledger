@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""MCP « Porte de sortie » — LECTURE SEULE.
+"""MCP Net·Out — LECTURE SEULE.
 
 Il ne lance rien, ne signe rien, n'envoie aucune transaction. Il sert les données qui ont mené aux
 décisions de l'agent, et de quoi analyser les positions : l'univers considéré, la liste courte avec
@@ -14,9 +14,9 @@ Dans la configuration de Claude :
 
     {
       "mcpServers": {
-        "porte-de-sortie": {
+        "netout": {
           "command": "python3",
-          "args": ["/chemin/porte-de-sortie/mcp/pds_mcp.py"],
+          "args": ["/path/to/netout/mcp/pds_mcp.py"],
           "env": {"PDS_MCP_KEY": "<la clé>"}
         }
       }
@@ -475,7 +475,7 @@ def handle(msg: dict) -> dict | None:
         return {"jsonrpc": "2.0", "id": mid, "result": {
             "protocolVersion": "2024-11-05",
             "capabilities": {"tools": {}},
-            "serverInfo": {"name": "porte-de-sortie", "version": "1.0.0"},
+            "serverInfo": {"name": "netout", "version": "1.0.0"},
         }}
     if method in ("notifications/initialized", "notifications/cancelled"):
         return None

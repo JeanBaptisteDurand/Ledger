@@ -118,7 +118,7 @@ def mcp_config(address: str, reveal: bool = False) -> dict:
     key = user_key(address)
     return {
         "mcpServers": {
-            "porte-de-sortie": {
+            "netout": {
                 "command": sys.executable,
                 "args": [str(ROOT / "mcp" / "pds_mcp.py")],
                 "env": {

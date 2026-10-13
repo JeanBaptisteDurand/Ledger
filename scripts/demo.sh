@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# PORTE DE SORTIE — la démonstration complète, en une commande.
+# Net·Out — the full demo, in one command.
 #
 #   1. un Ledger Flex émulé (Speculos) sert l'app Ethereum compilée avec les clés de test
 #   2. le porteur lit et SIGNE le mandat sur l'appareil, en clair, avec NOS filtres

@@ -1,5 +1,5 @@
 {
-  "name": "porte-de-sortie-dmk",
+  "name": "netout-dmk",
   "private": true,
   "version": "1.0.0",
   "description": "Le chemin Signer du brief : Signer Kit Ethereum + DMK (Speculos ou USB), et le wallet-cli de l'Agent Stack",

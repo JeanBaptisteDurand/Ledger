@@ -3,7 +3,7 @@
 *Written for Ledger Dev Rel, as the N3XT brief asks: "where the documentation lost you, which workflow
 was confusing, what context was missing, and one concrete suggestion. Be blunt."*
 
-Everything below was hit while building [Net·Out](README.md) (working title: Porte de sortie). Each item says what we expected,
+Everything below was hit while building [Net·Out](README.md). Each item says what we expected,
 what happened, and the one change that would fix it. Nothing here is second-hand: every claim has a
 file, a line, or a command.
 
@@ -195,8 +195,8 @@ open that PR too.
 ## 7. `signMessage` drops the whole message as soon as it contains one non-ASCII character
 
 **What happened.** We wired Sign-In with Ethereum (EIP-4361) through the Signer Kit
-(`device-signer-kit-ethereum` 1.18.1, `signMessage`). Our first SIWE message, with a French `statement`
-("Porte de sortie — ta Ledger reste chez toi."), failed in ~150 ms with `InvalidStatusWordError`; the same
+(`device-signer-kit-ethereum` 1.18.1, `signMessage`). Our first SIWE message, whose `statement` was a French
+sentence with an em dash (—), failed in ~150 ms with `InvalidStatusWordError`; the same
 message without the statement signed. We first read it as a length limit (~229 bytes). It is not: on 10 October
 we replayed it on Speculos (app-ethereum 1.22.4) with ASCII messages of 230, 255, 256 and 600 bytes — all sign,
 chunked correctly — and with `"é"` repeated ten times (10 characters, 20 bytes), which fails. The exchange:
@@ -283,7 +283,7 @@ restarted under the page — all three pass (`front/scripts/tests-appareil.mjs`)
 
 **One unexplained run out of six.** Once, on a freshly started Speculos and with a slow holder, the first
 EIP-712 signature after the Transaction Check opt-in came back as "This transaction cannot be clear-signed"
-(the kit's blind fallback), the app having gone to its home screen right after « Maybe later ». Fresh
+(the kit's blind fallback), the app having gone to its home screen right after "Maybe later". Fresh
 Speculos plus slow holder was replayed twice afterwards and passed both times, as did three other runs.
 We note it; we could not reproduce it.
 

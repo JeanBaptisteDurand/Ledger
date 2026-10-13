@@ -24,7 +24,7 @@ export const MEASURED = {
     { label: 'The analyst answers, by bots and vault_openness', duration: '35 s' },
     { label: 'Reconnect by the device', outcome: 'same vault, five positions, two exceptions', tone: 'success' },
   ] as Step[],
-  source: 'The 25 September 2026 run, in a real browser. front/APP.md for the latest run.',
+  source: 'A full run in a real browser. front/APP.md for the latest run.',
 }
 
 export const FINDINGS = {

@@ -18,20 +18,20 @@ const AGENTS = {
   title: ['They buy. ', 'The contract decides.', ''] as HotTitle,
   takeaway: 'Execution agents, no language model · named, launched, stopped by you · they never see the exit',
   lead: 'A bot is an execution agent without a language model. It chooses on what it sees, the depth, the advertised yield, and never sees the exit. All your bots work in the same vault, under the same mandate.',
-  source: 'agent/agent.py (DCA on the Uniswap v4 long tail), agent/vaults.py (advertised yield, ERC-4626). README.md, “Plusieurs agents”.',
+  source: 'agent/agent.py (DCA on the Uniswap v4 long tail), agent/vaults.py (advertised yield, ERC-4626). README.md, “The agents, and the line between them”.',
 }
 const REQUESTS = {
   title: ['Out of bounds ', 'does not mean no.', ''] as HotTitle,
   takeaway: 'The number comes back to the device · read and sign, or leave refused · one position, one amount, once',
   lead: 'When a bot wants a position your mandate refuses, the request comes back to you, on the device, with the real number. An exception is worth this position, this amount and this number, once.',
   note: ['If the exit worsens between your reading and the purchase, ', 'the contract refuses the exception', ' (ExitWorseThanSeen). A refusal is kept: no bot asks for that position again.'] as const,
-  source: 'contracts/src/ExitVault.sol, buyWithException(). README.md, “L’escalade”.',
+  source: 'contracts/src/ExitVault.sol, buyWithException(). README.md, “What it does”.',
 }
 const POSITIONS = {
   title: ['A door ', 'can close.', ''] as HotTitle,
   takeaway: 'The exit measured at the purchase · re-probed on demand · exit while you still can',
   lead: 'The probe measures the exit at the time of the purchase, not the future. The only answer is to probe again, and to leave while you still can.',
-  source: 'agent/watch.py. README.md, “Ce que ça n’attrape pas”.',
+  source: 'agent/watch.py. README.md, “What it does”.',
 }
 const JOURNAL = {
   title: ['The journal, ', 'decision by decision.', ''] as HotTitle,

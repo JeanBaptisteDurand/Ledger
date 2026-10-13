@@ -20,7 +20,7 @@ Beside the map, one module at a time, in the same grammar: **TARE** while a roun
 decision (the four steps of the counterfactual, the figure, the verdict), then **the bots' board** (every bot you launched
 with its state, universe, pace and slices, its rounds, entries, refusals, exceptions and spend, stop and restart; the
 chosen bot's performance and its decisions newest first, with what it saw, what the contract measured, and why). Two
-buttons in the rail, « Bots » and « TARE », pin either one at any phase.
+buttons in the rail, "Bots" and "TARE", pin either one at any phase.
 
 The demo's live map carries the same gestures in its drawer: the sentence for the bounds, the funds, the
 agents (with the map's slots filling as bots are launched), the request, the re-probe and a compact analyst. The map's
@@ -125,7 +125,7 @@ the device tests (refusal on the device, two tabs, bench restart), the bench pag
 
 Full journey (12 October, on the pages above, with Florent's branch merged), every step passed: sign-in, deposit of 0.5 ETH
 signed on the device, bounds (Claude), mandate clear-signed (`isBlindSign=false`), pools bot 2 buys / 8 refusals, exception
-with a queue of 3, « leave refused », re-probe and exit (one position sold at 310 → 600 bps), withdrawal of 0.1 WETH
+with a queue of 3, "leave refused", re-probe and exit (one position sold at 310 → 600 bps), withdrawal of 0.1 WETH
 authorised on the device, vaults bot (Moonwell at 2 691 bps) stopped from the live table and its exception signed, the
 analyst through `bots` in 33 s, the account (80 gestures, the key, the configuration), the live map and the cockpit (since removed, with the replay), logout
 and reconnection on the same state through the bench device, the SaaS door. The reference timings are the 10 and 11 October
@@ -134,7 +134,7 @@ headless without WebGL: the hero shows its poster, everything else is the produc
 
 Previous run (10 October, late evening, on Florent's merged home): login signed in the page 7 s, **deposit of 0.5 ETH signed on
 the device 8.5 s** (kept as WETH), mandate clear-signed 7.3 s (`isBlindSign=false`), pools bot 2 buys / 8 refusals, exception
-9.9 s with a queue of 3, « laisser refusé », watch and sell, **withdrawal of 0.1 WETH authorised on the device 8.6 s**, vaults
+9.9 s with a queue of 3, "leave refused", watch and sell, **withdrawal of 0.1 WETH authorised on the device 8.6 s**, vaults
 bot and Moonwell exception, the analyst through `bots` in 20 s, the account, logout and reconnection on the same state —
 146 s, no failure. The device tests pass (refusal, two tabs, bench restart); the bench page's own journey passes.
 

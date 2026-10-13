@@ -83,7 +83,7 @@ function schemaHashKit(schema) {
 function makeContextModule(descriptor, sink) {
   return {
     async getContexts() { return []; },
-    async getFieldContext() { return { type: "error", error: new Error("porte-de-sortie : pas de contexte de champ") }; },
+    async getFieldContext() { return { type: "error", error: new Error("netout: no field context") }; },
     async getTypedDataFilters(ctx) {
       if (!descriptor) {
         return { type: "error", error: new Error("aucun descripteur : le kit va signer en aveugle") };

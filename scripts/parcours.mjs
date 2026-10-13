@@ -169,7 +169,7 @@ await click('#b-login'); await sleep(1200);
 await click('#b-reveal'); await sleep(800); await click('#b-mcpcfg'); await sleep(800);
 const acc = await page.evaluate(() => fetch('/api/account?reveal=1').then(r => r.json()));
 log(`compte : ${acc.profile.address} · ${acc.profile.logins} connexion(s) · événements : ${JSON.stringify(acc.events.map(e => e.kind))}`);
-log(`clé MCP (dérivée) : ${acc.mcp_key}  config env : ${JSON.stringify(acc.mcp_config.mcpServers['porte-de-sortie'].env)}`);
+log(`clé MCP (dérivée) : ${acc.mcp_key}  config env : ${JSON.stringify(acc.mcp_config.mcpServers['netout'].env)}`);
 for (const k of (RESUME ? ['login', 'run', 'run_done', 'watch', 'analysis', 'bot_added', 'bot_stopped'] : ['login', 'session', 'strategy', 'mandate_signed', 'run', 'run_done', 'notified', 'exception_signed', 'watch', 'analysis', 'bot_added', 'bot_stopped']))
   if (!acc.events.some(e => e.kind === k)) fail(`événement manquant : ${k}`);
 await page.$eval('#c-account', el => el.scrollIntoView());
