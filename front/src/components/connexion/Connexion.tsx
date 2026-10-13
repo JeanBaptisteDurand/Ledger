@@ -5,7 +5,7 @@
  */
 import { useEffect, useRef, useState } from 'react'
 import { useGSAP } from '@gsap/react'
-import { Nav } from '../Nav'
+import { BenchNav } from '../Nav'
 import { Hero } from '../Hero'
 import { Footer } from '../Footer'
 import { initSmoothScroll, setPageLocked } from '../../motion/scroll'
@@ -48,7 +48,7 @@ export function ConnexionPage() {
     <BenchProvider>
       <div>
         <a href="#the-door" className="skip-link t-kicker">Skip to content</a>
-        <Nav hiddenUntilRelease={false} />
+        <BenchNav />
         <main>
           <Hero finished title={HERO.title} catchLine={HERO.catch} heading={HERO.heading} />
           <Sections />

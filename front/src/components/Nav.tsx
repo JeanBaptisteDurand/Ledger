@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { linkProps, useRoute, type Route } from '../app/router'
+import { useBench } from '../app/useBench'
 import { Wordmark } from './Wordmark'
 
 /** The site's name. The device in the hero keeps its own wordmark; this is what the product is called. */
@@ -106,4 +107,11 @@ export function Nav({ hiddenUntilRelease, solid = false, account }: { hiddenUnti
       </nav>
     </header>
   )
+}
+
+/** The bar on a page that already follows the bench (the demo, the door): the address as the bench says it, live, so a
+ *  sign-in made on the page itself shows at once (the account's pages pass it the same way). */
+export function BenchNav() {
+  const { state } = useBench()
+  return <Nav hiddenUntilRelease={false} account={state ? state.address : undefined} />
 }
