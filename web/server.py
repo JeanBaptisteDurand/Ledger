@@ -334,7 +334,7 @@ def a_boot():
         else:
             return False, "anvil did not start"
         G["anvil"] = True
-        say(f"anvil : fork de Base au bloc {FORK_BLOCK}")
+        say(f"anvil: Base fork at block {FORK_BLOCK}")
     if not G["speculos"]:
         rc, out = run([str(ROOT / "ledger" / "speculos.sh"), "up"])
         if rc != 0:
@@ -742,7 +742,7 @@ def run_round(b: dict) -> None:
             event("bot_done", bot=b["name"], reason=b["stop_reason"], rounds=b["rounds"])
             say(f"bot “{b['name']}”: done, {b['stop_reason']}")
     except Exception as e:  # noqa: BLE001
-        say(f"[{b['name']}] agent : {e}")
+        say(f"[{b['name']}] agent: {e}")
     finally:
         S["running"], S["bot_running"] = False, None
         save_bots()
@@ -981,7 +981,7 @@ def _notify(esc: dict) -> None:
             requests.post(NOTIFY_URL, json=payload, timeout=5)
             say("the holder is notified (webhook): they can come, read the number and decide")
         except Exception as ex:  # noqa: BLE001
-            say(f"notification : {ex}")
+            say(f"notification: {ex}")
 
 def a_watch():
     """Resonde les positions detenues : la sortie s'est-elle refermee depuis l'achat ?"""
@@ -1018,7 +1018,7 @@ def a_watch():
             if sold:
                 refresh_positions()
         except Exception as e:  # noqa: BLE001
-            say(f"surveillance : {e}")
+            say(f"watch: {e}")
         finally:
             S["watching"] = False
 
@@ -1208,7 +1208,7 @@ class H(BaseHTTPRequestHandler):
             if not G["speculos"]:
                 rc, out = run([str(ROOT / "ledger" / "speculos.sh"), "up"])
                 if rc != 0:
-                    return self._send(200, {"ok": False, "msg": "Speculos : " + out[-200:]})
+                    return self._send(200, {"ok": False, "msg": "Speculos: " + out[-200:]})
                 G["speculos"] = True
             import sign_mandate as sm
             sm.URL = SPECULOS
@@ -1297,7 +1297,7 @@ class H(BaseHTTPRequestHandler):
                         _finish_exception(pend["escalation"], sig, pend["is_vault"], pend["key"], pend["pool_hash"],
                                           pend["expiry"], pend["nonce"], body.get("report"))
                 except Exception as e:  # noqa: BLE001
-                    say(f"{pend['kind']} : {e}")
+                    say(f"{pend['kind']}: {e}")
                 finally:
                     S["signing"] = None
             return self._send(200, {"ok": True})
@@ -1323,10 +1323,10 @@ class H(BaseHTTPRequestHandler):
             # l'univers de l'agent de demonstration : pools Uniswap v4, ou coffres ERC-4626 (Morpho)
             want = body.get("universe")
             if want not in ("pools", "vaults"):
-                return self._send(200, {"ok": False, "msg": f"univers inconnu : {want}"})
+                return self._send(200, {"ok": False, "msg": f"unknown universe: {want}"})
             with LOCK:
                 S["universe"] = want
-                say("univers de l'agent : " + ("coffres ERC-4626 (Morpho, WETH, Base)" if want == "vaults" else "pools Uniswap v4 (WETH, Base)"))
+                say("the agent's universe: " + ("ERC-4626 vaults (Morpho, WETH, Base)" if want == "vaults" else "Uniswap v4 pools (WETH, Base)"))
             return self._send(200, {"ok": True, "universe": want})
         if path == "/api/analyze":
             # l'analyste : le VRAI agent — il repond par les outils du MCP en lecture seule, jamais de memoire
@@ -1356,7 +1356,7 @@ class H(BaseHTTPRequestHandler):
                     event("analysis", question=q[:200], tools=sorted({t["tool"] for t in r["tools_used"]}))
                 except Exception as ex:  # noqa: BLE001
                     entry.update({"pending": False, "answer": "", "error": repr(ex)})
-                    say(f"analyste : {ex}")
+                    say(f"analyst: {ex}")
 
             threading.Thread(target=worker, daemon=True).start()
             return self._send(200, {"ok": True, "msg": "the analyst is querying the tools"})
@@ -1364,7 +1364,7 @@ class H(BaseHTTPRequestHandler):
             # le chemin vers l'appareil : « dmk » (Signer Kit de Ledger) ou « python » (client officiel)
             want = body.get("signer")
             if want not in (*signers.SIGNERS, "browser"):
-                return self._send(200, {"ok": False, "msg": f"signer inconnu : {want}"})
+                return self._send(200, {"ok": False, "msg": f"unknown signer: {want}"})
             if want == "dmk" and not signers.dmk_available():
                 return self._send(200, {"ok": False, "msg": "Signer Kit missing: cd ledger/dmk && npm i"})
             with LOCK:

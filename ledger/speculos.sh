@@ -10,7 +10,9 @@ TARE="${TARE_ROOT:-$ROOT/../ETH_Online_2026}"
 OURS="$ROOT/ledger/build/app-ethereum/build/flex/bin/app.elf"
 APPS="$TARE/infra/speculos/apps"
 ELF="${ELF:-$([[ -f "$OURS" ]] && echo "$OURS" || echo "$APPS/ethereum-flex-testkey.elf")}"
-PORT="${PORT:-5013}"
+# le port de l'émulateur a sa propre variable : PORT est celui du banc (8199 en ligne), et le banc lance ce script
+# avec son environnement. Avec PORT, il visait le port du banc, supprimait le bon conteneur et échouait (13 oct.).
+PORT="${SPECULOS_PORT:-5013}"
 BIND="${BIND:-127.0.0.1}"   # l'API de l'émulateur ne sort pas de la machine ; le banc la relaie sous /speculos
 NAME="${NAME:-pds-speculos}"
 IMAGE="${SPECULOS_IMAGE:-ghcr.io/ledgerhq/speculos:latest}"

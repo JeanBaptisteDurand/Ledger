@@ -53772,15 +53772,15 @@ ${ge(n42)}`;
             return [];
           },
           async getFieldContext() {
-            return { type: "error", error: new Error("porte-de-sortie : pas de contexte de champ") };
+            return { type: "error", error: new Error("porte-de-sortie: no field context") };
           },
           async getTypedDataFilters(ctx) {
-            if (!descriptor) return { type: "error", error: new Error("aucun descripteur") };
+            if (!descriptor) return { type: "error", error: new Error("no descriptor") };
             const want = descriptor.verifyingContract.toLowerCase();
             const got = (ctx.verifyingContract || "").toLowerCase();
             const hash3 = await schemaHashKit(ctx.schema);
             if (got !== want || Number(ctx.chainId) !== Number(descriptor.chainId) || hash3 !== descriptor.schemaHashKit) {
-              return { type: "error", error: new Error(`descripteur ${want}@${descriptor.chainId}, demand\xE9 ${got}@${ctx.chainId}`) };
+              return { type: "error", error: new Error(`descriptor for ${want}@${descriptor.chainId}, asked for ${got}@${ctx.chainId}`) };
             }
             return {
               type: "success",
@@ -53841,23 +53841,23 @@ ${ge(n42)}`;
       async function getAddress2() {
         const signer = new m57({ dmk: state.dmk, sessionId: state.sessionId }).withContextModule(makeContextModule(null, {})).build();
         const st2 = await lastState(signer.getAddress(PATH, { checkOnDevice: false, returnChainCode: false }).observable);
-        if (st2.status !== t3.Completed) throw new Error("getAddress : " + describe(st2));
+        if (st2.status !== t3.Completed) throw new Error("getAddress: " + describe(st2));
         state.address = st2.output.address;
         return state.address;
       }
       async function signMessage(message, onStep) {
-        if (!state.dmk) throw new Error("pas de Ledger connect\xE9e");
+        if (!state.dmk) throw new Error("no Ledger connected");
         const signer = new m57({ dmk: state.dmk, sessionId: state.sessionId }).withContextModule(makeContextModule(null, {})).build();
         const st2 = await lastState(signer.signMessage(PATH, message).observable, onStep);
-        if (st2.status !== t3.Completed) throw new Error("signMessage : " + describe(st2));
+        if (st2.status !== t3.Completed) throw new Error("signMessage: " + describe(st2));
         return { signature: toSig(st2.output), address: state.address };
       }
       async function signTypedData(typedData, descriptor, onStep) {
-        if (!state.dmk) throw new Error("pas de Ledger connect\xE9e");
+        if (!state.dmk) throw new Error("no Ledger connected");
         const sink = {};
         const signer = new m57({ dmk: state.dmk, sessionId: state.sessionId }).withContextModule(makeContextModule(descriptor, sink)).build();
         const st2 = await lastState(signer.signTypedData(PATH, typedData).observable, onStep);
-        if (st2.status !== t3.Completed) throw new Error("signTypedData : " + describe(st2));
+        if (st2.status !== t3.Completed) throw new Error("signTypedData: " + describe(st2));
         return { signature: toSig(st2.output), address: state.address, report: sink.report || null };
       }
       function hexToBytes2(h23) {
@@ -53909,11 +53909,11 @@ ${ge(n42)}`;
         ].map(rlpBytes).concat([rlpList([])]);
       }
       async function signTransaction(tx, onStep) {
-        if (!state.dmk) throw new Error("pas de Ledger connect\xE9e");
+        if (!state.dmk) throw new Error("no Ledger connected");
         const unsigned = concat3(new Uint8Array([2]), rlpList(txFields(tx)));
         const signer = new m57({ dmk: state.dmk, sessionId: state.sessionId }).withContextModule(makeContextModule(null, {})).build();
         const st2 = await lastState(signer.signTransaction(PATH, unsigned).observable, onStep);
-        if (st2.status !== t3.Completed) throw new Error("signTransaction : " + describe(st2));
+        if (st2.status !== t3.Completed) throw new Error("signTransaction: " + describe(st2));
         const { r: r29, s: s59, v: v33 } = st2.output;
         let y37 = Number(v33);
         if (y37 === 27 || y37 === 28) y37 -= 27;

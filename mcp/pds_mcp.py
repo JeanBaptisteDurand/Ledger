@@ -358,7 +358,7 @@ def t_ledger_earn_yields(network: str = "ethereum", limit: int = 15) -> dict:
     """
     d = walletcli.earn_yields(network, limit)
     if not d.get("ok"):
-        return {"ok": False, "error": d.get("error") or d.get("raw"), "note": "wallet-cli indisponible ou hors ligne"}
+        return {"ok": False, "error": d.get("error") or d.get("raw"), "note": "wallet-cli unavailable or offline"}
     data = d.get("data", {})
     ys = data.get("yields", [])
     exit_fields = {"withdrawalDelay", "cooldown", "maxWithdraw", "exitCost", "unbonding", "queue", "lockup"}
@@ -503,7 +503,7 @@ def handle(msg: dict) -> dict | None:
         try:
             out = TOOLS[name][0](**args)
         except TypeError as e:
-            out = {"error": f"arguments : {e}"}
+            out = {"error": f"arguments: {e}"}
         return {"jsonrpc": "2.0", "id": mid, "result": {
             "content": [{"type": "text", "text": json.dumps(out, ensure_ascii=False, indent=1)}]
         }}

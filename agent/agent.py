@@ -271,7 +271,7 @@ def tick(n: int, vault: str, mandate: dict, universe: list[dict], stats: dict,
         "mode": "injected" if inject else "strategy",
         "strategy": {
             "name": "dca-longtail-weth-v1",
-            "objective": "profondeur de mesure + faible cout d'entree + presence au registre",
+            "objective": "measurement depth, a low entry cost, presence in the registry",
             "slice_wei": str(PARAMS["slice_wei"]),
             "min_depth_sizes": PARAMS["min_depth_sizes"],
             "require_registry": PARAMS["require_registry"],

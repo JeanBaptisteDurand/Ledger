@@ -83,7 +83,7 @@ au vrai CLI `claude` s'il est connecté sur le serveur, et le dit en une phrase 
 passer l'analyste et le stratège par l'API d'OpenAI : la clé se pose dans `/home/ubuntu/netout/openai.env`
 (`OPENAI_API_KEY=…`, droits 600), que le service lit.
 
-## Cinq pièges déjà payés
+## Six pièges déjà payés
 
 1. **Le conteneur Caddy a un système de fichiers en lecture seule.** Un montage sur un point qui n'existe pas dans
    l'image (`/srv/netout`) empêche le conteneur de démarrer, et les autres sites tombent avec lui. Le front est donc
@@ -95,6 +95,9 @@ passer l'analyste et le stratège par l'API d'OpenAI : la clé se pose dans `/ho
 4. **Le port 8099 de l'hôte était pris** par un autre service : le banc écoute sur 8199 (`PORT`).
 5. **`pkill -f` reconnaît sa propre ligne de commande** quand on le passe par `ssh` : la session s'est coupée en
    pleine installation. Un motif comme `[a]nvil` ne se reconnaît pas lui-même.
+6. **Le banc et l'émulateur se disputaient `PORT`.** Le service fixe `PORT=8199` pour le banc, et `speculos.sh` lisait
+   la même variable : relancé par le banc juste après un redémarrage, il visait 8199, supprimait le bon conteneur sur
+   5013 et échouait. Le port de l'émulateur s'appelle désormais `SPECULOS_PORT` (5013 par défaut).
 
 ## Vérifier de l'extérieur
 

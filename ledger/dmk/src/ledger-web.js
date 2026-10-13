@@ -43,14 +43,14 @@ async function schemaHashKit(schema) {
 function makeContextModule(descriptor, sink) {
   return {
     async getContexts() { return []; },
-    async getFieldContext() { return { type: "error", error: new Error("porte-de-sortie : pas de contexte de champ") }; },
+    async getFieldContext() { return { type: "error", error: new Error("porte-de-sortie: no field context") }; },
     async getTypedDataFilters(ctx) {
-      if (!descriptor) return { type: "error", error: new Error("aucun descripteur") };
+      if (!descriptor) return { type: "error", error: new Error("no descriptor") };
       const want = descriptor.verifyingContract.toLowerCase();
       const got = (ctx.verifyingContract || "").toLowerCase();
       const hash = await schemaHashKit(ctx.schema);
       if (got !== want || Number(ctx.chainId) !== Number(descriptor.chainId) || hash !== descriptor.schemaHashKit) {
-        return { type: "error", error: new Error(`descripteur ${want}@${descriptor.chainId}, demandé ${got}@${ctx.chainId}`) };
+        return { type: "error", error: new Error(`descriptor for ${want}@${descriptor.chainId}, asked for ${got}@${ctx.chainId}`) };
       }
       return {
         type: "success",
@@ -115,27 +115,27 @@ async function connect(transport = "webhid", speculosUrl = location.origin + "/s
 async function getAddress() {
   const signer = new SignerEthBuilder({ dmk: state.dmk, sessionId: state.sessionId }).withContextModule(makeContextModule(null, {})).build();
   const st = await lastState(signer.getAddress(PATH, { checkOnDevice: false, returnChainCode: false }).observable);
-  if (st.status !== DeviceActionStatus.Completed) throw new Error("getAddress : " + describe(st));
+  if (st.status !== DeviceActionStatus.Completed) throw new Error("getAddress: " + describe(st));
   state.address = st.output.address;
   return state.address;
 }
 
 /** Sign-In with Ethereum : un message texte (EIP-4361), signé en personal_sign (EIP-191) sur l'appareil. */
 async function signMessage(message, onStep) {
-  if (!state.dmk) throw new Error("pas de Ledger connectée");
+  if (!state.dmk) throw new Error("no Ledger connected");
   const signer = new SignerEthBuilder({ dmk: state.dmk, sessionId: state.sessionId }).withContextModule(makeContextModule(null, {})).build();
   const st = await lastState(signer.signMessage(PATH, message).observable, onStep);
-  if (st.status !== DeviceActionStatus.Completed) throw new Error("signMessage : " + describe(st));
+  if (st.status !== DeviceActionStatus.Completed) throw new Error("signMessage: " + describe(st));
   return { signature: toSig(st.output), address: state.address };
 }
 
 /** Le mandat ou une dérogation : EIP-712 clear-signé avec NOS descripteurs. */
 async function signTypedData(typedData, descriptor, onStep) {
-  if (!state.dmk) throw new Error("pas de Ledger connectée");
+  if (!state.dmk) throw new Error("no Ledger connected");
   const sink = {};
   const signer = new SignerEthBuilder({ dmk: state.dmk, sessionId: state.sessionId }).withContextModule(makeContextModule(descriptor, sink)).build();
   const st = await lastState(signer.signTypedData(PATH, typedData).observable, onStep);
-  if (st.status !== DeviceActionStatus.Completed) throw new Error("signTypedData : " + describe(st));
+  if (st.status !== DeviceActionStatus.Completed) throw new Error("signTypedData: " + describe(st));
   return { signature: toSig(st.output), address: state.address, report: sink.report || null };
 }
 
@@ -167,11 +167,11 @@ function txFields(tx) {
  * destinataire, montant) ; on la sérialise, l'appareil la signe, on rend la transaction signée prête à publier.
  */
 async function signTransaction(tx, onStep) {
-  if (!state.dmk) throw new Error("pas de Ledger connectée");
+  if (!state.dmk) throw new Error("no Ledger connected");
   const unsigned = concat(new Uint8Array([2]), rlpList(txFields(tx)));
   const signer = new SignerEthBuilder({ dmk: state.dmk, sessionId: state.sessionId }).withContextModule(makeContextModule(null, {})).build();
   const st = await lastState(signer.signTransaction(PATH, unsigned).observable, onStep);
-  if (st.status !== DeviceActionStatus.Completed) throw new Error("signTransaction : " + describe(st));
+  if (st.status !== DeviceActionStatus.Completed) throw new Error("signTransaction: " + describe(st));
   const { r, s, v } = st.output;
   let y = Number(v); if (y === 27 || y === 28) y -= 27; if (y > 1) y = y & 1;  // type 2 : la parité, 0 ou 1
   const signed = concat(new Uint8Array([2]), rlpList(txFields(tx).concat([rlpBytes(bigToBytes(y)), rlpBytes(bigToBytes(r)), rlpBytes(bigToBytes(s))])));

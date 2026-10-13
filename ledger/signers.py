@@ -72,7 +72,7 @@ def sign(kind: str, data: dict, filters: dict, signer: str | None = None, *, spe
     """
     signer = signer or default_signer()
     if signer not in SIGNERS:
-        raise ValueError(f"signer inconnu : {signer}")
+        raise ValueError(f"unknown signer: {signer}")
     vault = data["domain"]["verifyingContract"]
 
     if signer == "dmk":
