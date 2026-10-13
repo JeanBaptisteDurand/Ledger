@@ -19,7 +19,7 @@ import { DeviceManagementKitBuilder, DeviceActionStatus, DeviceModelId, ConsoleL
 import { webHidTransportFactory } from "@ledgerhq/device-transport-kit-web-hid";
 import { speculosTransportFactory } from "@ledgerhq/device-transport-kit-speculos";
 import { SignerEthBuilder } from "@ledgerhq/device-signer-kit-ethereum";
-import { firstValueFrom } from "rxjs";
+import { firstValueFrom, filter, timeout } from "rxjs";
 import * as nobleSha from "@noble/hashes/sha256";
 
 const PATH = "44'/60'/0'/0/0";
@@ -94,7 +94,17 @@ async function connect(transport = "webhid", speculosUrl = location.origin + "/s
   let b = new DeviceManagementKitBuilder().addTransport(factory);
   try { if (localStorage.getItem('pdsDebug') === '1') b = b.addLogger(new ConsoleLogger(LogLevel.Debug)); } catch { /* pas de stockage */ }
   const dmk = b.build();
-  const device = await firstValueFrom(dmk.startDiscovering({}));   // WebHID : ouvre le sélecteur d'appareil du navigateur
+  // WebHID : une Ledger que ce site a déjà le droit d'utiliser se rejoint sans le sélecteur du navigateur, qui ne s'ouvre
+  // qu'au clic. Une reconnexion en cours de route (page rechargée, app rouverte, câble rebranché) n'a donc pas besoin de
+  // clic : la signature est lancée par la page une seconde après le bouton, hors du geste qui l'a demandée.
+  let device = null;
+  if (transport === "webhid") {
+    try {
+      const known = await firstValueFrom(dmk.listenToAvailableDevices({}).pipe(filter(l => l.length > 0), timeout({ first: 1500 })));
+      device = known[0];
+    } catch { /* aucune encore autorisée, ou aucune branchée : on demande au navigateur */ }
+  }
+  if (!device) device = await firstValueFrom(dmk.startDiscovering({}));   // WebHID : ouvre le sélecteur d'appareil du navigateur
   // sans le rafraîchisseur du DMK : il envoie b001000000 toutes les secondes avec un délai de 800 ms — pendant que le
   // porteur lit l'écran (10 s, 30 s…), ce battement expire, le transport Speculos coupe la session et la signature meurt
   const sessionId = await dmk.connect({ device, sessionRefresherOptions: { isRefresherDisabled: true } });

@@ -189,7 +189,7 @@ def hook_analysis(c: dict) -> dict:
     if os.environ.get("PDS_NO_COUNTERFACTUAL"):
         # un vrai noeud n'a pas anvil_setCode : la mesure TARE se fait a part, sur un fork du bloc courant
         return {"permissions_from_address": hook_permissions(c["hook"]), "live_counterfactual_entry": None,
-                "live_counterfactual_exit": None, "method": "pas de contrefactuel sur un vrai noeud (PDS_NO_COUNTERFACTUAL)"}
+                "live_counterfactual_exit": None, "method": "no counterfactual on a real node (PDS_NO_COUNTERFACTUAL)"}
     entree = counterfactual(ANVIL, key, True, PARAMS["slice_wei"])
     sortie = None
     if entree.get("out_with"):
@@ -197,10 +197,10 @@ def hook_analysis(c: dict) -> dict:
         sortie = counterfactual(ANVIL, key, False, int(entree["out_with"]))
     return {
         "permissions_from_address": hook_permissions(c["hook"]),
-        "permissions_note": "non discriminant : 780 pools sains sur 932 portent afterSwapReturnsDelta",
+        "permissions_note": "not discriminating: 780 healthy pools out of 932 carry afterSwapReturnsDelta",
         "live_counterfactual_entry": entree,
         "live_counterfactual_exit": sortie,
-        "method": "TARE : anvil_setCode remplace le hook par 89 octets inertes, on cote deux fois",
+        "method": "TARE: anvil_setCode swaps the hook for 89 inert bytes, and the swap is quoted twice",
     }
 
 
@@ -215,7 +215,7 @@ def probe(vault: str, c: dict) -> dict:
         "exit_blocked": bools[0] == "true" if bools else None,
         "blocking_error": sel[0] if sel and sel[0] != "0x00000000" else None,
         "raw": " / ".join(lines)[:200],
-        "source": "ExitVault.exitLossBps — achat + revente integrale simules, puis revert",
+        "source": "ExitVault.exitLossBps: purchase and full resale simulated, then reverted",
     }
 
 
@@ -244,19 +244,19 @@ def tick(n: int, vault: str, mandate: dict, universe: list[dict], stats: dict,
     if inject:
         forced = next((c for c in universe if c["pool_id"].startswith(inject)), None)
         if not forced:
-            raise SystemExit(f"pool injecté introuvable : {inject}")
+            raise SystemExit(f"injected pool not found: {inject}")
         s, parts = score(forced)
         pick = {**{k: v for k, v in forced.items() if k != "_one_way"},
                 "score": s, "score_parts": parts, "_one_way": forced["_one_way"]}
-        why = ("CONSIGNE INJECTEE : une page lue par l'agent lui a impose ce jeton. "
-               "L'agent obeit — c'est le propre d'un agent injecte.")
+        why = ("INJECTED INSTRUCTION: a page the agent read imposed this token on it. "
+               "The agent obeys: that is what an injected agent does.")
         cands = [pick] + [c for c in cands if c["pool_id"] != pick["pool_id"]][:4]
     else:
         pick = cands[0]
-        why = (f"premier d'une liste courte de 5, score {pick['score']} : "
-               f"mesure sur {pick['depth_sizes']} tailles, entree a {pick['entry_bps_median']} bps, "
-               + ("connu du registre Uniswap" if pick["registry"]["present"] else "absent du registre Uniswap")
-               + ". Aucun terme du score ne regarde la sortie : elle n'est pas observable avant d'acheter.")
+        why = (f"first of a shortlist of 5, score {pick['score']}: "
+               f"measured at {pick['depth_sizes']} sizes, entry at {pick['entry_bps_median']} bps, "
+               + ("known to the Uniswap registry" if pick["registry"]["present"] else "absent from the Uniswap registry")
+               + ". No term of the score looks at the exit: it cannot be observed before buying.")
 
     hooks = hook_analysis(pick)
     ex = probe(vault, pick)
@@ -309,22 +309,22 @@ def _escalation(pick: dict, ex: dict, max_bps: int) -> dict | None:
     bps = ex.get("loss_bps")
     if ex.get("exit_blocked") or bps is None or bps >= 10_000:
         return {"possible": False,
-                "reason": "sortie bloquee : le jeton n'est ni detenable ni revendable, aucune derogation n'y change rien"}
+                "reason": "exit blocked: the token can be neither held nor resold, and no exception changes that"}
     return {
         "possible": True,
         "pool_id": pick["pool_id"], "hook": pick["hook"], "currency1": pick["currency1"],
         "fee": pick["fee"], "tickSpacing": pick["tickSpacing"],
         "seen_exit_bps": int(bps), "mandate_allows_bps": max_bps,
         "amount_in": str(PARAMS["slice_wei"]),
-        "question": f"ce pool coute {int(bps)} bps a la sortie, ton mandat en autorise {max_bps} — tu signes quand meme ?",
+        "question": f"this pool costs {int(bps)} bps to exit, your mandate allows {max_bps}: do you sign anyway?",
     }
 
 
 def _decode_error(out: str) -> str | None:
     if "0x18208f15" in out:
-        return "CannotExit — la sortie coute plus que le mandat n'autorise"
+        return "CannotExit: the exit costs more than the mandate allows"
     if "0x0b7d8347" in out or "ExitBlocked" in out:
-        return "ExitBlocked — le jeton n'est meme pas transferable jusqu'au coffre"
+        return "ExitBlocked: the token cannot even be transferred to the vault"
     m = re.search(r"(custom error [^\n]+|revert[^\n]*)", out)
     return m.group(1)[:200] if m else out.strip()[-200:]
 
@@ -332,7 +332,7 @@ def _decode_error(out: str) -> str | None:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--ticks", type=int, default=3)
-    ap.add_argument("--inject", help="prefixe d'un pool_id impose par une consigne injectee")
+    ap.add_argument("--inject", help="prefix of a pool_id imposed by an injected instruction")
     ap.add_argument("--mandate", default=str(ROOT / "mandate.json"))
     ap.add_argument("--reset-journal", action="store_true")
     ap.add_argument("--params", help="fichier JSON de parametres de strategie (slice_wei, min_depth_sizes, require_registry)")
@@ -348,9 +348,9 @@ def main() -> None:
     mandate = json.loads(Path(args.mandate).read_text())
     vault = mandate["vault"]
     universe, stats = build_universe()
-    print(f"univers : {stats['pools']} pools WETH mesures — dont {stats['zero_entry_cost']} a 0,00 bps a l'achat, "
-          f"parmi lesquels {stats['zero_entry_and_trap']} pieges ; "
-          f"{stats['traps_absent_from_registry']}/{stats['traps_total']} hooks pieges absents du registre\n")
+    print(f"universe: {stats['pools']} WETH pools measured, {stats['zero_entry_cost']} of them at 0.00 bps to buy, "
+          f"{stats['zero_entry_and_trap']} of which are traps; "
+          f"{stats['traps_absent_from_registry']}/{stats['traps_total']} trap hooks absent from the registry\n")
 
     # deja tente : ce que le compte detient (n'importe quel bot, n'importe quel tour) et ce que CE bot a deja essaye —
     # un bot qui tourne a son rythme avance dans l'univers au lieu de retenter le meme refus a chaque tour
@@ -368,12 +368,12 @@ def main() -> None:
     for n in range(1, args.ticks + 1):
         e = tick(n, vault, mandate, universe, stats, held, args.inject if n == args.ticks and args.inject else None)
         if e is None:
-            print("plus rien de nouveau a tenter : tout l'univers a deja ete essaye ou est detenu")
+            print("nothing new left to try: the whole universe has been tried or is held")
             break
-        mark = "OK " if e["decision"] == "EXECUTED" else "NON"
-        print(f"[{mark}] tour {n} ({e['mode']}) — {e['pick']['pool_id'][:12]} "
-              f"entree {e['pick']['entry_bps_median']} bps · sortie {e['exit_probe']['loss_bps']} bps"
-              + (" (bloquee)" if e["exit_probe"].get("exit_blocked") else "")
+        mark = "OK " if e["decision"] == "EXECUTED" else "NO "
+        print(f"[{mark}] round {n} ({e['mode']}): {e['pick']['pool_id'][:12]} "
+              f"entry {e['pick']['entry_bps_median']} bps · exit {e['exit_probe']['loss_bps']} bps"
+              + (" (blocked)" if e["exit_probe"].get("exit_blocked") else "")
               + (f" · hook {e['hook_analysis']['live_counterfactual_entry'].get('bps')}"
                  f"/{(e['hook_analysis']['live_counterfactual_exit'] or {}).get('bps')} bps"
                  if e.get("hook_analysis") else "")

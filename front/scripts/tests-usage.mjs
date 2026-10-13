@@ -105,7 +105,7 @@ await go('Account')
 // ───────────── 3 · session, then the wrong deposits, then a right one
 await btn('Open the session').click()
 s = await until((x) => !!x.vault, 'session ouverte', 180000)
-s = await until((x) => x.log.some((l) => /5 ETH fictifs/.test(l)) && BigInt(x.owner_eth || '0') >= 4990000000000000000n, 'le porteur a ses ETH fictifs', 60000)
+s = await until((x) => x.log.some((l) => /5 fictional ETH/.test(l)) && BigInt(x.owner_eth || '0') >= 4990000000000000000n, 'le porteur a ses ETH fictifs', 60000)
 await shot('04-account-session')
 for (const [v, why] of [['0', 'zéro'], ['5000', 'trop grand']]) {
   await page.getByLabel('Deposit (ETH)').fill(v); await btn('Deposit from my Ledger').click(); await sleep(1200)
@@ -113,7 +113,7 @@ for (const [v, why] of [['0', 'zéro'], ['5000', 'trop grand']]) {
   await sleep(2500)
 }
 await page.getByLabel('Deposit (ETH)').fill('0.3'); await btn('Deposit from my Ledger').click()
-s = await until((x) => !x.pending && !x.signing && x.log.some((l) => /dépôt signé sur ta Ledger et confirmé/.test(l)), 'dépôt de 0.3 ETH signé sur l’appareil', 180000)
+s = await until((x) => !x.pending && !x.signing && x.log.some((l) => /deposit signed on your Ledger and confirmed/.test(l)), 'dépôt de 0.3 ETH signé sur l’appareil', 180000)
 
 // ───────────── 4 · bounds with the keyboard, the chips, the mandate — on the demo's live map
 await liveMap()
@@ -165,7 +165,7 @@ await shot('08-demandes')
 if (s.escalation && s.escalation.possible) {
   const n = s.exception_buys.length
   await btn('Read and sign on Ledger').click()
-  s = await until((x) => x.exception_buys.length > n || x.log.some((l) => /dérogation/.test(l) && /refus|empir/.test(l)), 'dérogation signée (ou refusée par le coffre, dit)', 240000)
+  s = await until((x) => x.exception_buys.length > n || x.log.some((l) => /exception/.test(l) && /refus|worse/i.test(l)), 'dérogation signée (ou refusée par le coffre, dit)', 240000)
 }
 
 // ───────────── 7 · the analyst: Enter, then a follow-up that needs the history — on the account page
@@ -256,9 +256,9 @@ await m.context().close()
 if (REMOTE) log('la page du banc reste sur la machine du banc (elle n’est pas publiée en ligne) : étape sautée')
 else if ((await page.goto('http://127.0.0.1:8099/', { waitUntil: 'domcontentloaded' }), await sleep(2500), await page.locator('#b-deposit').count())) {
   await page.fill('#dep-amount', '0.2'); await page.click('#b-deposit')
-  s = await until((x) => !x.pending && !x.signing && x.log.some((l) => /0\.2 ETH, gardés en WETH/.test(l)), 'banc : dépôt de 0.2 ETH signé', 180000)
+  s = await until((x) => !x.pending && !x.signing && x.log.some((l) => /0\.2 ETH, kept as WETH/.test(l)), 'banc : dépôt de 0.2 ETH signé', 180000)
   await page.fill('#wd-amount', '0.1'); await page.click('#b-withdraw')
-  s = await until((x) => !x.pending && !x.signing && x.log.some((l) => /0\.1000 WETH rendus/.test(l)), 'banc : retrait de 0.1 WETH autorisé', 180000)
+  s = await until((x) => !x.pending && !x.signing && x.log.some((l) => /0\.1000 WETH returned/.test(l)), 'banc : retrait de 0.1 WETH autorisé', 180000)
 } else fail('la page du banc n’a pas les boutons de dépôt et de retrait')
 
 // ───────────── 12 · reset, accepted

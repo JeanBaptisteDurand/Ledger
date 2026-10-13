@@ -285,7 +285,7 @@ def send_and_sign(data: dict, filters: dict):
         pass
     rapdu = client.response()
     if rapdu.status != 0x9000:
-        raise RuntimeError(f"refuse sur l'appareil : status 0x{rapdu.status:04x}")
+        raise RuntimeError(f"refused on the device: status 0x{rapdu.status:04x}")
     v, r, s = ResponseParser.signature(rapdu.data)
     return "0x" + r.to_bytes(32, "big").hex() + s.to_bytes(32, "big").hex() + bytes([v]).hex()
 

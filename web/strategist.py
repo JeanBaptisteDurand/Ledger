@@ -20,46 +20,42 @@ import subprocess
 
 WETH = "0x4200000000000000000000000000000000000006"
 
-SYSTEM = """Tu conçois des mandats pour un agent d'investissement DCA autonome sur Base (Uniswap v4).
-
-Tu ne choisis JAMAIS de jeton et tu ne promets aucun rendement : tu traduis une intention en BORNES
-qu'un humain va lire sur l'écran de son Ledger et signer une fois pour toutes.
-
-Réponds UNIQUEMENT par un objet JSON, sans texte autour, avec exactement ces clés :
-
+SYSTEM = """You design mandates for an autonomous DCA investment agent on Base (Uniswap v4).
+You NEVER pick a token and you promise no return: you translate an intention into BOUNDS that a human will read on
+their Ledger's screen and sign once and for all.
+Answer ONLY with a JSON object, with no text around it, with exactly these keys:
 {
- "budget_weth": <nombre, entre 0.01 et 5>,          // le budget total du mandat, en WETH
- "max_round_trip_loss_bps": <entier, 50 a 2000>,    // la perte aller-retour toleree, en points de base
- "slice_weth": <nombre, entre 0.0001 et 0.05>,      // la taille d'une tranche de DCA
- "ticks": <entier, 2 a 12>,                         // combien de tranches l'agent place
- "days": <entier, 1 a 30>,                          // duree de validite du mandat
- "min_depth_sizes": <entier, 3 a 8>,                // exigence de profondeur de mesure
- "require_registry": <true|false>,                  // n'acheter que des hooks connus du registre Uniswap
- "risk": "prudent" | "equilibre" | "offensif",
- "rationale": "<deux phrases sobres, dans la langue de l'intention, qui expliquent CES bornes>",
- "warning": "<une phrase, dans la langue de l'intention, sur ce que ces bornes ne protegent PAS>"
+ "budget_weth": <number, between 0.01 and 5>,          // the mandate's total budget, in WETH
+ "max_round_trip_loss_bps": <integer, 50 to 2000>,    // the round-trip loss tolerated, in basis points
+ "slice_weth": <number, between 0.0001 and 0.05>,      // the size of one DCA slice
+ "ticks": <integer, 2 to 12>,                         // how many slices the agent places
+ "days": <integer, 1 to 30>,                          // how long the mandate is valid
+ "min_depth_sizes": <integer, 3 to 8>,                // how many sizes the measurement must cover
+ "require_registry": <true|false>,                    // only buy hooks known to the Uniswap registry
+ "risk": "prudent" | "balanced" | "aggressive",
+ "rationale": "<two plain sentences, in the language of the intention, that explain THESE bounds>",
+ "warning": "<one sentence, in the language of the intention, on what these bounds do NOT protect>"
 }
-
-Reperes utiles : un pool ordinaire coute 100 a 250 bps d'aller-retour ; en dessous de 100 bps de
-tolerance l'agent n'achetera presque rien ; au-dessus de 1000 bps il accepte des pools dont on sort
-tres mal. Prudent = 100-200 bps. Equilibre = 200-400. Offensif = 400-800.
+Useful marks: an ordinary pool costs 100 to 250 bps for a round trip; below 100 bps of tolerance the agent buys almost
+nothing; above 1000 bps it accepts pools that are very hard to leave. Use exactly 150 bps for a prudent, cautious or
+careful intention, 300 for a balanced one or when nothing is said, and 600 for an aggressive one.
 """
 
 FALLBACK_WORDS = {
     "prudent": ("prudent", 150, 4), "prudente": ("prudent", 150, 4), "sûr": ("prudent", 150, 4),
     "sur": ("prudent", 150, 4), "conservateur": ("prudent", 150, 4), "doucement": ("prudent", 150, 4),
-    "offensif": ("offensif", 600, 8), "agressif": ("offensif", 600, 8), "risqué": ("offensif", 600, 8),
-    "risque": ("offensif", 600, 8), "memecoin": ("offensif", 600, 8), "memecoins": ("offensif", 600, 8),
+    "offensif": ("aggressive", 600, 8), "agressif": ("aggressive", 600, 8), "risqué": ("aggressive", 600, 8),
+    "risque": ("aggressive", 600, 8), "memecoin": ("aggressive", 600, 8), "memecoins": ("aggressive", 600, 8),
     # the same words in English, for the site's sentences
     "cautious": ("prudent", 150, 4), "careful": ("prudent", 150, 4), "safe": ("prudent", 150, 4),
     "conservative": ("prudent", 150, 4), "gently": ("prudent", 150, 4),
-    "aggressive": ("offensif", 600, 8), "risky": ("offensif", 600, 8), "offensive": ("offensif", 600, 8),
+    "aggressive": ("aggressive", 600, 8), "risky": ("aggressive", 600, 8), "offensive": ("aggressive", 600, 8),
 }
 
 
 def _fallback(prompt: str) -> dict:
     p = prompt.lower()
-    risk, bps, ticks = "equilibre", 300, 6
+    risk, bps, ticks = "balanced", 300, 6
     for w, (r, b, t) in FALLBACK_WORDS.items():
         if w in p:
             risk, bps, ticks = r, b, t
@@ -71,10 +67,10 @@ def _fallback(prompt: str) -> dict:
         "budget_weth": budget, "max_round_trip_loss_bps": bps,
         "slice_weth": round(budget / max(ticks, 1) / 10, 6), "ticks": ticks, "days": 7,
         "min_depth_sizes": 6, "require_registry": risk == "prudent", "risk": risk,
-        "rationale": ("Lecture par mots-clés, sans modèle : le CLI `claude` n'est pas disponible. "
-                      f"Profil {risk}, tolérance de sortie {bps} bps, {ticks} tranches."),
-        "warning": "Ces bornes limitent le coût de sortie, pas la valeur du jeton acheté.",
-        "_source": "repli deterministe (claude CLI absent)",
+        "rationale": ("Read from keywords, without a model: no language model is available on this bench. "
+                      f"Profile {risk}, exit tolerance {bps} bps, {ticks} slices."),
+        "warning": "These bounds limit the cost of the exit, not the value of the token bought.",
+        "_source": "deterministic fallback (no language model)",
     }
 
 
@@ -149,10 +145,10 @@ def propose(prompt: str, timeout: int = 120) -> dict:
             )
             data = _extract_json(p.stdout or "") if p.returncode == 0 else None
             if data:
-                data["_source"] = "claude CLI (Claude Agent SDK, mode impression)"
+                data["_source"] = "claude CLI (Claude Agent SDK, print mode)"
             else:
                 data = _fallback(prompt)
-                data["_source"] += f" — sortie du modele inexploitable (rc={p.returncode})"
+                data["_source"] += f" — unusable model output (rc={p.returncode})"
         except (FileNotFoundError, subprocess.TimeoutExpired) as e:
             data = _fallback(prompt)
             data["_source"] += f" — {type(e).__name__}"
@@ -171,7 +167,7 @@ def propose(prompt: str, timeout: int = 120) -> dict:
     clamp("days", 1, 30, int)
     clamp("min_depth_sizes", 3, 8, int)
     data["require_registry"] = bool(data.get("require_registry", False))
-    data["risk"] = data.get("risk") if data.get("risk") in ("prudent", "equilibre", "offensif") else "equilibre"
+    data["risk"] = data.get("risk") if data.get("risk") in ("prudent", "balanced", "aggressive") else "balanced"
     data["rationale"] = _trim(str(data.get("rationale", "")), 620)
     data["warning"] = _trim(str(data.get("warning", "")), 300)
     data["budget_wei"] = str(int(round(data["budget_weth"] * 10**18)))

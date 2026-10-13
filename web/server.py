@@ -189,7 +189,7 @@ def state_for(address: str, via: str | None = None) -> dict:
                         st["journal"] = read_journal()
                         st["exception_buys"] = [
                             {"pool": r["pick"]["pool_id"], "token": r["pick"]["currency1"], "name": r["pick"].get("name"),
-                             "kind": r.get("kind", "pool"), "exit_bps": r["exit_probe"]["loss_bps"], "tick": "déro.",
+                             "kind": r.get("kind", "pool"), "exit_bps": r["exit_probe"]["loss_bps"], "tick": "exc.",
                              "under_exception": True}
                             for r in st["journal"] if r.get("under_exception") and r["decision"] == "EXECUTED"]
                         refresh_positions()
@@ -198,8 +198,8 @@ def state_for(address: str, via: str | None = None) -> dict:
                             st["weth"] = bal.strip().split()[0]
                         st["refused_escalations"] = [ev["pool_id"].lower() for ev in accounts.events(address, limit=10**6)
                                                      if ev.get("kind") == "exception_refused" and ev.get("pool_id")]
-                        st["log"].append(f"session retrouvée : coffre {m['vault'][:10]}…, {len(st['journal'])} lignes de "
-                                         f"journal, {len(st['positions'])} position(s) encore détenue(s)")
+                        st["log"].append(f"session restored: vault {m['vault'][:10]}…, {len(st['journal'])} journal "
+                                         f"lines, {len(st['positions'])} position(s) still held")
                     finally:
                         bind(prev)
             except Exception:  # noqa: BLE001
@@ -210,7 +210,7 @@ def state_for(address: str, via: str | None = None) -> dict:
         st["bots"] = load_bots(st)
         for b in st["bots"]:
             if b["status"] == "running" and not st["signed"]:
-                b.update({"status": "stopped", "stopped": int(time.time()), "stop_reason": "mandat absent au redémarrage du banc"})
+                b.update({"status": "stopped", "stopped": int(time.time()), "stop_reason": "no mandate when the bench restarted"})
         ACCOUNTS[a] = st
         if any(b["status"] == "running" for b in st["bots"]):
             ensure_scheduler(st)
@@ -297,7 +297,7 @@ def refresh_positions():
             S["spent"] = sp.strip().split()[0]
     lines = [{"pool": r["pick"]["pool_id"], "token": r["pick"]["currency1"], "kind": r.get("kind", "pool"),
               "name": r["pick"].get("name"), "bot": (r.get("bot") or {}).get("name"),
-              "exit_bps": r["exit_probe"]["loss_bps"], "tick": ("déro." if r.get("under_exception") else r["tick"]),
+              "exit_bps": r["exit_probe"]["loss_bps"], "tick": ("exc." if r.get("under_exception") else r["tick"]),
               "under_exception": bool(r.get("under_exception"))}
              for r in read_journal() if r["decision"] == "EXECUTED"]
     pos = []
@@ -314,14 +314,14 @@ def refresh_positions():
 
 def a_boot():
     if not BASE_RPC:
-        return False, "BASE_RPC_URL introuvable"
+        return False, "BASE_RPC_URL not found"
     if LIVE and not G["anvil"]:
         if not BASE_RPC:
-            return False, "BASE_RPC_URL introuvable"
+            return False, "BASE_RPC_URL not found"
         if not (DEPLOYER_KEY and AGENT_KEY and AGENT):
-            return False, "réseau réel : il faut PDS_DEPLOYER_KEY, PDS_AGENT_KEY et PDS_AGENT_ADDRESS"
+            return False, "live network: PDS_DEPLOYER_KEY, PDS_AGENT_KEY and PDS_AGENT_ADDRESS are needed"
         if cast("block-number")[0] != 0:
-            return False, "la chaîne ne répond pas"
+            return False, "the chain does not answer"
         G["anvil"] = True
     if not G["anvil"]:
         P["anvil"] = subprocess.Popen(
@@ -332,7 +332,7 @@ def a_boot():
                 break
             time.sleep(0.5)
         else:
-            return False, "anvil n'a pas démarré"
+            return False, "anvil did not start"
         G["anvil"] = True
         say(f"anvil : fork de Base au bloc {FORK_BLOCK}")
     if not G["speculos"]:
@@ -340,7 +340,7 @@ def a_boot():
         if rc != 0:
             return False, "Speculos : " + out[-300:]
         G["speculos"] = True
-        say("Speculos : un Ledger Flex, app Ethereum 1.22.4 compilée avec les clés de test")
+        say("Speculos: a Ledger Flex, Ethereum app 1.22.4 built with the test keys")
 
     rc, cid = cast("chain-id")
     if rc == 0 and cid.strip().isdigit():
@@ -351,20 +351,20 @@ def a_boot():
             for tok in filt["tokens"]:
                 tok["chain_id"] = G["chain_id"]
         if LIVE:
-            say(f"réseau réel : chaîne {G['chain_id']} — rien n'est crédité, les fonds viennent de ta Ledger")
+            say(f"live network: chain {G['chain_id']}, nothing is credited, the funds come from your Ledger")
     if not S["address"]:
-        return False, "connecte-toi d'abord — ta Ledger dans le navigateur (Sign-In with Ethereum), ou l'appareil du banc"
+        return False, "sign in first: your Ledger in the browser (Sign-In with Ethereum), or the bench device"
     if S["signer"] == "browser":
         S["owner"] = S["address"]
-        say(f"compte du porteur, prouvé par une signature sur sa Ledger : {S['owner']}")
+        say(f"the holder's account, proven by a signature on their Ledger: {S['owner']}")
     else:
         import sign_mandate as sm
         sm.URL = SPECULOS
         dev = sm.device_address()
         if dev.lower() != S["address"].lower():
-            return False, f"l'appareil branché ({dev[:10]}…) n'est pas le compte connecté ({S['address'][:10]}…)"
+            return False, f"the plugged device ({dev[:10]}…) is not the signed-in account ({S['address'][:10]}…)"
         S["owner"] = dev
-        say(f"compte lu sur l'appareil : {S['owner']}")
+        say(f"account read on the device: {S['owner']}")
 
     rc, nb = cast("nonce", "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
     deploy_nonce = int(nb.strip() or 0)
@@ -373,7 +373,7 @@ def a_boot():
                    "--constructor-args", S["owner"], POOL_MANAGER], cwd=ROOT / "contracts")
     m = re.search(r"Deployed to:\s*(0x[0-9a-fA-F]{40})", out)
     if not m:
-        return False, "déploiement : " + out[-400:]
+        return False, "deployment: " + out[-400:]
     S["vault"] = m.group(1)
     jpath().write_text("")   # nouvelle session, nouveau journal (le compte, lui, garde son historique)
     S["journal"] = []
@@ -382,32 +382,32 @@ def a_boot():
     event("session", vault=S["vault"], signer=S["signer"])
     S["deployer"] = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
     S["deploy_nonce"] = deploy_nonce
-    say(f"coffre déployé au nom de ce compte : {S['vault']}")
+    say(f"vault deployed in this account's name: {S['vault']}")
 
     # Les descripteurs de clear signing de CE coffre (mandat, dérogation), compilés et signés ici même
     # avec la clé de test : c'est ce que notre context module servira au Signer Kit.
     try:
         S["descriptors"] = {k: str(signers.descriptor_path(k, S["vault"])) for k in ("mandate", "exception", "withdraw")}
-        say("descripteurs EIP-712 compilés pour ce coffre (mandat : 5 filtres, dérogation : 6, retrait : 4) — signés cal.pem")
+        say("EIP-712 descriptors built for this vault (mandate: 5 filters, exception: 6, withdrawal: 4), signed with cal.pem")
     except Exception as e:  # noqa: BLE001
-        say(f"descripteurs : {e} — le chemin Python reste disponible")
+        say(f"descriptors: {e}; the Python path is still available")
         S["signer"] = "python"
     G["ring"] = walletcli.ring_status()
     if G["ring"].get("initialised"):
-        say("Ledger Key Ring : initialisé sur cette machine (la clé du MCP peut être scellée)")
+        say("Ledger Key Ring: initialised on this machine (the MCP key can be sealed)")
     else:
-        say("Ledger Key Ring : non initialisé ici (`wallet-cli ring init` demande un Flex en USB)")
+        say("Ledger Key Ring: not initialised here (`wallet-cli ring init` needs a Flex over USB)")
 
     if FUND_VAULT:
         cast("send", WETH, "deposit()", "--value", "5ether", key=DEPLOYER_KEY)
         cast("send", WETH, "transfer(address,uint256)", S["vault"], str(5 * 10**18), key=DEPLOYER_KEY)
-        say("coffre approvisionné de 5 WETH — raccourci de banc : de l'argent fictif, d'un compte anvil")
+        say("vault funded with 5 WETH, a bench shortcut: fictional money from an anvil account")
     if not LIVE:
         # et le porteur lui-meme recoit 5 ETH fictifs : c'est LUI qui depose dans son coffre, depuis sa Ledger
         cast("rpc", "anvil_setBalance", S["owner"], hex(5 * 10**18))
-        say("ton adresse a reçu 5 ETH fictifs (fork) : dépose dans ton coffre depuis ta Ledger")
+        say("your address received 5 fictional ETH (fork): deposit into your vault from your Ledger")
     refresh_funds()
-    return True, "prêt"
+    return True, "ready"
 
 
 def refresh_funds() -> None:
@@ -432,26 +432,26 @@ def a_deposit(amount_eth) -> tuple[bool, str]:
     que l'enveloppe (nonce, frais, gaz) ; l'appareil affiche le montant et l'adresse du coffre, comme pour
     n'importe quel envoi. Le coffre le garde en WETH."""
     if not S["vault"]:
-        return False, "il faut une session"
+        return False, "a session is needed"
     if S["signer"] != "browser":
-        return False, "le dépôt se signe dans la page : choisis « Ma Ledger · ce navigateur » sur la page Appareil"
+        return False, "the deposit is signed in this page: choose “My Ledger · this browser” at the door"
     if S["signing"] or S["pending"]:
-        return False, "une signature est déjà en attente"
+        return False, "a signature is already waiting"
     try:
         wei = _wei(amount_eth)
     except ValueError:
-        return False, "un montant en ETH, entre 0 et 1000"
+        return False, "an amount in ETH, between 0 and 1000"
     rc, cid = cast("chain-id")
     rc2, nonce = cast("nonce", S["owner"])
     rc3, gp = cast("gas-price")
     if rc or rc2 or rc3:
-        return False, "la chaîne ne répond pas"
+        return False, "the chain does not answer"
     gas_price = int(gp.strip() or 0) or 10**6
     tx = {"chainId": int(cid.strip()), "nonce": int(nonce.strip()), "to": S["vault"], "value": str(wei), "data": "0x",
           "gas": 120000, "maxFeePerGas": str(gas_price * 2 + 10**6), "maxPriorityFeePerGas": str(min(gas_price, 10**6))}
     S["pending"] = {"kind": "deposit", "tx": tx, "amount_wei": str(wei), "token": secrets.token_urlsafe(8), "ts": int(time.time())}
     S["signing"] = "deposit"
-    return True, "ta Ledger, dans ton navigateur : lis le montant et l'adresse du coffre, puis maintiens « Hold to sign »"
+    return True, "your Ledger, in your browser: read the amount and the vault's address, then press “Hold to sign”"
 
 
 def _finish_deposit(raw: str) -> None:
@@ -460,7 +460,7 @@ def _finish_deposit(raw: str) -> None:
     rc, out = cast("publish", raw)
     m = re.search(r"\"?transactionHash\"?\s*[:=]?\s*\"?(0x[0-9a-fA-F]{64})", out) or re.search(r"(0x[0-9a-fA-F]{64})", out)
     if rc != 0 or not m:
-        say(f"dépôt : la chaîne a refusé la transaction — {out[-160:]}")
+        say(f"deposit: the chain refused the transaction: {out[-160:]}")
         print(f"[deposit] publish rc={rc} : {out[-400:]}", file=sys.stderr, flush=True)
         return
     txh = m.group(1)
@@ -472,27 +472,27 @@ def _finish_deposit(raw: str) -> None:
     refresh_funds()
     if ok:
         event("deposited", amount_wei=pend_amount, tx=txh)
-        say(f"dépôt signé sur ta Ledger et confirmé : {int(pend_amount) / 1e18 if pend_amount != '?' else '?'} ETH, "
-            f"gardés en WETH dans ton coffre ({txh[:10]}…)")
+        say(f"deposit signed on your Ledger and confirmed: {int(pend_amount) / 1e18 if pend_amount != '?' else '?'} ETH, "
+            f"kept as WETH in your vault ({txh[:10]}…)")
     else:
-        say(f"dépôt : transaction publiée mais échouée ({txh[:10]}…)")
+        say(f"deposit: transaction published but failed ({txh[:10]}…)")
 
 
 def a_withdraw(amount) -> tuple[bool, str]:
     """Le retrait : le porteur autorise, par une signature EIP-712 lue en clair, UN montant vers SON adresse,
     valable une heure, une fois. Le banc l'execute (il paie le gaz) ; il ne peut rien y changer."""
     if not S["vault"]:
-        return False, "il faut une session"
+        return False, "a session is needed"
     if S["signing"] or S["pending"]:
-        return False, "une signature est déjà en attente"
+        return False, "a signature is already waiting"
     refresh_funds()
     have = int(S["weth"]) if str(S["weth"]).isdigit() else 0
     try:
         wei = have if str(amount).strip() in ("", "all", "tout") else _wei(amount)
     except ValueError:
-        return False, "un montant en WETH, ou « tout »"
+        return False, "an amount in WETH, or “all”"
     if wei <= 0 or wei > have:
-        return False, f"le coffre tient {have / 1e18:.4f} WETH"
+        return False, f"the vault holds {have / 1e18:.4f} WETH"
     import sign_mandate as sm
     sm.URL = SPECULOS
     expiry, nonce = int(time.time()) + 3600, int(time.time())
@@ -500,12 +500,12 @@ def a_withdraw(amount) -> tuple[bool, str]:
     try:
         S["descriptors"]["withdraw"] = str(signers.descriptor_path("withdraw", S["vault"]))
     except Exception as e:  # noqa: BLE001
-        say(f"descripteur du retrait : {e}")
+        say(f"withdrawal descriptor: {e}")
     if S["signer"] == "browser":
         S["pending"] = {"kind": "withdraw", "typedData": data, "amount_wei": str(wei), "expiry": expiry, "nonce": nonce,
                         "token": secrets.token_urlsafe(8), "ts": int(time.time())}
         S["signing"] = "withdraw"
-        return True, "ta Ledger, dans ton navigateur : lis le montant et le destinataire, puis maintiens « Hold to sign »"
+        return True, "your Ledger, in your browser: read the amount and the recipient, then press “Hold to sign”"
 
     st = current()
 
@@ -515,13 +515,13 @@ def a_withdraw(amount) -> tuple[bool, str]:
             r = signers.sign("withdraw", data, sm.WITHDRAW_FILTERS, S["signer"], speculos=SPECULOS)
             _finish_withdraw(r["signature"], wei, expiry, nonce)
         except Exception as e:  # noqa: BLE001
-            say(f"retrait refusé ou erreur : {e}")
+            say(f"withdrawal refused or failed: {e}")
         finally:
             S["signing"] = None
 
     S["signing"] = "withdraw"
     threading.Thread(target=worker, daemon=True).start()
-    return True, "l'appareil attend : lis le montant et le destinataire, puis maintiens « Hold to sign »"
+    return True, "the device is waiting: read the amount and the recipient, then press “Hold to sign”"
 
 
 WITHDRAW_SIG = "withdrawWithAuthorization((address,uint256,address,uint64,uint256),bytes)"
@@ -533,9 +533,9 @@ def _finish_withdraw(sig: str, wei: int, expiry: int, nonce: int) -> None:
     refresh_funds()
     if ok:
         event("withdrawn", amount_wei=str(wei))
-        say(f"retrait autorisé sur ta Ledger et exécuté : {wei / 1e18:.4f} WETH rendus à ton adresse")
+        say(f"withdrawal authorised on your Ledger and executed: {wei / 1e18:.4f} WETH returned to your address")
     else:
-        say(f"retrait : le coffre a refusé — {out[-160:]}")
+        say(f"withdrawal: the vault refused: {out[-160:]}")
 
 
 def a_chat(prompt: str):
@@ -544,7 +544,7 @@ def a_chat(prompt: str):
     S["proposal"] = prop
     S["chat"].append({"role": "assistant", "text": prop["rationale"], "warning": prop["warning"],
                       "source": prop.get("_source", "")})
-    say("stratégie proposée — à lire et à valider sur l'appareil")
+    say("strategy proposed: to read and approve on the device")
     event("strategy", prompt=prompt[:200], max_round_trip_loss_bps=prop["max_round_trip_loss_bps"], budget_weth=prop["budget_weth"])
     return True, "ok"
 
@@ -567,17 +567,17 @@ def _finish_mandate(sig: str, owner: str | None, signer: str, expiry: int, repor
     S["signed"] = True
     event("mandate_signed", signer=signer, vault=S["vault"], max_round_trip_loss_bps=int(p["max_round_trip_loss_bps"]),
           budget_wei=p["budget_wei"], expiry=expiry)
-    via = {"dmk": "Signer Kit + DMK, notre context module", "python": "client officiel en APDU direct",
-           "browser": "Signer Kit dans le navigateur du porteur, sa Ledger à lui"}.get(signer, signer)
-    say(f"mandat signé sur l'appareil ({via}) — l'agent peut travailler seul dans ces bornes")
+    via = {"dmk": "Signer Kit + DMK, our context module", "python": "the official client, in direct APDUs",
+           "browser": "Signer Kit in the holder's browser, on their own Ledger"}.get(signer, signer)
+    say(f"mandate signed on the device ({via}): the agent can work alone within these bounds")
     if report:
-        say(f"rapport du Signer Kit : isBlindSign={report.get('isBlindSign')} · "
-            f"{(report.get('ethContext') or {}).get('clearSigningType')} — ce rapport partirait chez Ledger ; ici il reste")
+        say(f"Signer Kit report: isBlindSign={report.get('isBlindSign')} · "
+            f"{(report.get('ethContext') or {}).get('clearSigningType')} ; this report would go to Ledger, here it stays")
 
 
 def a_sign_mandate():
     if not (S["vault"] and S["proposal"]):
-        return False, "il faut un compte et une stratégie"
+        return False, "an account and a strategy are needed"
     import sign_mandate as sm
     sm.URL = SPECULOS
     data, expiry = _mandate_typed(S["proposal"])
@@ -586,7 +586,7 @@ def a_sign_mandate():
         # la Ledger est chez le porteur : la page fait signer (Signer Kit + WebHID) et nous rend la signature
         S["pending"] = {"kind": "mandate", "typedData": data, "expiry": expiry, "token": secrets.token_urlsafe(8), "ts": int(time.time())}
         S["signing"] = "mandate"
-        return True, "ta Ledger, dans ton navigateur : lis les champs, puis maintiens « Hold to sign »"
+        return True, "your Ledger, in your browser: read the fields, then press “Hold to sign”"
 
     st = current()
 
@@ -596,13 +596,13 @@ def a_sign_mandate():
             r = signers.sign("mandate", data, sm.FILTERS, S["signer"], speculos=SPECULOS)
             _finish_mandate(r["signature"], r.get("owner"), r["signer"], expiry, r.get("report"))
         except Exception as e:  # noqa: BLE001
-            say(f"mandat refusé ou erreur : {e}")
+            say(f"mandate refused or failed: {e}")
         finally:
             S["signing"] = None
 
     S["signing"] = "mandate"
     threading.Thread(target=worker, daemon=True).start()
-    return True, "l'appareil attend : lis les champs, puis maintiens « Hold to sign »"
+    return True, "the device is waiting: read the fields, then press “Hold to sign”"
 
 # ------------------------------------------------------------------ les bots : des agents nommes, dans le meme mandat
 #
@@ -679,8 +679,8 @@ def run_round(b: dict) -> None:
     event("run", bot=b["name"], universe=b["universe"], ticks=b["ticks"], round=b["rounds"] + 1)
     S["running"], S["bot_running"] = True, b["id"]
     try:
-        say(f"bot « {b['name']} » — tour {b['rounds'] + 1} ({'coffres ERC-4626, Morpho' if vaults_mode else 'pools Uniswap v4'}) : "
-            f"{b['ticks']} tranches de {int(b['slice_wei']) / 1e18:.4f} WETH")
+        say(f"bot “{b['name']}”, round {b['rounds'] + 1} ({'ERC-4626 vaults, Morpho' if vaults_mode else 'Uniswap v4 pools'}): "
+            f"{b['ticks']} slices of {int(b['slice_wei']) / 1e18:.4f} WETH")
         proc = subprocess.Popen(
             [sys.executable, str(ROOT / "agent" / script), "--ticks", str(b["ticks"]), "--params", str(params),
              "--mandate", str(mpath())],
@@ -723,24 +723,24 @@ def run_round(b: dict) -> None:
               refused=sum(1 for r in new if r["decision"] != "EXECUTED"), escalation=(S["escalation"] or {}).get("question"))
         if pending and S["escalation"] and S["escalation"].get("bot", {}).get("id") == b["id"] and not S["escalation"].get("_notified"):
             S["escalation"]["_notified"] = True
-            say(f"[{b['name']}] un achat est hors bornes : il attend ta décision sur l'appareil"
-                + (f" ({len(S['escalation_queue'])} autre(s) en attente)" if S["escalation_queue"] else ""))
+            say(f"[{b['name']}] a purchase is out of bounds: it waits for your decision on the device"
+                + (f" ({len(S['escalation_queue'])} more waiting)" if S["escalation_queue"] else ""))
             _notify(S["escalation"])
         # fin naturelle : un seul tour demande, budget epuise, mandat echu
         budget = int(S["mandate"]["mandate"]["budgetAmount"])
         spent = int((S["spent"] or "0").split()[0]) if str(S["spent"]).strip() else 0
         expired = int(S["mandate"]["mandate"]["expiry"]) <= time.time()
         if b["interval_s"] == 0:
-            b.update({"status": "done", "stopped": int(time.time()), "stop_reason": "un seul tour demandé"})
+            b.update({"status": "done", "stopped": int(time.time()), "stop_reason": "a single round was asked"})
         elif not new:
-            b.update({"status": "done", "stopped": int(time.time()), "stop_reason": "plus rien de nouveau à tenter dans cet univers"})
+            b.update({"status": "done", "stopped": int(time.time()), "stop_reason": "nothing new left to try in this universe"})
         elif spent >= budget:
-            b.update({"status": "done", "stopped": int(time.time()), "stop_reason": "budget du mandat consommé"})
+            b.update({"status": "done", "stopped": int(time.time()), "stop_reason": "the mandate's budget is spent"})
         elif expired:
-            b.update({"status": "done", "stopped": int(time.time()), "stop_reason": "mandat échu"})
+            b.update({"status": "done", "stopped": int(time.time()), "stop_reason": "the mandate has expired"})
         if b["status"] == "done":
             event("bot_done", bot=b["name"], reason=b["stop_reason"], rounds=b["rounds"])
-            say(f"bot « {b['name']} » : terminé — {b['stop_reason']}")
+            say(f"bot “{b['name']}”: done, {b['stop_reason']}")
     except Exception as e:  # noqa: BLE001
         say(f"[{b['name']}] agent : {e}")
     finally:
@@ -782,7 +782,7 @@ def ensure_scheduler(st: dict) -> None:
 def a_bot_add(body: dict | None = None):
     body = body or {}
     if not S["signed"]:
-        return False, "il faut d'abord un mandat signé : les bots travaillent dedans"
+        return False, "a signed mandate comes first: the bots work inside it"
     universe = body.get("universe") or S["universe"]
     if universe not in ("pools", "vaults"):
         return False, f"univers inconnu : {universe}"
@@ -791,15 +791,15 @@ def a_bot_add(body: dict | None = None):
         interval = int(body.get("interval_s") or 0)
         slice_wei = int(float(body["slice_weth"]) * 1e18) if body.get("slice_weth") else None
     except (TypeError, ValueError):
-        return False, "paramètres invalides"
+        return False, "invalid parameters"
     b = new_bot(body.get("name") or "", universe, ticks, interval, slice_wei)
     S["bots"].append(b)
     save_bots()
     event("bot_added", bot=b["name"], universe=universe, ticks=b["ticks"], interval_s=b["interval_s"])
-    say(f"bot « {b['name']} » ajouté : {'coffres ERC-4626' if universe == 'vaults' else 'pools v4'}, {b['ticks']} tranches par tour, "
-        + ("un seul tour" if b["interval_s"] == 0 else f"un tour toutes les {b['interval_s']} s"))
+    say(f"bot “{b['name']}” added: {'ERC-4626 vaults' if universe == 'vaults' else 'v4 pools'}, {b['ticks']} slices per round, "
+        + ("a single round" if b["interval_s"] == 0 else f"a round every {b['interval_s']} s"))
     ensure_scheduler(current())
-    return True, f"bot « {b['name']} » lancé"
+    return True, f"bot “{b['name']}” launched"
 
 
 def a_bot_stop(body: dict | None = None):
@@ -808,15 +808,15 @@ def a_bot_stop(body: dict | None = None):
     if not b:
         return False, "bot inconnu"
     if b["status"] != "running":
-        return False, "ce bot ne tourne plus"
-    b.update({"status": "stopped", "stopped": int(time.time()), "stop_reason": "arrêté par le porteur"})
+        return False, "this bot is no longer running"
+    b.update({"status": "stopped", "stopped": int(time.time()), "stop_reason": "stopped by the holder"})
     proc = BOT_PROC.get(b["id"])
     if proc and proc.poll() is None:
         proc.terminate()      # le tour en cours s'arrete la ; ce qui est achete reste dans le coffre, sous le mandat
     save_bots()
     event("bot_stopped", bot=b["name"], rounds=b["rounds"])
-    say(f"bot « {b['name']} » arrêté par le porteur après {b['rounds']} tour(s) — ses positions restent dans le coffre")
-    return True, f"bot « {b['name']} » arrêté"
+    say(f"bot “{b['name']}” stopped by the holder after {b['rounds']} round(s); its positions stay in the vault")
+    return True, f"bot “{b['name']}” stopped"
 
 
 def a_bot_restart(body: dict | None = None):
@@ -825,26 +825,26 @@ def a_bot_restart(body: dict | None = None):
     if not b:
         return False, "bot inconnu"
     if not S["signed"]:
-        return False, "il faut un mandat signé"
+        return False, "a signed mandate is needed"
     if b["status"] == "running":
-        return False, "ce bot tourne déjà"
+        return False, "this bot is already running"
     b.update({"status": "running", "started": int(time.time()), "stopped": None, "stop_reason": None, "next_run": time.time()})
     if b["interval_s"] == 0:
         b["interval_s"] = 60   # relancer un bot d'un tour, c'est le faire tourner
     save_bots()
     event("bot_restarted", bot=b["name"])
     ensure_scheduler(current())
-    return True, f"bot « {b['name']} » relancé"
+    return True, f"bot “{b['name']}” restarted"
 
 
 def a_run():
     """« Lancer un tour » : un bot d'un seul tour, dans l'univers choisi — le geste simple de la demo."""
     if not S["signed"]:
-        return False, "il faut d'abord un mandat signé"
+        return False, "a signed mandate comes first"
     p = S["proposal"] or {}
     label = "coffres" if S["universe"] == "vaults" else "pools"
-    n = 1 + sum(1 for b in S["bots"] if b["name"].startswith("tour unique"))
-    return a_bot_add({"name": f"tour unique {n} · {label}", "universe": S["universe"], "ticks": p.get("ticks") or 3, "interval_s": 0})
+    n = 1 + sum(1 for b in S["bots"] if b["name"].startswith("single round"))
+    return a_bot_add({"name": f"single round {n} · {label}", "universe": S["universe"], "ticks": p.get("ticks") or 3, "interval_s": 0})
 
 
 def _exception_prepare(e: dict):
@@ -857,13 +857,13 @@ def _exception_prepare(e: dict):
         key = tup([WETH, e["currency1"], e["fee"], e["tickSpacing"], e["hook"]])
         rc, kh = cast("call", S["vault"], "hashPoolKey((address,address,uint24,int24,address))(bytes32)", key)
     if rc != 0:
-        raise RuntimeError("hachage de la position : " + kh[-200:])
+        raise RuntimeError("position hash: " + kh[-200:])
     return is_vault, key, kh.strip().split()[0]
 
 
 def _finish_exception(e: dict, sig: str, is_vault: bool, key, pool_hash: str, expiry: int, nonce: int, report=None):
     S["last_report"] = report
-    say("dérogation signée sur l'appareil — l'agent réessaie, une seule fois")
+    say("exception signed on the device: the agent retries, once")
     exc = tup([AGENT, WETH, pool_hash, e["amount_in"], e["seen_exit_bps"], expiry, nonce])
     if is_vault:
         rc2, out = cast("send", S["vault"], ENTER_EXC_SIG, mandate_tuple(), S["mandate"]["signature"],
@@ -872,9 +872,9 @@ def _finish_exception(e: dict, sig: str, is_vault: bool, key, pool_hash: str, ex
         rc2, out = cast("send", S["vault"], BUY_EXC_SIG, mandate_tuple(), S["mandate"]["signature"],
                         exc, sig, key, e["amount_in"], key=AGENT_KEY)
     if rc2 == 0 and re.search(r"status\s+1", out):
-        say(f"ACHAT AUTORISÉ sous dérogation — sortie {e['seen_exit_bps']} bps, assumée")
+        say(f"PURCHASE AUTHORISED under exception: exit {e['seen_exit_bps']} bps, accepted")
         S["exception_buys"].append({"pool": e["pool_id"], "token": e["currency1"], "name": e.get("name"),
-                                    "kind": e.get("kind", "pool"), "exit_bps": e["seen_exit_bps"], "tick": "déro.",
+                                    "kind": e.get("kind", "pool"), "exit_bps": e["seen_exit_bps"], "tick": "exc.",
                                     "under_exception": True, "bot": (e.get("bot") or {}).get("name")})
         # la position existe : elle entre au journal, au meme format que les tours de l'agent, pour que la
         # surveillance (watch.py) et le MCP la voient — sans le journal, une position acquise sous derogation
@@ -883,16 +883,16 @@ def _finish_exception(e: dict, sig: str, is_vault: bool, key, pool_hash: str, ex
         entry = {
             "ts": int(time.time()), "tick": (max([r["tick"] for r in journal if isinstance(r.get("tick"), int)] or [0]) + 1),
             "kind": e.get("kind", "pool"), "mode": "exception", "under_exception": True,
-            "strategy": {"name": "derogation", "objective": "decision humaine, lue et signee sur l'appareil",
+            "strategy": {"name": "derogation", "objective": "a human decision, read and signed on the device",
                          "slice_wei": str(e["amount_in"])},
             "shortlist": [],
             "pick": {"pool_id": e["pool_id"], "currency1": e["currency1"], "hook": e.get("hook"), "fee": e.get("fee", 0),
                      "tickSpacing": e.get("tickSpacing", 0), "name": e.get("name"), "ref_holder": e.get("ref_holder"),
                      "entry_bps_median": 0.0, "depth_sizes": 0, "registry": {"present": None}},
-            "why": (f"le coffre avait refuse ({e['seen_exit_bps']} bps de sortie, mandat a {e['mandate_allows_bps']}) ; "
-                    "le porteur a lu ce nombre sur son appareil et a signe une derogation a usage unique"),
+            "why": (f"the vault had refused ({e['seen_exit_bps']} bps exit, mandate at {e['mandate_allows_bps']}); "
+                    "the holder read this number on their device and signed a single-use exception"),
             "exit_probe": {"loss_bps": int(e["seen_exit_bps"]), "exit_blocked": False,
-                           "source": "le nombre lu et signe sur l'appareil (ExitWorseThanSeen si la sortie a empire)"},
+                           "source": "the number read and signed on the device (ExitWorseThanSeen if the exit got worse)"},
             "mandate": {"owner": S["owner"], "max_round_trip_loss_bps": e["mandate_allows_bps"],
                         "budget_wei": S["mandate"]["mandate"]["budgetAmount"], "signed_on": "Ledger Flex (EIP-712)"},
             "decision": "EXECUTED", "escalation_request": None, "bot": e.get("bot"),
@@ -906,14 +906,14 @@ def _finish_exception(e: dict, sig: str, is_vault: bool, key, pool_hash: str, ex
               mandate_allows_bps=e["mandate_allows_bps"], position_kind=e.get("kind", "pool"), bot=(e.get("bot") or {}).get("name"))
         refresh_positions()
     else:
-        say("le coffre a refusé la dérogation : " + (out.strip()[-200:] or "?"))
+        say("the vault refused the exception: " + (out.strip()[-200:] or "?"))
 
 
 def _next_escalation() -> None:
     """La demande courante est tranchée : la suivante, s'il y en a une, prend sa place."""
     S["escalation"] = S["escalation_queue"].pop(0) if S["escalation_queue"] else None
     if S["escalation"]:
-        say(f"demande suivante : {S['escalation'].get('question')}")
+        say(f"next request: {S['escalation'].get('question')}")
         _notify(S["escalation"])
 
 
@@ -921,20 +921,20 @@ def a_escalate_no():
     """Le porteur laisse le refus du coffre : la demande est close, sans signature."""
     e = S["escalation"]
     if not e:
-        return False, "aucune demande en attente"
+        return False, "no request waiting"
     S["refused_escalations"].append(e["pool_id"].lower())
     event("exception_refused", position=e.get("name") or e["pool_id"], pool_id=e["pool_id"], seen_exit_bps=e.get("seen_exit_bps"),
           bot=(e.get("bot") or {}).get("name"))
-    say(f"le porteur laisse le refus : {e.get('name') or e['pool_id'][:12]} ({e.get('seen_exit_bps')} bps) reste hors du coffre")
+    say(f"the holder leaves it refused: {e.get('name') or e['pool_id'][:12]} ({e.get('seen_exit_bps')} bps) stays out of the vault")
     _next_escalation()
-    return True, "refus maintenu"
+    return True, "left refused"
 
 
 def a_escalate():
     """Le porteur lit sur son Flex le coût réel de la sortie, et signe — ou non — une dérogation."""
     e = S["escalation"]
     if not e:
-        return False, "aucune demande en attente"
+        return False, "no request waiting"
     import sign_mandate as sm
     sm.URL = SPECULOS
     try:
@@ -949,7 +949,7 @@ def a_escalate():
         S["pending"] = {"kind": "exception", "typedData": data, "expiry": expiry, "nonce": nonce, "token": secrets.token_urlsafe(8), "ts": int(time.time()),
                         "is_vault": is_vault, "key": key, "pool_hash": pool_hash, "escalation": e}
         S["signing"] = "exception"
-        return True, "ta Ledger, dans ton navigateur : lis le coût de sortie, puis signe — ou refuse"
+        return True, "your Ledger, in your browser: read the exit cost, then sign, or refuse"
 
     st = current()
 
@@ -959,13 +959,13 @@ def a_escalate():
             r = signers.sign("exception", data, sm.EXCEPTION_FILTERS, S["signer"], speculos=SPECULOS)
             _finish_exception(e, r["signature"], is_vault, key, pool_hash, expiry, nonce, r.get("report"))
         except Exception as ex:  # noqa: BLE001
-            say(f"dérogation : {ex}")
+            say(f"exception: {ex}")
         finally:
             S["signing"] = None
 
     S["signing"] = "exception"
     threading.Thread(target=worker, daemon=True).start()
-    return True, "l'appareil montre le coût de sortie : à toi de trancher"
+    return True, "the device shows the exit cost: your call"
 
 
 def _notify(esc: dict) -> None:
@@ -979,16 +979,16 @@ def _notify(esc: dict) -> None:
     if NOTIFY_URL:
         try:
             requests.post(NOTIFY_URL, json=payload, timeout=5)
-            say("le porteur est prévenu (webhook) : il peut venir lire le nombre et trancher")
+            say("the holder is notified (webhook): they can come, read the number and decide")
         except Exception as ex:  # noqa: BLE001
             say(f"notification : {ex}")
 
 def a_watch():
     """Resonde les positions detenues : la sortie s'est-elle refermee depuis l'achat ?"""
     if not S["signed"]:
-        return False, "il faut un mandat signé"
+        return False, "a signed mandate is needed"
     if S["watching"]:
-        return False, "surveillance déjà en cours"
+        return False, "a watch is already running"
 
     st = current()
 
@@ -1010,10 +1010,10 @@ def a_watch():
             worse = [r for r in rows if (r.get("delta_bps") or 0) > 0 or r.get("blocked")]
             sold = [r for r in rows if r.get("action") == "VENDU"]
             if not rows:
-                say("surveillance : aucune position détenue")
+                say("watch: no position held")
             else:
-                say(f"surveillance : {len(rows)} position(s), {len(worse)} dont la sortie s'est refermée"
-                    + (f", {len(sold)} vendue(s)" if sold else ""))
+                say(f"watch: {len(rows)} position(s), {len(worse)} whose exit has closed"
+                    + (f", {len(sold)} sold" if sold else ""))
             event("watch", positions=len(rows), worse=len(worse), sold=len(sold), sell_if=sell_if)
             if sold:
                 refresh_positions()
@@ -1024,13 +1024,13 @@ def a_watch():
 
     S["watching"] = True
     threading.Thread(target=worker, kwargs={"sell_if": S.pop("_sell_if", None)}, daemon=True).start()
-    return True, "la sonde est gratuite : on la relance autant qu'on veut"
+    return True, "the probe is free: run it as often as you like"
 
 
 def a_watch_sell():
     """Meme chose, mais on SORT de ce qui a trop empire. Seuil = le mandat + une marge."""
     if not S["signed"]:
-        return False, "il faut un mandat signé"
+        return False, "a signed mandate is needed"
     S["_sell_if"] = int(S["mandate"]["mandate"]["maxRoundTripLossBps"])
     return a_watch()
 
@@ -1053,7 +1053,7 @@ def a_reset():
             (accounts.paths(st["address"])["dir"] / "bots.json").unlink()
         except OSError:
             pass
-    return True, "compte remis à zéro — le banc continue de tourner"
+    return True, "account reset; the bench keeps running"
 
 
 ACTIONS = {"boot": a_boot, "sign_mandate": a_sign_mandate, "run": a_run,
@@ -1107,7 +1107,7 @@ class H(BaseHTTPRequestHandler):
             return self._send(200, (Path(__file__).parent / "schema.html").read_bytes(), "text/html; charset=utf-8")
         if path == "/api/account":
             if not S["address"]:
-                return self._send(200, {"ok": False, "msg": "pas de compte : connecte-toi"})
+                return self._send(200, {"ok": False, "msg": "no account: sign in"})
             reveal = parse_qs(urlparse(self.path).query).get("reveal", ["0"])[0] == "1"
             pth = accounts.paths(S["address"])
             prof = json.loads(pth["profile"].read_text()) if pth["profile"].exists() else {"address": S["address"]}
@@ -1116,13 +1116,13 @@ class H(BaseHTTPRequestHandler):
                                     "mcp_key": key if reveal else (key[:4] + "…" + key[-4:]),
                                     "mcp_config": accounts.mcp_config(S["address"], reveal),
                                     "dir": str(pth["dir"]), "key_note": (
-                                        "dérivée du secret maître par HMAC(maître, adresse) — jamais stockée ; le secret "
-                                        "maître est celui que scripts/ring-seal.sh scelle dans le Ledger Key Ring")})
+                                        "derived from the master secret by HMAC(master, address), never stored; the master "
+                                        "secret is the one scripts/ring-seal.sh seals in the Ledger Key Ring")})
         if path.startswith("/dist/") and ".." not in path:
             f = Path(__file__).parent / path.lstrip("/")
             if f.is_file():
                 return self._send(200, f.read_bytes(), "application/javascript; charset=utf-8")
-            return self._send(404, {"error": "bundle absent : cd ledger/dmk && npm run build:web"})
+            return self._send(404, {"error": "bundle missing: cd ledger/dmk && npm run build:web"})
         if path.startswith("/speculos/"):
             # le proxy vers l'emulateur, meme origine : le DMK du navigateur lui parle comme a une Ledger
             upstream = SPECULOS + self.path[len("/speculos"):]
@@ -1152,12 +1152,12 @@ class H(BaseHTTPRequestHandler):
         if path == "/api/descriptor":
             kind = parse_qs(urlparse(self.path).query).get("kind", ["mandate"])[0]
             if kind not in ("mandate", "exception", "withdraw") or not S["vault"]:
-                return self._send(400, {"error": "kind=mandate|exception|withdraw, et une session ouverte"})
+                return self._send(400, {"error": "kind=mandate|exception|withdraw, and an open session"})
             return self._send(200, Path(signers.descriptor_path(kind, S["vault"])).read_bytes())
         if path == "/api/siwe/nonce":
             S["siwe_nonce"] = secrets.token_hex(4)  # court : le message SIWE doit tenir dans une APDU (Signer Kit, FEEDBACK § 8)
             return self._send(200, {"nonce": S["siwe_nonce"], "domain": self.headers.get("Host", f"127.0.0.1:{PORT}"),
-                                    "chainId": G.get("chain_id") or 8453, "statement": "Porte de sortie — je me connecte avec ma Ledger."})
+                                    "chainId": G.get("chain_id") or 8453, "statement": "Net-Out: I sign in with my Ledger."})
         if path in ("/", "/index.html"):
             return self._send(200, (Path(__file__).parent / "index.html").read_bytes(), "text/html; charset=utf-8")
         if path == "/api/screen":
@@ -1215,10 +1215,10 @@ class H(BaseHTTPRequestHandler):
             try:
                 addr = sm.device_address()
             except Exception as e:  # noqa: BLE001
-                return self._send(200, {"ok": False, "msg": f"appareil : {e}"})
+                return self._send(200, {"ok": False, "msg": f"device: {e}"})
             with LOCK:
-                cookie = self._login(addr, "appareil du banc (adresse lue sur la Ledger)")
-                say(f"connecté : {S['address']} — adresse lue sur l'appareil")
+                cookie = self._login(addr, "the bench device (address read on the Ledger)")
+                say(f"signed in: {S['address']}, address read on the device")
             return self._send(200, {"ok": True, "address": S["address"]}, cookie=cookie)
         if path == "/api/logout":
             m = re.search(r"pds_session=([A-Za-z0-9_\-]+)", self.headers.get("Cookie", "") or "")
@@ -1240,52 +1240,52 @@ class H(BaseHTTPRequestHandler):
             # un personal_sign (EIP-191) fait sur la Ledger ; `cast wallet verify` retrouve le signataire.
             msg, sig, addr = body.get("message", ""), body.get("signature", ""), (body.get("address") or "")
             if not (S["siwe_nonce"] and f"Nonce: {S['siwe_nonce']}" in msg):
-                return self._send(200, {"ok": False, "msg": "nonce absent ou périmé : redemande /api/siwe/nonce"})
+                return self._send(200, {"ok": False, "msg": "nonce missing or expired: ask /api/siwe/nonce again"})
             if not re.fullmatch(r"0x[0-9a-fA-F]{40}", addr) or addr.lower() not in msg.lower():
-                return self._send(200, {"ok": False, "msg": "l'adresse ne figure pas dans le message"})
+                return self._send(200, {"ok": False, "msg": "the address is not in the message"})
             p = subprocess.run(["cast", "wallet", "verify", "--address", addr, msg, sig], capture_output=True, text=True, timeout=60)
             if p.returncode != 0:
-                return self._send(200, {"ok": False, "msg": "signature refusée : " + (p.stderr or p.stdout).strip()[-160:]})
+                return self._send(200, {"ok": False, "msg": "signature refused: " + (p.stderr or p.stdout).strip()[-160:]})
             with LOCK:
                 S["siwe_nonce"] = None
-                cookie = self._login(addr, "Sign-In with Ethereum (Ledger dans le navigateur)")
-                say(f"connecté : {addr} — prouvé par une signature sur sa Ledger (Sign-In with Ethereum)")
+                cookie = self._login(addr, "Sign-In with Ethereum (Ledger in the browser)")
+                say(f"signed in: {addr}, proven by a signature on their Ledger (Sign-In with Ethereum)")
             return self._send(200, {"ok": True, "address": addr}, cookie=cookie)
         if path == "/api/signed":
             # la page a fait signer la Ledger du porteur : elle nous rend la signature (ou le refus)
             pend = S.get("pending")
             if not pend or pend["kind"] != body.get("kind"):
-                return self._send(200, {"ok": False, "msg": "rien à signer de ce genre"})
+                return self._send(200, {"ok": False, "msg": "nothing of this kind to sign"})
             if body.get("error"):
                 with LOCK:
                     S["pending"] = None
                     S["signing"] = None
                     err = str(body["error"])[:160]
-                    say(f"{pend['kind']} : refusé ou erreur côté porteur — {err}")
-                    print(f"[signed] {pend['kind']} : erreur côté porteur — {err}", file=sys.stderr, flush=True)
+                    say(f"{pend['kind']}: refused or failed on the holder's side: {err}")
+                    print(f"[signed] {pend['kind']}: error on the holder's side: {err}", file=sys.stderr, flush=True)
                     if "InvalidStatusWord" in err or "6980" in err:
-                        say("l'app Ethereum est peut-être restée « en cours de signature » : sur Speculos, "
-                            "`ledger/speculos.sh up` ; sur un Flex, quitte et rouvre l'app (FEEDBACK § 8)")
-                return self._send(200, {"ok": True, "msg": "refus noté"})
+                        say("the Ethereum app may be stuck “signing”: on Speculos, "
+                            "`ledger/speculos.sh up`; on a Flex, quit and reopen the app (FEEDBACK § 8)")
+                return self._send(200, {"ok": True, "msg": "refusal noted"})
             if pend["kind"] == "deposit":
                 raw = body.get("raw") or ""
                 if not re.fullmatch(r"0x02[0-9a-fA-F]+", raw):
-                    return self._send(200, {"ok": False, "msg": "transaction signée mal formée"})
+                    return self._send(200, {"ok": False, "msg": "malformed signed transaction"})
                 with LOCK:
                     S["_last_pending"], S["pending"] = pend, None
                     try:
                         _finish_deposit(raw)
                     except Exception as e:  # noqa: BLE001
-                        say(f"dépôt : {e}")
+                        say(f"deposit: {e}")
                     finally:
                         S["signing"] = None
                 return self._send(200, {"ok": True})
             sig = body.get("signature") or ""
             if not re.fullmatch(r"0x[0-9a-fA-F]{130}", sig):
-                return self._send(200, {"ok": False, "msg": "signature mal formée"})
+                return self._send(200, {"ok": False, "msg": "malformed signature"})
             owner = body.get("owner") or S["owner"]
             if S["owner"] and owner.lower() != S["owner"].lower():
-                return self._send(200, {"ok": False, "msg": f"signé par {owner[:10]}…, la session est à {S['owner'][:10]}…"})
+                return self._send(200, {"ok": False, "msg": f"signed by {owner[:10]}…, the session belongs to {S['owner'][:10]}…"})
             with LOCK:
                 S["pending"] = None
                 try:
@@ -1332,14 +1332,14 @@ class H(BaseHTTPRequestHandler):
             # l'analyste : le VRAI agent — il repond par les outils du MCP en lecture seule, jamais de memoire
             q = (body.get("question") or "").strip()
             if not q:
-                return self._send(200, {"ok": False, "msg": "pose une question"})
+                return self._send(200, {"ok": False, "msg": "ask a question"})
             if (S["analysis"] or {}).get("pending"):
-                return self._send(200, {"ok": False, "msg": "l'analyste travaille déjà"})
+                return self._send(200, {"ok": False, "msg": "the analyst is already working"})
             entry = {"question": q, "pending": True, "answer": "", "tools_used": [], "error": None, "ts": int(time.time())}
             history = [a for a in S["analyses"] if not a.get("pending") and a.get("answer")]
             S["analyses"].append(entry)
             S["analysis"] = entry
-            say(f"analyste : « {q} » — il interroge le MCP")
+            say(f"analyst: “{q}”, querying the MCP")
 
             st = current()
             env = account_env()
@@ -1351,27 +1351,27 @@ class H(BaseHTTPRequestHandler):
                 try:
                     r = analyst.ask(q, history=history, env=env)
                     entry.update({**r, "question": q, "pending": False})
-                    used = ", ".join(sorted({t["tool"] for t in r["tools_used"]})) or "aucun outil"
-                    say(f"analyste : réponse par {used}" + (f" — {r['error']}" if r["error"] else ""))
+                    used = ", ".join(sorted({t["tool"] for t in r["tools_used"]})) or "no tool"
+                    say(f"analyst: answered through {used}" + (f" — {r['error']}" if r["error"] else ""))
                     event("analysis", question=q[:200], tools=sorted({t["tool"] for t in r["tools_used"]}))
                 except Exception as ex:  # noqa: BLE001
                     entry.update({"pending": False, "answer": "", "error": repr(ex)})
                     say(f"analyste : {ex}")
 
             threading.Thread(target=worker, daemon=True).start()
-            return self._send(200, {"ok": True, "msg": "l'analyste interroge les outils"})
+            return self._send(200, {"ok": True, "msg": "the analyst is querying the tools"})
         if path == "/api/signer":
             # le chemin vers l'appareil : « dmk » (Signer Kit de Ledger) ou « python » (client officiel)
             want = body.get("signer")
             if want not in (*signers.SIGNERS, "browser"):
                 return self._send(200, {"ok": False, "msg": f"signer inconnu : {want}"})
             if want == "dmk" and not signers.dmk_available():
-                return self._send(200, {"ok": False, "msg": "Signer Kit absent : cd ledger/dmk && npm i"})
+                return self._send(200, {"ok": False, "msg": "Signer Kit missing: cd ledger/dmk && npm i"})
             with LOCK:
                 S["signer"] = want
-                say("chemin de signature : " + {"dmk": "Signer Kit Ethereum 1.18.1 sur le DMK 1.9.1 (côté banc)",
-                                                "python": "client officiel d'app-ethereum, APDU direct",
-                                                "browser": "Signer Kit dans TON navigateur — ta Ledger, chez toi"}[want])
+                say("signing path: " + {"dmk": "Signer Kit Ethereum 1.18.1 on DMK 1.9.1 (bench side)",
+                                                "python": "app-ethereum's official client, direct APDUs",
+                                                "browser": "Signer Kit in YOUR browser: your Ledger, at home"}[want])
             return self._send(200, {"ok": True, "signer": want})
         if path in ("/api/bots", "/api/bots/stop", "/api/bots/restart"):
             fn = {"/api/bots": a_bot_add, "/api/bots/stop": a_bot_stop, "/api/bots/restart": a_bot_restart}[path]
@@ -1394,5 +1394,5 @@ class H(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    print(f"\n  PORTE DE SORTIE — http://127.0.0.1:{PORT}\n")
+    print(f"\n  NET-OUT — http://127.0.0.1:{PORT}\n")
     ThreadingHTTPServer(("127.0.0.1", PORT), H).serve_forever()

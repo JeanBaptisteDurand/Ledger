@@ -77,7 +77,7 @@ def sign(kind: str, data: dict, filters: dict, signer: str | None = None, *, spe
 
     if signer == "dmk":
         if not dmk_available():
-            raise RuntimeError("Signer Kit indisponible : `cd ledger/dmk && npm i` (et node dans le PATH)")
+            raise RuntimeError("Signer Kit unavailable: `cd ledger/dmk && npm i` (and node in the PATH)")
         with tempfile.NamedTemporaryFile("w", suffix=".typed.json", delete=False) as f:
             json.dump(data, f)
             typed = f.name
@@ -107,7 +107,7 @@ def sign(kind: str, data: dict, filters: dict, signer: str | None = None, *, spe
                 except OSError:
                     pass
         if not r.get("signature"):
-            raise RuntimeError("Signer Kit : " + (r.get("error") or p.stderr[-400:] or "refus"))
+            raise RuntimeError("Signer Kit: " + (r.get("error") or p.stderr[-400:] or "refused"))
         return {"signature": r["signature"], "owner": r.get("owner"), "signer": "dmk",
                 "screens": r.get("screens"), "report": r.get("blindSigningReport"), "steps": r.get("steps"),
                 "log": p.stderr}
@@ -129,7 +129,7 @@ def sign(kind: str, data: dict, filters: dict, signer: str | None = None, *, spe
         InputData.process_data(client, data, filters)
         rapdu, pages = sm.navigate_and_sign(client, kind)
         if rapdu.status != 0x9000:
-            raise RuntimeError(f"refusé sur l'appareil : status 0x{rapdu.status:04x}")
+            raise RuntimeError(f"refused on the device: status 0x{rapdu.status:04x}")
         v, r, s = RP.signature(rapdu.data)
         sig = "0x" + r.to_bytes(32, "big").hex() + s.to_bytes(32, "big").hex() + bytes([v]).hex()
         return {"signature": sig, "owner": sm.device_address(), "signer": "python", "screens": pages}

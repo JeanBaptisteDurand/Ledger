@@ -68,7 +68,7 @@ export const OVERFLOW = {
 export const AGENTS = {
   title: ['An injected prompt can make a bot ', 'choose', ' a trap. It cannot make it ', 'exceed', ' your mandate.'] as const,
   takeaway: 'The one that acts has no LLM · the one with an LLM cannot act',
-  lead: 'Two kinds of agents, one boundary. The bots act without a language model and never see the exit: the contract measures it. The analyst is Claude on ten read-only tools: it cites the tool behind every number and can sign nothing, send nothing, stop nothing.',
+  lead: 'Two kinds of agents, one boundary. The bots act without a language model and never see the exit: the contract measures it. The analyst is a language model on ten read-only tools: it cites the tool behind every number and can sign nothing, send nothing, stop nothing.',
   bots: { kicker: 'They act · no language model', title: 'The bots', facts: [['Universes', 'Uniswap v4 pools · ERC-4626 vaults', ''], ['Key', 'a session key, the vault only', 'hot'], ['Sees', 'depth, entry, yield. Never the exit', '']] as ReadonlyArray<readonly [string, string, '' | 'hot']> },
   analyst: { kicker: 'It understands · Agent Stack', title: 'The analyst', facts: [['Tools', '10, read only, through our MCP', 'hot'], ['Key', 'derived from your address, written nowhere', ''], ['Can', 'answer, and cite', '']] as ReadonlyArray<readonly [string, string, '' | 'hot']> },
   mapNote: ['One path leads to a purchase: a bot, its session key, ', 'the vault', '. Everything else reads, measures or signs a rule.'] as const,

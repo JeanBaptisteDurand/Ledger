@@ -53,7 +53,7 @@ Base a **27 % de la position de son plus gros déposant bloquée**, et cinq coff
 |---|---|
 | **Signer Kit + DMK** (1.18.1 / 1.9.1) | dans le navigateur du porteur (WebHID pour une vraie Flex, Speculos en banc) : la connexion Sign-In with Ethereum, le dépôt, le mandat, chaque dérogation, le retrait. Jamais un achat. |
 | **Clear signing** (ERC-7730) | nos descripteurs du mandat, de la dérogation et du retrait, compilés et signés avec la clé de test de l'app Ethereum 1.22.4 : la Flex affiche les champs, le kit rapporte `isBlindSign=false`. Vérifié sur la Flex émulée et sur une vraie Flex. |
-| **Agent Stack** (wallet-cli 2.1.0) | l'analyste, un vrai agent : Claude sur un MCP en lecture seule de dix outils, dont `earn yields` de Ledger ; il cite l'outil sous chaque nombre et ne peut rien signer. |
+| **Agent Stack** (wallet-cli 2.1.0) | l'analyste, un vrai agent : un modèle de langage (Claude par son CLI, ou gpt-4o-mini par l'API d'OpenAI sur le site en ligne) sur un MCP en lecture seule de dix outils, dont `earn yields` de Ledger ; il cite l'outil sous chaque nombre et ne peut rien signer. |
 | **Ring CLI** (Ledger Key Ring Protocol) | le secret maître dont dérive la clé MCP de chaque compte (`HMAC-SHA256(maître, adresse)`, jamais stockée), scellé sous la graine de l'opérateur. |
 
 [Ligne à ligne](#les-briques-ledger-du-brief-ligne-à-ligne), avec les versions et les fichiers.
@@ -111,7 +111,9 @@ du haut porte « The product », « Demo » et « Sign in » ; connecté, elle a
 **Live.** <https://netout.tech> serves the whole site with the bench behind it: a Base fork pinned at block
 50 614 000, an emulated Ledger Flex, the account server. *Sign in with the emulated Flex* takes one click; you sign on
 its screen with the mouse (a click taps, a drag to the left turns the page, a long press signs). There is one emulated
-Flex for every visitor, so one holder and one signature at a time; a real Ledger over USB opens its own account. How it
+Flex for every visitor, so one holder and one signature at a time; a real Ledger over USB opens its own account.
+Its deposit is a real Base transaction that the bench only publishes on the fork: test it with an address that holds
+no ETH on Base. How it
 is served, and what was tested from outside: [`DEPLOY.md`](DEPLOY.md).
 
 **The measure.** The exit is measured by **TARE**, our ETHOnline 2026 instrument (finalist, Uniswap Foundation prize,
@@ -141,7 +143,8 @@ was clear-signed on a physical Flex over USB (`ecrecover` matches).
 
 **The agents.** Execution bots (no language model) that the holder names, starts and stops; they never see the
 exit — the contract measures it; their key can only call the holder's vault. The one real agent is the **analyst**:
-Claude on a read-only MCP of ten tools, citing the tool behind every number; it cannot sign, send or stop anything.
+a language model on a read-only MCP of ten tools (Claude through its CLI; OpenAI's gpt-4o-mini on the live site), citing the
+tool behind every number; it cannot sign, send or stop anything.
 
 **Ledger's bricks, one role each.** Signer Kit + DMK in the holder's browser (WebHID for a real Ledger, Speculos
 for the bench), with our own EIP-712 descriptors — compiled with the test key of a 1.22.4 build of the official app,
@@ -224,7 +227,7 @@ Cinq gestes, dans l'ordre :
    clair sur l'écran (montant, destinataire, échéance), que le banc exécute en payant le gaz, sans pouvoir y changer
    un chiffre (`withdrawWithAuthorization`, 6 tests). Sur le fork, le banc t'a mis 5 ETH fictifs, et 5 WETH de
    démonstration dans le coffre ; sur un vrai réseau, rien n'est crédité.
-2. **Demande une stratégie, en français.** Le CLI `claude` traduit ton intention en **bornes** :
+2. **Demande une stratégie, en une phrase.** Le CLI `claude`, ou l'API d'OpenAI en ligne, traduit ton intention en **bornes** :
    budget, coût de sortie toléré, taille de tranche, échéance. Il n'achète rien, ne choisit aucun
    jeton, et il écrit lui-même ce que ses bornes **ne** protègent **pas**.
 3. **Valide sur le Ledger.** L'écran du Flex est à gauche, en direct, et **c'est toi qui l'approuves** :
@@ -409,6 +412,10 @@ font piéger, pour montrer que le coffre les rattrape. **Le vrai agent, c'est l'
 qui, pour répondre, **interroge nos outils** au lieu de parler de mémoire. Il n'a accès qu'au MCP en
 lecture seule (`--strict-mcp-config`, rien d'autre n'est chargé) et cite l'outil derrière chaque nombre.
 
+Sur le site en ligne, le même analyste tourne sur l'API d'OpenAI (`gpt-4o-mini`) : le banc lance le même serveur MCP
+avec l'environnement du compte, donne ses dix outils au modèle comme des fonctions, et garde la même trace des outils
+sous chaque réponse. `PDS_LLM=openai` le choisit, `OPENAI_API_KEY` l'ouvre ; le stratège suit la même règle.
+
 ```
 $ python3 agent/analyst.py "pourquoi le tour 2 a-t-il ete refuse, et que prenait son hook ?"
 
@@ -561,7 +568,7 @@ navigateur).
 | **la dérogation** | l'autorisation à usage unique, signée sur l'appareil avec le coût de sortie lu, pour une entrée hors mandat |
 | **le dépôt, le retrait** | l'envoi d'ETH du porteur à son coffre (la seule transaction qu'il signe) ; l'autorisation EIP-712 qui lui rend ses fonds |
 | **un bot** | un agent d'exécution sans modèle de langage, nommé par le porteur, qui ne voit jamais la sortie |
-| **l'analyste** | le vrai agent : Claude sur dix outils en lecture seule, qui cite l'outil sous chaque nombre |
+| **l'analyste** | le vrai agent : un modèle de langage sur dix outils en lecture seule, qui cite l'outil sous chaque nombre (Claude en local, gpt-4o-mini en ligne) |
 | **le contrefactuel** (TARE) | la même cotation avec un hook inerte à la place du vrai : l'écart est ce que le hook prend |
 | **le banc** | ce serveur et ces pages : un fork de Base, un Flex émulé, un compte par adresse |
 | **le veilleur** | le resondage des positions tenues, et la vente de ce qui a empiré au-delà du mandat |
@@ -592,7 +599,7 @@ accounts/<adresse>/           un compte = une adresse prouvée : profile, mandat
 agent/
   agent.py                    la stratégie DCA (pools v4), le journal du pourquoi
   vaults.py                   l'agent de rendement (coffres ERC-4626 réels, Morpho) — il prend Moonwell en premier
-  analyst.py                  LE VRAI AGENT : répond par les outils du MCP (claude -p, --strict-mcp-config), jamais de mémoire
+  analyst.py                  LE VRAI AGENT : répond par les outils du MCP (claude -p, ou l'API d'OpenAI : PDS_LLM), jamais de mémoire
   counterfactual.py           le contrefactuel de TARE, remesuré en direct
   watch.py                    resonde les positions détenues (pools ET coffres), et sort si la porte se ferme
 FEEDBACK.md                   le retour d'expérience développeur, pour Ledger Dev Rel
@@ -604,7 +611,7 @@ web/
   accounts.py                 les comptes : dossier par adresse, clé MCP dérivée (HMAC), profil, événements, sessions
   schema.html                 qui fait quoi : les agents, les outils, les briques Ledger (/schema.html)
   dist/ledger-web.js          le bundle navigateur (esbuild), servi par le banc ; proxy /speculos/* meme origine
-  strategist.py               une phrase en français -> des bornes, par le CLI `claude`
+  strategist.py               une phrase -> des bornes, par le CLI `claude` ou l'API d'OpenAI (PDS_LLM)
 scripts/demo.sh               la version ligne de commande, en une commande (SIGNER=dmk|python)
 scripts/parcours.mjs          le parcours complet dans un vrai navigateur (Chromium headless), de la connexion à la reconnexion
 scripts/porteur.py            le porteur automatique du banc (Speculos) — optionnellement lent, jamais contre un vrai appareil
@@ -674,8 +681,14 @@ USB (`ledgerblue.loadApp`) — **à la place de l'app Ethereum officielle**, que
 Appareil déverrouillé, Ledger Wallet fermé, accepter « Allow unsafe manager » et l'installation sur l'écran ; l'app se
 lance ensuite avec un avertissement « non vérifiée ». Chargé le 2 octobre sur une Flex (OS 1.6.1, MCU 6.9.2).
 
+**Une vraie Ledger sur le site, et ce qu'elle signe vraiment.** Sur <https://netout.tech> comme en local, elle passe par
+« Real Ledger (USB) » et « My Ledger · this browser », dans Chrome, Edge ou Brave ; les chemins du banc signent toujours
+sur la Flex émulée. Une Ledger déjà autorisée par le site se reconnecte sans clic. Le dépôt qu'elle signe est une vraie
+transaction Base (chainId 8453), que le banc ne publie que sur le fork : elle resterait valable sur le réseau principal
+tant que l'adresse y garde le même nonce et assez d'ETH. **Tester avec une adresse sans ETH sur Base.**
 
-- **Docker** (Speculos, `ledger-app-builder`), **Foundry**, **Python 3.12+**, **Node 20+**, le CLI **`claude`**
+
+- **Docker** (Speculos, `ledger-app-builder`), **Foundry**, **Python 3.12+**, **Node 20+**, le CLI **`claude`** ou une clé OpenAI
   (le stratège et l'analyste), un **RPC Base** (`BASE_RPC_URL`).
 
   Ce qui est obligatoire, ce qui est optionnel, et ce que le banc dit quand ça manque (vérifié le 10 octobre) :
@@ -683,7 +696,8 @@ lance ensuite avec un avertissement « non vérifiée ». Chargé le 2 octobre s
   | clé | rôle | si elle manque |
   |---|---|---|
   | `BASE_RPC_URL` (ou le `.env` de TARE) | le fork de Base | **obligatoire** — le banc démarre, et l'ouverture de session répond « BASE_RPC_URL introuvable » |
-  | le CLI `claude` connecté | le stratège, l'analyste | le stratège passe en repli déterministe et le dit ; l'analyste répond « le CLI claude est absent », rien d'autre ne change |
+  | le CLI `claude` connecté | le stratège, l'analyste | le stratège passe en repli déterministe et le dit ; l'analyste répond que le CLI est absent, rien d'autre ne change |
+  | `OPENAI_API_KEY`, avec `PDS_LLM=openai` | le stratège et l'analyste par l'API d'OpenAI (`gpt-4o-mini`, `OPENAI_MODEL` pour un autre), avec les mêmes dix outils | optionnelle ; c'est ce que le site en ligne utilise |
   | `PDS_NOTIFY_URL` | le webhook quand ça déborde | optionnelle — la page et `agent/notifications.jsonl` préviennent quand même |
   | `mcp/.mcp-key` (ou le Key Ring) | le secret maître des clés MCP | créée au premier appel ; `scripts/ring-seal.sh` pour la sceller |
   | `TARE_ROOT` | le corpus des mesures | optionnelle si TARE est cloné à côté |

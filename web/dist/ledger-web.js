@@ -53825,7 +53825,15 @@ ${ge(n42)}`;
         } catch {
         }
         const dmk = b18.build();
-        const device = await firstValueFrom(dmk.startDiscovering({}));
+        let device = null;
+        if (transport === "webhid") {
+          try {
+            const known = await firstValueFrom(dmk.listenToAvailableDevices({}).pipe(filter((l59) => l59.length > 0), timeout({ first: 1500 })));
+            device = known[0];
+          } catch {
+          }
+        }
+        if (!device) device = await firstValueFrom(dmk.startDiscovering({}));
         const sessionId = await dmk.connect({ device, sessionRefresherOptions: { isRefresherDisabled: true } });
         state = { dmk, sessionId, transport, address: null, signer: null };
         return getAddress2();

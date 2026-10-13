@@ -31,23 +31,23 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 MCP = ROOT / "mcp" / "pds_mcp.py"
 
-SYSTEM = """Tu es l'analyste de « Porte de sortie » : un coffre on-chain qui n'autorise un agent a entrer
-dans une position (pool Uniswap v4, coffre ERC-4626) que si la sortie tient dans le mandat que le porteur
-a signe sur son Ledger.
+SYSTEM = """You are the analyst of Net·Out: an on-chain vault that lets an agent enter a position (a Uniswap v4 pool,
+an ERC-4626 vault) only if the exit fits within the mandate the holder signed on their Ledger.
 
-Regles absolues :
-1. Tu reponds UNIQUEMENT a partir des resultats des outils MCP `porte-de-sortie`. Jamais de memoire,
-   jamais d'estimation. Si un outil ne donne pas la donnee, dis-le en une phrase et arrete-toi la.
-2. Chaque nombre que tu cites vient d'un champ d'un resultat d'outil ; nomme l'outil entre parentheses
-   la premiere fois, p. ex. « 2 693 bps (vault_openness) ».
-3. Appelle les outils necessaires, pas plus : `operations` pour la liste (chaque ligne a un `seq`, son rang ;
-   les ticks repartent a 1 a chaque tour, pools puis coffres), `decision(tick, kind)` ou `decision(seq)` pour un tour,
-   `hook_analysis(tick)` pour ce que le hook prend, `positions` pour ce qu'on detient, `bots` pour les bots du
-   compte (actifs, arretes, leur bilan) et `operations(bot=<nom>)` pour le detail d'un bot, `vault_openness`
-   pour la porte des coffres, `compare_entry_exit` pour entree contre sortie, `ledger_earn_yields` pour ce
-   que l'Agent Stack de Ledger montre d'une position a rendement.
-4. Dans la langue de la question (francais ou anglais), sobre, sans emphase, 3 a 8 phrases. Pas de listes a puces sauf pour comparer des lignes.
-5. Tu ne conseilles pas d'acheter ou de vendre. Tu expliques ce qui s'est passe et ce que les mesures disent.
+Absolute rules:
+1. You answer ONLY from the results of the `porte-de-sortie` MCP tools. Never from memory, never an estimate. If a
+   tool does not give the data, say so in one sentence and stop there.
+2. Every number you quote comes from a field of a tool result; name the tool in brackets the first time, for example
+   "2 693 bps (vault_openness)".
+3. Call the tools you need, no more: `operations` for the list (each row has a `seq`, its rank; ticks start again at 1
+   on each round, pools then vaults), `decision(tick, kind)` or `decision(seq)` for one round, `hook_analysis(tick)`
+   for what the hook takes, `positions` for what is held, `bots` for the account's bots (running, stopped, their
+   record) and `operations(bot=<name>)` for one bot's detail, `vault_openness` for the vaults' door,
+   `compare_entry_exit` for entry against exit, `ledger_earn_yields` for what Ledger's Agent Stack shows of a yield
+   position.
+4. Answer in the language of the question, English by default, plainly and without emphasis, in 3 to 8 sentences. No
+   bullet lists, except to compare rows.
+5. You do not advise buying or selling. You explain what happened and what the measurements say.
 """
 
 
@@ -150,9 +150,9 @@ def ask(question: str, timeout: int = 240, max_turns: int = 12, history: list[di
     key = env.get("PDS_MCP_KEY") or mcp_key()
     if history:
         transcript = "\n".join(
-            f"Q : {h['question']}\nR : {(h.get('answer') or '')[:700]}" for h in history[-4:] if h.get("answer"))
-        question = (f"Échanges précédents de cette conversation (pour le contexte ; ne les recopie pas, "
-                    f"réinterroge les outils si la question y renvoie) :\n{transcript}\n\nNouvelle question : {question}")
+            f"Q: {h['question']}\nA: {(h.get('answer') or '')[:700]}" for h in history[-4:] if h.get("answer"))
+        question = (f"Earlier exchanges in this conversation (for context; do not copy them, "
+                    f"query the tools again if the question refers to them):\n{transcript}\n\nNew question: {question}")
     if llm_backend() == "openai":
         answer, tools_used, turns, error = _ask_openai(question, env, key, timeout, max_turns)
         model = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
@@ -193,20 +193,20 @@ def ask(question: str, timeout: int = 240, max_turns: int = 12, history: list[di
             elif ev.get("type") == "result":
                 answer = ev.get("result") or ""
                 if ev.get("is_error"):
-                    error = answer or "erreur du modele"
+                    error = answer or "model error"
         if p.returncode != 0 and not answer:
             error = (p.stderr or p.stdout or "")[-600:]
     except FileNotFoundError:
-        error = "le CLI `claude` est absent : l'analyste ne peut pas tourner (pas de repli : il ne parle qu'avec des donnees)"
+        error = "the `claude` CLI is missing: the analyst cannot run (no fallback: it only speaks from data)"
     except subprocess.TimeoutExpired:
-        error = f"delai depasse ({timeout}s)"
+        error = f"timed out ({timeout}s)"
     finally:
         try:
             os.unlink(cfg_path)
         except OSError:
             pass
     return {"question": question, "answer": answer.strip(), "tools_used": tools_used, "turns": turns,
-            "error": error, "source": "claude CLI (Claude Agent SDK) + MCP porte-de-sortie, lecture seule, --strict-mcp-config"}
+            "error": error, "source": "claude CLI (Claude Agent SDK) + MCP porte-de-sortie, read only, --strict-mcp-config"}
 
 
 if __name__ == "__main__":
@@ -214,10 +214,10 @@ if __name__ == "__main__":
     ap.add_argument("question", nargs="*")
     ap.add_argument("--json", action="store_true")
     a = ap.parse_args()
-    q = " ".join(a.question) or "pourquoi le dernier tour a-t-il ete refuse, et qu'est-ce que le hook prenait ?"
+    q = " ".join(a.question) or "why was the last round refused, and what was the hook taking?"
     r = ask(q)
     if a.json:
         print(json.dumps(r, ensure_ascii=False, indent=1))
     else:
-        print(r["answer"] or f"(pas de reponse : {r['error']})")
-        print("\n— outils consultes : " + (", ".join(f"{t['tool']}({','.join(f'{k}={v}' for k, v in t['args'].items())})" for t in r["tools_used"]) or "aucun"))
+        print(r["answer"] or f"(no answer: {r['error']})")
+        print("\n— tools consulted: " + (", ".join(f"{t['tool']}({','.join(f'{k}={v}' for k, v in t['args'].items())})" for t in r["tools_used"]) or "none"))

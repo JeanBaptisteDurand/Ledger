@@ -13,7 +13,7 @@ export interface Proposal {
   slice_weth: number
   ticks: number
   days: number
-  risk: 'prudent' | 'equilibre' | 'offensif'
+  risk: 'prudent' | 'balanced' | 'aggressive'
   min_depth_sizes: number
   require_registry: boolean
   rationale: string
@@ -225,5 +225,5 @@ export const EVENT_LABELS: Record<string, string> = {
 }
 
 export const STOP_REASONS: Record<string, string> = {
-  'arrêté par le porteur': 'stopped by you',
+  'stopped by the holder': 'stopped by you',
 }

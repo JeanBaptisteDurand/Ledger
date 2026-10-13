@@ -26,7 +26,7 @@ const FUNDS = {
 }
 const ANALYST = {
   title: ['It understands. ', 'It can do nothing.', ''] as HotTitle,
-  takeaway: 'Claude on ten read-only tools · a key derived from your address · the tool cited under every number',
+  takeaway: 'A language model on ten read-only tools · a key derived from your address · the tool cited under every number',
   lead: 'An agent wired to your account, read only. It does not answer from memory: it queries your bots, your decisions, your positions and the measures, and names the tool behind every figure.',
   source: 'mcp/pds_mcp.py, ten tools, none of which signs, sends or stops a bot. README.md, “L’analyste”.',
 }

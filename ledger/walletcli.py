@@ -44,11 +44,11 @@ def call(*args: str, timeout: int = 90, stdin: bytes | None = None) -> dict:
     """Lance `wallet-cli <args> --output json` ; rend toujours un dict {ok, data|error}."""
     b = binary()
     if not b:
-        return {"ok": False, "error": {"message": "wallet-cli introuvable (npm i dans ledger/dmk, ou $WALLET_CLI)"}}
+        return {"ok": False, "error": {"message": "wallet-cli not found (npm i in ledger/dmk, or $WALLET_CLI)"}}
     try:
         p = subprocess.run([str(b), *args, "--output", "json"], capture_output=True, timeout=timeout, input=stdin)
     except subprocess.TimeoutExpired:
-        return {"ok": False, "error": {"message": f"wallet-cli {' '.join(args)} : délai dépassé"}}
+        return {"ok": False, "error": {"message": f"wallet-cli {' '.join(args)}: timed out"}}
     raw = (p.stdout or b"").decode(errors="replace").strip()
     try:
         d = json.loads(raw)
@@ -78,7 +78,7 @@ def balances(account: str) -> dict:
 def ring_status() -> dict:
     """Initialisé ou pas, sans toucher à l'appareil : `ring keys` lit un cache local."""
     if not binary():
-        return {"available": False, "initialised": False, "message": "wallet-cli introuvable"}
+        return {"available": False, "initialised": False, "message": "wallet-cli not found"}
     d = call("ring", "keys")
     if d.get("ok"):
         keys = d.get("data", {}).get("keys", d.get("data"))

@@ -126,14 +126,14 @@ def measure(url: str, key: dict, zero_for_one: bool, amount_in: int) -> dict:
     return {
         **base, "bps": round(bps, 4), "label": "MEASURED",
         "out_with": str(with_hook), "out_without": str(without_hook),
-        "reading": f"ce hook prend {bps:.2f} bps sur ce swap, a ce bloc",
+        "reading": f"this hook takes {bps:.2f} bps on this swap, at this block",
     }
 
 
 if __name__ == "__main__":
     import argparse
 
-    ap = argparse.ArgumentParser(description="remesure en direct ce qu'un hook prend")
+    ap = argparse.ArgumentParser(description="re-measures live what a hook takes")
     ap.add_argument("--rpc", default="http://127.0.0.1:8545")
     ap.add_argument("--c0", required=True)
     ap.add_argument("--c1", required=True)

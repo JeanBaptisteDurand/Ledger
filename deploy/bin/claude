@@ -6,5 +6,5 @@ if [ -s /home/ubuntu/netout/claude.env ]; then set -a; . /home/ubuntu/netout/cla
 if [ -n "${CLAUDE_CODE_OAUTH_TOKEN:-}${ANTHROPIC_API_KEY:-}" ] || [ -s "${HOME:-/home/ubuntu}/.claude/.credentials.json" ]; then
   exec /usr/local/bin/claude "$@"
 fi
-echo "le CLI claude n'est pas encore connecté sur ce serveur : l'analyste ne peut pas tourner (sur le serveur : claude, puis /login)" >&2
+echo "the claude CLI is not signed in on this server yet: the analyst cannot run (on the server: claude, then /login)" >&2
 exit 1

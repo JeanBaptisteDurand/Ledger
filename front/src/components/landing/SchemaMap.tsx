@@ -18,7 +18,7 @@ const NODES: Node[] = [
   { id: 'mcp', x: 860, y: 190, w: 300, h: 104, tone: 'agent', kicker: 'Agent Stack · read only', title: 'MCP · 10 tools', lines: ['bots · operations · decision', 'positions · vault_openness', 'hook_analysis · earn_yields'] },
   { id: 'bots', x: 40, y: 350, w: 300, h: 118, kicker: 'Execution agents · no LLM', title: 'The bots', lines: ['agent.py · DCA, v4 pools', 'vaults.py · yield, ERC-4626', 'session key: the vault only'] },
   { id: 'vault', x: 440, y: 420, w: 320, h: 118, kicker: 'The contract · Base fork', title: 'ExitVault', lines: ['verify mandate · ecrecover', 'buy(): swap + resale, same tx', 'enterVault(): deposit + redeem'] },
-  { id: 'analyst', x: 860, y: 350, w: 300, h: 104, tone: 'agent', kicker: 'Agent Stack · Claude', title: 'The analyst', lines: ['reads through the MCP tools', 'cites each tool it called', 'no signing, no sending'] },
+  { id: 'analyst', x: 860, y: 350, w: 300, h: 104, tone: 'agent', kicker: 'Agent Stack · LLM', title: 'The analyst', lines: ['reads through the MCP tools', 'cites each tool it called', 'no signing, no sending'] },
   { id: 'tare', x: 40, y: 540, w: 300, h: 104, kicker: 'The measure', title: 'TARE · counterfactual', lines: ['hook → 89 inert bytes', 'quoted twice: in, out', 'watch.py · re-probe, exit'] },
   { id: 'pools', x: 440, y: 580, w: 150, h: 104, kicker: 'Universe 1', title: 'Uniswap v4', lines: ['WETH long tail', 'six traps', '0 → 9 990 bps'] },
   { id: 'vaults', x: 610, y: 580, w: 150, h: 104, kicker: 'Universe 2', title: 'ERC-4626', lines: ['ten Morpho vaults', 'Moonwell door', '27 % closed'] },

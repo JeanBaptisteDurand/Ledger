@@ -66,10 +66,10 @@ def load_key() -> str:
     if RINGFILE.exists():
         plain = walletcli.ring_decrypt(RINGFILE)
         if plain:
-            _KEY_SOURCE = "Ledger Key Ring (.mcp-key.ring déchiffré par wallet-cli ring decrypt)"
+            _KEY_SOURCE = "Ledger Key Ring (.mcp-key.ring decrypted by wallet-cli ring decrypt)"
             return plain.decode().strip()
-        print("[pds-mcp] .mcp-key.ring présent mais indéchiffrable ici (ring non initialisé, ou hors ligne) "
-              "— repli sur .mcp-key en clair", file=sys.stderr)
+        print("[pds-mcp] .mcp-key.ring is here but cannot be decrypted here (ring not initialised, or offline) "
+              "— falling back to the plain .mcp-key", file=sys.stderr)
     if not KEYFILE.exists():
         KEYFILE.parent.mkdir(parents=True, exist_ok=True)
         KEYFILE.write_text(secrets.token_urlsafe(24))
@@ -130,8 +130,8 @@ def t_operations(decision: str | None = None, limit: int = 50, bot: str | None =
     rows = rows[-limit:]
     return {
         "count": len(rows),
-        "note": "les ticks repartent a 1 a chaque tour de l'agent (pools, puis coffres) : pour designer une operation "
-                "sans ambiguite, utilise `seq` (rang dans le journal) ou `tick` + `kind`",
+        "note": "ticks start again at 1 on each round of the agent (pools, then vaults): to name an operation "
+                "without ambiguity, use `seq` (its rank in the journal) or `tick` + `kind`",
         "operations": [
             {
                 "seq": r["seq"], "tick": r["tick"], "ts": r["ts"], "mode": r["mode"], "bot": _bot_name(r),
@@ -153,12 +153,12 @@ def _pick_rows(tick: int | None, kind: str | None, seq: int | None, what: str) -
     rows = [dict(r, seq=i + 1) for i, r in enumerate(read_journal())]
     if seq is not None:
         hit = [r for r in rows if r["seq"] == seq]
-        return hit, (None if hit else {"error": f"aucune opération de rang {seq} (journal : {len(rows)} lignes)"})
+        return hit, (None if hit else {"error": f"no operation of rank {seq} (journal: {len(rows)} rows)"})
     if tick is None:
-        return [], {"error": f"{what} : donne `tick` (avec `kind` si pools et coffres ont tourné) ou `seq`"}
+        return [], {"error": f"{what}: give `tick` (with `kind` if both pools and vaults have run) or `seq`"}
     hit = [r for r in rows if r["tick"] == tick and (kind is None or r.get("kind", "pool") == kind)]
     if not hit:
-        return [], {"error": f"aucune opération au tour {tick}" + (f" ({kind})" if kind else "")}
+        return [], {"error": f"no operation at round {tick}" + (f" ({kind})" if kind else "")}
     return hit, None
 
 
@@ -170,9 +170,9 @@ def t_decision(tick: int | None = None, kind: str | None = None, seq: int | None
     out = dict(hit[-1])
     out.setdefault("kind", "pool")
     if len(hit) > 1:  # meme tick dans deux tours (pools puis coffres) : on rend le dernier, et on le dit
-        out["note"] = ("plusieurs opérations portent ce tick : " + ", ".join(f"seq {r['seq']} = {r.get('kind', 'pool')} "
-                       f"{(r['pick'].get('name') or r['pick']['pool_id'][:12])}" for r in hit) + " — celle-ci est la dernière ; "
-                       "précise `kind` ou `seq`")
+        out["note"] = ("several operations carry this tick: " + ", ".join(f"seq {r['seq']} = {r.get('kind', 'pool')} "
+                       f"{(r['pick'].get('name') or r['pick']['pool_id'][:12])}" for r in hit) + "; this one is the last; "
+                       "give `kind` or `seq`")
     return out
 
 
@@ -187,7 +187,7 @@ def t_bots(status: str | None = None) -> dict:
     """Les bots du compte — ceux qui tournent et ceux qui sont arrêtés — avec leur bilan relu dans le journal."""
     bots = read_bots()
     if not bots:
-        return {"count": 0, "bots": [], "note": "aucun bot : le porteur n'en a pas encore lancé (ou le compte a été remis à zéro)"}
+        return {"count": 0, "bots": [], "note": "no bot: the holder has not launched one yet (or the account was reset)"}
     rows = read_journal()
     out = []
     for b in bots:
@@ -207,15 +207,15 @@ def t_bots(status: str | None = None) -> dict:
                            "exit_loss_bps_at_entry": r["exit_probe"]["loss_bps"], "under_exception": bool(r.get("under_exception"))} for r in ex],
         })
     return {"count": len(out), "bots": out,
-            "note": "tous les bots d'un compte travaillent dans le même coffre, sous le même mandat signé une fois : "
-                    "le budget et la perte de sortie tolérée sont communs ; `operations(bot=<nom>)` donne le détail d'un bot"}
+            "note": "all the bots of an account work in the same vault, under the same mandate signed once: "
+                    "the budget and the tolerated exit loss are shared; `operations(bot=<name>)` gives one bot's detail"}
 
 
 def t_positions() -> dict:
     """Ce que le coffre détient, et ce qui reste du budget signé."""
     m = read_mandate()
     if not m:
-        return {"error": "aucun mandat : lance d'abord le banc"}
+        return {"error": "no mandate: start the bench first"}
     vault = m["vault"]
     held = []
     for r in read_journal():
@@ -253,11 +253,11 @@ def t_mandate() -> dict:
     """Le mandat signé sur le Ledger, et ce qu'il autorise."""
     m = read_mandate()
     if not m:
-        return {"error": "aucun mandat"}
+        return {"error": "no mandate"}
     return {
         "owner_device": m["owner"], "vault": m["vault"], "chainId": m["chainId"],
         "signature": m["signature"], "fields": m["mandate"],
-        "signed_on": "Ledger Flex, EIP-712, affiché champ par champ",
+        "signed_on": "Ledger Flex, EIP-712, shown field by field",
         "enforced_by": "ExitVault.buy — ecrecover(digest) == owner, budget, expiration",
     }
 
@@ -266,11 +266,11 @@ def t_universe_facts() -> dict:
     """Pourquoi un piège est indiscernable AVANT l'achat — les chiffres de l'univers."""
     rows = read_journal()
     if not rows:
-        return {"error": "aucune opération"}
+        return {"error": "no operation"}
     # le dernier tour d'un agent (une entree sous derogation n'a pas de faits d'univers : elle vient du porteur)
     last = next((r for r in reversed(rows) if (r.get("strategy") or {}).get("universe_facts")), None)
     if last is None:
-        return {"error": "aucun tour d'agent au journal (seulement des entrées sous dérogation)"}
+        return {"error": "no agent round in the journal (only entries under exception)"}
     facts = last["strategy"]["universe_facts"]
     refused = [r for r in rows if r["decision"] != "EXECUTED"]
     return {
@@ -285,9 +285,9 @@ def t_universe_facts() -> dict:
             "refused_exit_bps": sorted({r["exit_probe"]["loss_bps"] for r in refused if r["exit_probe"]["loss_bps"]}),
         },
         "reading": (
-            "Le coût d'entrée ne sépare rien : les pièges coûtent à l'achat ce que coûtent des pools sains. "
-            "Le registre de hooks d'Uniswap ne les connaît pas. Seule la sortie les distingue, et elle "
-            "n'est visible qu'en la simulant."
+            "The entry cost separates nothing: the traps cost what healthy pools cost to buy. "
+            "Uniswap's hook registry does not know them. Only the exit tells them apart, and it "
+            "can only be seen by simulating it."
         ),
     }
 
@@ -309,7 +309,7 @@ def t_compare_entry_exit() -> dict:
     return {
         "table": table,
         "entry_spread": {"min": min(ent), "max": max(ent), "median": statistics.median(ent)} if ent else None,
-        "note": "trie sur `entry_bps` : rien ne sépare accepté et refusé. Trie sur `exit_bps` : tout se sépare.",
+        "note": "sort on `entry_bps`: nothing separates accepted from refused. Sort on `exit_bps`: everything separates.",
     }
 
 
@@ -321,8 +321,8 @@ def t_hook_analysis(tick: int | None = None, seq: int | None = None) -> dict:
     elif tick is not None:
         rows = [r for r in rows if r["tick"] == tick]
     if not rows:
-        return {"error": "aucune analyse de hook au journal" + (f" pour ce tour ({tick})" if tick is not None else "")
-                + " — les coffres ERC-4626 n'ont pas de hook : ce sont des swaps v4 qui en ont"}
+        return {"error": "no hook analysis in the journal" + (f" for this round ({tick})" if tick is not None else "")
+                + "; ERC-4626 vaults have no hook: v4 swaps do"}
     out = []
     for r in rows:
         h = r["hook_analysis"]
@@ -342,9 +342,9 @@ def t_hook_analysis(tick: int | None = None, seq: int | None = None) -> dict:
         "permissions_note": rows[0]["hook_analysis"]["permissions_note"],
         "rows": out,
         "reading": (
-            "Deux familles de pieges apparaissent : le hook qui prend tout a la sortie (0 bps a "
-            "l'entree, ~9990 a la sortie), et le jeton qui refuse d'etre transfere (le hook prend 0 "
-            "dans les deux sens, mais on ne peut pas le detenir). Le coffre attrape les deux."
+            "Two families of traps show up: the hook that takes everything on the way out (0 bps on "
+            "entry, ~9990 on exit), and the token that refuses to be transferred (the hook takes 0 "
+            "both ways, but it cannot be held). The vault catches both."
         ),
     }
 
@@ -370,18 +370,18 @@ def t_ledger_earn_yields(network: str = "ethereum", limit: int = 15) -> dict:
             "interest": f"{y.get('interestType')} {y.get('interestValue')}",
             "category": y.get("category"), "deeplink": y.get("deeplink"),
             "fields_returned": sorted(keys),
-            "exit_information": sorted(keys & exit_fields) or "aucune",
+            "exit_information": sorted(keys & exit_fields) or "none",
         })
     return {
-        "source": f"wallet-cli {walletcli.version() or '?'} — `earn yields --network {network}` (Agent Stack, sans appareil)",
+        "source": f"wallet-cli {walletcli.version() or '?'}: `earn yields --network {network}` (Agent Stack, no device)",
         "network": data.get("network"),
         "count": len(rows),
-        "rows_with_exit_information": sum(1 for r in rows if r["exit_information"] != "aucune"),
+        "rows_with_exit_information": sum(1 for r in rows if r["exit_information"] != "none"),
         "rows": rows,
         "reading": (
-            "La brique Earn de l'Agent Stack décrit l'ENTRÉE d'une position (fournisseur, jeton, rendement) et mène "
-            "au dépôt (`earn deposit --product <id>`, signé sur l'appareil). Rien n'y décrit la sortie. C'est la "
-            "question que Porte de sortie pose avant chaque entrée — sur les swaps aujourd'hui, sur ces coffres ensuite."
+            "The Agent Stack's Earn brick describes the ENTRY of a position (provider, token, yield) and leads "
+            "to the deposit (`earn deposit --product <id>`, signed on the device). Nothing in it describes the exit. That is the "
+            "question Net·Out asks before every entry: on swaps today, on these vaults next."
         ),
     }
 
@@ -397,7 +397,7 @@ def t_vault_openness(vault: str | None = None, amount_wei: int | None = None) ->
     import vaults as va
 
     if not MANDATE.exists():
-        return {"error": "pas de mandate.json : le coffre n'est pas deploye (ouvre une session dans le banc)"}
+        return {"error": "no mandate.json: the vault is not deployed (open a session on the bench)"}
     ev = json.loads(MANDATE.read_text())["vault"]
     universe, stats = va.build_universe(False)
     if vault:
@@ -416,44 +416,44 @@ def t_vault_openness(vault: str | None = None, amount_wei: int | None = None) ->
             "exit_loss_bps_for_mandate": ex.get("loss_bps"),
         })
     return {
-        "measured_by": "ExitVault.vaultExitLossBps / vaultStuckBps sur le fork de Base (bloc epingle)",
+        "measured_by": "ExitVault.vaultExitLossBps / vaultStuckBps on the Base fork (pinned block)",
         "universe_note": stats["note"],
         "count": len(rows),
         "full_vaults": sum(1 for r in rows if r["deposit_refused"]),
         "rows": rows,
         "reading": (
-            "Le rendement affiche ne dit rien de la porte. Au bloc des mesures, le plus gros coffre WETH de Base a plus "
-            "d'un quart de la position de son plus gros deposant bloquee, et cinq coffres sur dix refusent le depot. "
-            "`previewRedeem` ne le montre pas : le standard lui impose d'ignorer les limites de retrait."
+            "The yield shown says nothing of the door. At the block of the measurements, Base's largest WETH vault has more "
+            "than a quarter of its largest depositor's position stuck, and five vaults out of ten refuse the deposit. "
+            "`previewRedeem` does not show it: the standard makes it ignore withdrawal limits."
         ),
     }
 
 
 TOOLS = {
     "vault_openness": (t_vault_openness,
-                       "La porte des coffres ERC-4626 (Morpho WETH, Base), mesuree maintenant : aller-retour reel, "
-                       "part bloquee du plus gros deposant, coffres pleins.",
+                       "The door of the ERC-4626 vaults (Morpho WETH, Base), measured now: a real round trip, "
+                       "the largest depositor's stuck share, the full vaults.",
                        {"vault": {"type": "string"}, "amount_wei": {"type": "integer"}}),
     "ledger_earn_yields": (t_ledger_earn_yields,
-                           "Ce que l'Agent Stack de Ledger (wallet-cli earn yields) dit d'une position à rendement — "
-                           "et ce qu'il n'en dit pas : la sortie.",
+                           "What Ledger's Agent Stack (wallet-cli earn yields) says of a yield position, "
+                           "and what it does not say: the exit.",
                            {"network": {"type": "string"}, "limit": {"type": "integer"}}),
-    "operations": (t_operations, "Les opérations de l'agent, avec l'issue et son motif.",
+    "operations": (t_operations, "The agent's operations, with their outcome and its reason.",
                    {"decision": {"type": "string", "enum": ["EXECUTED", "REFUSED_BY_VAULT"]},
                     "limit": {"type": "integer"}, "bot": {"type": "string"}}),
-    "decision": (t_decision, "Tout ce qui a mené à une décision : univers, liste courte, scores, sonde, issue. "
-                 "Les ticks repartent à 1 à chaque tour (pools, puis coffres) : donne `kind` (pool|vault) ou `seq` (rang, cf. operations).",
+    "decision": (t_decision, "Everything that led to a decision: universe, shortlist, scores, probe, outcome. "
+                 "Ticks start again at 1 on each round (pools, then vaults): give `kind` (pool|vault) or `seq` (rank, see operations).",
                  {"tick": {"type": "integer"}, "kind": {"type": "string", "enum": ["pool", "vault"]}, "seq": {"type": "integer"}}),
-    "positions": (t_positions, "Ce que le coffre détient (et quel bot l'a pris), et ce qui reste du budget signé.", {}),
-    "bots": (t_bots, "Les bots du compte : actifs et arrêtés, univers, rythme, tours, achats/refus, dérogations, dépense, "
-             "motifs de refus, positions prises. Lecture seule : rien ici ne lance ni n'arrête un bot.",
+    "positions": (t_positions, "What the vault holds (and which bot took it), and what is left of the signed budget.", {}),
+    "bots": (t_bots, "The account's bots: running and stopped, universe, pace, rounds, buys and refusals, exceptions, spend, "
+             "refusal reasons, positions taken. Read only: nothing here starts or stops a bot.",
              {"status": {"type": "string", "enum": ["running", "stopped", "done"]}}),
-    "mandate": (t_mandate, "Le mandat signé sur le Ledger et ce qu'il autorise.", {}),
-    "universe_facts": (t_universe_facts, "Pourquoi un piège est indiscernable avant l'achat.", {}),
-    "compare_entry_exit": (t_compare_entry_exit, "Entrée contre sortie, opération par opération.", {}),
+    "mandate": (t_mandate, "The mandate signed on the Ledger, and what it allows.", {}),
+    "universe_facts": (t_universe_facts, "Why a trap cannot be told apart before buying.", {}),
+    "compare_entry_exit": (t_compare_entry_exit, "Entry against exit, operation by operation.", {}),
     "hook_analysis": (t_hook_analysis,
-                      "Ce que chaque hook prend, remesuré en direct par le contrefactuel TARE, dans les deux sens (pools v4 ; "
-                      "`seq` = rang dans le journal, cf. operations).",
+                      "What each hook takes, re-measured live by the TARE counterfactual, both ways (v4 pools; "
+                      "`seq` = rank in the journal, see operations).",
                       {"tick": {"type": "integer"}, "seq": {"type": "integer"}}),
 }
 
@@ -478,10 +478,10 @@ def handle(msg: dict) -> dict | None:
         return {"jsonrpc": "2.0", "id": mid, "result": {"tools": [
             {
                 "name": name,
-                "description": desc + (" (lecture seule)" if env_key else " (lecture seule ; exige `key`)"),
+                "description": desc + (" (read only)" if env_key else " (read only; requires `key`)"),
                 "inputSchema": {
                     "type": "object",
-                    "properties": ({} if env_key else {"key": {"type": "string", "description": "clé du serveur (PDS_MCP_KEY)"}}) | props,
+                    "properties": ({} if env_key else {"key": {"type": "string", "description": "the server's key (PDS_MCP_KEY)"}}) | props,
                     **({} if env_key else {"required": ["key"]}),
                 },
             }
@@ -494,10 +494,10 @@ def handle(msg: dict) -> dict | None:
         passed = args.pop("key", None)
         given = env_key or passed
         if name not in TOOLS:
-            return {"jsonrpc": "2.0", "id": mid, "error": {"code": -32601, "message": f"outil inconnu : {name}"}}
+            return {"jsonrpc": "2.0", "id": mid, "error": {"code": -32601, "message": f"unknown tool: {name}"}}
         if not key_ok(given):
             return {"jsonrpc": "2.0", "id": mid, "result": {
-                "content": [{"type": "text", "text": "clé refusée — passe `key`, ou PDS_MCP_KEY dans l'environnement."}],
+                "content": [{"type": "text", "text": "key refused: pass `key`, or PDS_MCP_KEY in the environment."}],
                 "isError": True,
             }}
         try:
@@ -507,14 +507,14 @@ def handle(msg: dict) -> dict | None:
         return {"jsonrpc": "2.0", "id": mid, "result": {
             "content": [{"type": "text", "text": json.dumps(out, ensure_ascii=False, indent=1)}]
         }}
-    return {"jsonrpc": "2.0", "id": mid, "error": {"code": -32601, "message": f"méthode inconnue : {method}"}}
+    return {"jsonrpc": "2.0", "id": mid, "error": {"code": -32601, "message": f"unknown method: {method}"}}
 
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--print-key", action="store_true", help="la cle maitre, ou celle d'un compte avec --account")
-    ap.add_argument("--account", help="adresse d'un compte : sa cle derivee")
-    ap.add_argument("--key-status", action="store_true", help="d'où vient la clé : Key Ring ou fichier en clair")
+    ap.add_argument("--print-key", action="store_true", help="the master key, or an account's key with --account")
+    ap.add_argument("--account", help="an account's address: its derived key")
+    ap.add_argument("--key-status", action="store_true", help="where the key comes from: the Key Ring or a plain file")
     ap.add_argument("--selftest", action="store_true")
     a = ap.parse_args()
     if a.print_key:

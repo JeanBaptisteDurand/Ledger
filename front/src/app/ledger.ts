@@ -77,6 +77,11 @@ export function explain(message: string): string {
   if (/6901/.test(message)) return 'Another client is talking to the device, close the other tabs, then reopen the Ethereum app.'
   if (/5515|Locked/i.test(message)) return 'The device is locked: unlock it and open the Ethereum app.'
   if (/NoDevice|not found|No device/i.test(message)) return 'No device selected.'
+  // a real Ledger over USB: what the emulator never says
+  if (/6a80/i.test(message)) return 'The device refused the data (6A80). On a real Ledger this is most often the official Ethereum app: our clear-signing descriptors are signed with Ledger’s test key, so the device needs the Ethereum app built with that key (README, Prerequisites).'
+  if (/6d00|6e00|6e01|6511/i.test(message)) return 'The Ethereum app is not open on the device: open it, then try again.'
+  if (/user gesture|SecurityError|NotAllowedError/i.test(message)) return 'The browser needs a click to reach the Ledger: press the button again.'
+  if (/DeviceSessionNotFound|DeviceNotRecognized|disconnected/i.test(message)) return 'The Ledger was disconnected: plug it in, unlock it, open the Ethereum app, then try again.'
   return message
 }
 

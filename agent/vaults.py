@@ -42,10 +42,10 @@ STUCK_SIG = "vaultStuckBps(address,address)(uint256,uint256,uint256)"
 
 # Sélecteurs que le coffre ou le protocole renvoient (cast sig "...")
 SEL = {
-    "0x18208f15": "CannotExit — la porte est plus fermee que le mandat n'autorise",
+    "0x18208f15": "CannotExit: the door is more closed than the mandate allows",
     "0x0b7d8347": "ExitBlocked — l'aller-retour reel a echoue",
-    "0xbd608e71": "BuyFailed — le coffre a refuse le depot",
-    "0xded0652d": "AllCapsReached — le coffre est plein, il n'accepte plus de depot",
+    "0xbd608e71": "BuyFailed: the vault refused the deposit",
+    "0xded0652d": "AllCapsReached: the vault is full and accepts no more deposits",
 }
 
 # Les dix coffres WETH de Base mesurés au bloc 50 614 000, et leur plus gros déposant (Morpho API,
@@ -129,7 +129,7 @@ def build_universe(refresh: bool = False) -> tuple[list[dict], dict]:
             "registry": {"present": listed, "name": name if listed else None},
         })
     stats = {"vaults": len(universe), "listed": sum(1 for u in universe if u["listed"]),
-             "note": "aucun champ de cet univers ne parle de la sortie : ni delai, ni maxWithdraw, ni caps"}
+             "note": "no field of this universe speaks of the exit: no delay, no maxWithdraw, no caps"}
     return universe, stats
 
 
@@ -170,7 +170,7 @@ def probe(vault: str, c: dict, amount_wei: int | None = None) -> dict:
     """Ce que le coffre mesure : l'aller-retour REEL a notre taille, et la porte du plus gros deposant."""
     amt = str(amount_wei or PARAMS["slice_wei"])
     rc, out = cast("call", vault, PROBE_SIG, c["pool_id"], amt, c["ref_holder"])
-    res = {"source": "ExitVault.vaultExitLossBps — deposit+redeem reels puis revert, et maxWithdraw du plus gros deposant"}
+    res = {"source": "ExitVault.vaultExitLossBps: a real deposit and redeem, then reverted, and the largest depositor's maxWithdraw"}
     if rc != 0:
         sel = re.search(r"custom error (0x[0-9a-f]{8})", out)
         inner = re.search(r"0x[0-9a-f]{8}:\s*0*([0-9a-f]{8})", out)
@@ -223,16 +223,16 @@ def _decode_error(out: str) -> str | None:
 def _escalation(pick: dict, ex: dict, max_bps: int) -> dict | None:
     bps = ex.get("loss_bps")
     if ex.get("deposit_refused"):
-        return {"possible": False, "reason": f"le coffre refuse le depot : {ex['deposit_refused']} — rien a deroger"}
+        return {"possible": False, "reason": f"the vault refuses the deposit: {ex['deposit_refused']}, nothing to make an exception for"}
     if ex.get("exit_blocked") or bps is None or bps >= 10_000:
-        return {"possible": False, "reason": "sortie bloquee : l'aller-retour reel a echoue, aucune derogation n'y change rien"}
+        return {"possible": False, "reason": "exit blocked: the real round trip failed, and no exception changes that"}
     return {
         "possible": True, "kind": "vault",
         "pool_id": pick["pool_id"], "vault": pick["pool_id"], "name": pick["name"], "ref_holder": pick["ref_holder"],
         "currency1": pick["pool_id"], "hook": "ERC-4626", "fee": 0, "tickSpacing": 0,
         "seen_exit_bps": int(bps), "mandate_allows_bps": max_bps, "amount_in": str(PARAMS["slice_wei"]),
-        "question": (f"{pick['name']} : {ex.get('stuck_bps', 0)} bps de la plus grosse position ne peuvent pas sortir "
-                     f"aujourd'hui (porte a {100 - ex.get('stuck_bps', 0) / 100:.1f} %), ton mandat tolere {max_bps} bps — tu entres quand meme ?"),
+        "question": (f"{pick['name']}: {ex.get('stuck_bps', 0)} bps of the largest position cannot get out "
+                     f"today (the door is {100 - ex.get('stuck_bps', 0) / 100:.1f} % open), your mandate tolerates {max_bps} bps: do you enter anyway?"),
     }
 
 
@@ -246,18 +246,18 @@ def tick(n: int, vault: str, mandate: dict, universe: list[dict], stats: dict, h
     if inject:
         forced = next((c for c in universe if c["pool_id"].lower().startswith(inject.lower())), None)
         if not forced:
-            raise SystemExit(f"coffre injecte introuvable : {inject}")
+            raise SystemExit(f"injected vault not found: {inject}")
         s, parts = score(forced)
         pick = {**forced, "score": s, "score_parts": parts}
-        why = "CONSIGNE INJECTEE : une page lue par l'agent lui a impose ce coffre. L'agent obeit."
+        why = "INJECTED INSTRUCTION: a page the agent read imposed this vault on it. The agent obeys."
         cands = [pick] + [c for c in cands if c["pool_id"] != pick["pool_id"]][:4]
     else:
         if not cands:
-            raise SystemExit("plus de coffre candidat")
+            raise SystemExit("no candidate vault left")
         pick = cands[0]
-        why = (f"premier d'une liste courte de {len(cands)}, score {pick['score']} : {pick['apy_pct']} % affiche, "
-               f"{pick['total_assets_weth']} WETH deposes, {'liste' if pick['listed'] else 'non liste'} par Morpho. "
-               "Aucun terme du score ne regarde la porte : l'API ne la montre pas.")
+        why = (f"first of a shortlist of {len(cands)}, score {pick['score']}: {pick['apy_pct']} % shown, "
+               f"{pick['total_assets_weth']} WETH deposited, {'listed' if pick['listed'] else 'not listed'} by Morpho. "
+               "No term of the score looks at the door: the API does not show it.")
 
     ex = probe(vault, pick)
     rc, out = cast("send", vault, ENTER_SIG, mandate_tuple(mandate), mandate["signature"],
@@ -270,7 +270,7 @@ def tick(n: int, vault: str, mandate: dict, universe: list[dict], stats: dict, h
         "mode": "injected" if inject else "strategy",
         "strategy": {
             "name": "yield-erc4626-weth-v1",
-            "objective": "rendement affiche + taille + listing — la porte n'est pas dans l'API",
+            "objective": "the yield shown, the size, the listing: the door is not in the API",
             "slice_wei": str(PARAMS["slice_wei"]), "require_listed": PARAMS["require_listed"],
             "universe_size": len(universe), "universe_facts": stats,
         },
@@ -291,7 +291,7 @@ def tick(n: int, vault: str, mandate: dict, universe: list[dict], stats: dict, h
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--ticks", type=int, default=3)
-    ap.add_argument("--inject", help="prefixe de l'adresse d'un coffre impose par une consigne injectee")
+    ap.add_argument("--inject", help="prefix of the address of a vault imposed by an injected instruction")
     ap.add_argument("--mandate", default=str(ROOT / "mandate.json"))
     ap.add_argument("--params", help="JSON : slice_wei, require_listed, min_total_assets_wei")
     ap.add_argument("--refresh", action="store_true", help="relire l'API Morpho au lieu de l'amorce locale")
@@ -323,12 +323,12 @@ def main() -> None:
     for n in range(1, a.ticks + 1):
         e = tick(n, mandate["vault"], mandate, universe, stats, held, a.inject if n == a.ticks and a.inject else None)
         if e is None:
-            print("plus rien de nouveau a tenter : tous les coffres ont deja ete essayes ou sont detenus")
+            print("nothing new left to try: every vault has been tried or is held")
             break
         ex = e["exit_probe"]
-        mark = "OK " if e["decision"] == "EXECUTED" else "NON"
-        print(f"[{mark}] tour {n} ({e['mode']}) — {e['pick']['name']} · {e['pick']['apy_pct']} % affiche"
-              + (f" · porte {ex.get('stuck_bps')} bps fermee · aller-retour {ex.get('own_round_trip_bps')} bps" if ex.get("loss_bps") is not None else "")
+        mark = "OK " if e["decision"] == "EXECUTED" else "NO "
+        print(f"[{mark}] round {n} ({e['mode']}): {e['pick']['name']} · {e['pick']['apy_pct']} % shown"
+              + (f" · door {ex.get('stuck_bps')} bps closed · round trip {ex.get('own_round_trip_bps')} bps" if ex.get("loss_bps") is not None else "")
               + (f" · {ex['deposit_refused']}" if ex.get("deposit_refused") else "")
               + (f" — {e['error']}" if e["error"] else ""))
     print(f"\njournal : {JOURNAL}")

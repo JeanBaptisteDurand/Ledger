@@ -17,6 +17,7 @@ vers `netout.tech`.
 | le fork de Base (anvil) | `127.0.0.1:8545` | lancé par le serveur à l'ouverture de la première session |
 | la Flex émulée (Speculos) | `127.0.0.1:5013`, dans Docker | `ledger/speculos.sh up` ; le banc la relaie sous `/speculos` |
 | le porteur automatique | rien, par défaut | `netout-porteur`, à démarrer pour une vidéo ou une démo sans personne |
+| l'analyste et le stratège | l'API d'OpenAI, `gpt-4o-mini` | `PDS_LLM=openai` dans le service ; la clé dans `/home/ubuntu/netout/openai.env` (600), hors du dépôt |
 
 Caddy envoie `/api/*`, `/speculos/*` et `/dist/*` au banc, le reste au front. **Aucun port n'est ouvert pour Net·Out**
 et le pare-feu du serveur n'a pas été touché : Caddy joint le banc par un fichier, pas par le réseau. L'émulateur
@@ -78,8 +79,9 @@ sudo systemctl enable --now netout-banc netout-banc-proxy.socket
 ```
 
 `deploy/banc.sh` lance le serveur avec le bon `PATH` : foundry, node, et en tête `deploy/bin/claude`, qui passe la main
-au vrai CLI `claude` dès qu'il est connecté sur le serveur (`claude`, puis `/login`), sans redémarrer le banc, et le dit
-en une phrase tant qu'il ne l'est pas. Il s'installe dans `/home/ubuntu/netout/bin/`.
+au vrai CLI `claude` s'il est connecté sur le serveur, et le dit en une phrase sinon. En ligne, `PDS_LLM=openai` fait
+passer l'analyste et le stratège par l'API d'OpenAI : la clé se pose dans `/home/ubuntu/netout/openai.env`
+(`OPENAI_API_KEY=…`, droits 600), que le service lit.
 
 ## Cinq pièges déjà payés
 
@@ -119,6 +121,8 @@ La prochaine ouverture de session relance le fork au bloc 50 614 000.
 - **Une Flex par visiteur.** Il n'y en a qu'une, émulée : tous ceux qui la choisissent partagent le même porteur, donc
   le même compte, et elle signe une chose à la fois. Une vraie Ledger ouvre son propre compte.
 - **La vraie Ledger en ligne** n'a pas été rejouée sur ce domaine. Elle demande Chrome, Edge ou Brave (WebHID) et l'app
-  Ethereum compilée avec la clé de test.
-- **L'analyste** demande le CLI `claude` connecté sur le serveur, au compte de quelqu'un : chaque question d'un visiteur
-  est payée par ce compte. Tant qu'il ne l'est pas, l'analyste le dit, et le stratège passe en repli déterministe.
+  Ethereum compilée avec la clé de test. Le dépôt qu'elle signe est une vraie transaction Base, que le banc ne publie
+  que sur le fork : elle resterait valable sur le réseau principal au même nonce. Tester avec une adresse sans ETH sur Base.
+- **L'analyste et le stratège coûtent** : ils tournent sur la clé OpenAI posée sur le serveur, et chaque question d'un
+  visiteur est payée par elle. Rien ne les plafonne encore. Sans clé, le stratège passe en repli déterministe et
+  l'analyste dit qu'il ne peut pas tourner.

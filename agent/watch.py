@@ -111,7 +111,7 @@ def probe_vault(vault: str, pos: dict) -> dict:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--mandate", default=str(ROOT / "mandate.json"))
-    ap.add_argument("--sell-if", type=int, help="sortir si la sortie depasse ce seuil, en bps")
+    ap.add_argument("--sell-if", type=int, help="exit when the exit cost passes this threshold, in bps")
     ap.add_argument("--json", action="store_true")
     a = ap.parse_args()
 
@@ -134,16 +134,16 @@ def main() -> None:
                 rc, out = cast("send", vault, SELL_SIG, mt, mandate["signature"],
                                tup([WETH, pos["currency1"], pos["fee"], pos["tickSpacing"], pos["hook"]]), str(pos["held"]), "0", key=AGENT_KEY)
             ok = rc == 0 and re.search(r"status\s+1", out)
-            row["action"] = "SORTI" if ok else "sortie refusee"
+            row["action"] = "SORTI" if ok else "exit refused"
         rows.append(row)
 
         if not a.json:
-            d = "" if delta is None else (f"  ({delta:+d} bps depuis l'entree)" if delta else "  (inchangee)")
-            state = "BLOQUEE" if now["blocked"] else f"{now['exit_bps_now']} bps"
+            d = "" if delta is None else (f"  ({delta:+d} bps since the entry)" if delta else "  (unchanged)")
+            state = "BLOCKED" if now["blocked"] else f"{now['exit_bps_now']} bps"
             label = (pos["name"] or pos["pool_id"][:12]) if pos["kind"] == "vault" else pos["pool_id"][:12]
-            extra = (f"  [notre porte {now['our_stuck_bps']} bps · plus gros deposant {now['door_stuck_bps']} bps]"
+            extra = (f"  [our door {now['our_stuck_bps']} bps · largest depositor {now['door_stuck_bps']} bps]"
                      if pos["kind"] == "vault" else "")
-            print(f"  {label:<24} sortie a l'entree {before} bps  ->  maintenant {state}{d}{extra}"
+            print(f"  {label:<24} exit at entry {before} bps  ->  now {state}{d}{extra}"
                   + (f"   [{row['action']}]" if row["action"] != "aucune" else ""))
 
     WATCHLOG.parent.mkdir(parents=True, exist_ok=True)
@@ -154,12 +154,12 @@ def main() -> None:
     if a.json:
         print(json.dumps(rows, ensure_ascii=False, indent=1))
     elif not rows:
-        print("  aucune position detenue")
+        print("  no position held")
     else:
         worse = [r for r in rows if (r["delta_bps"] or 0) > 0 or r["blocked"]]
-        print(f"\n  {len(rows)} position(s) · {len(worse)} dont la sortie s'est degradee")
-        print("  la sonde est gratuite : on peut la relancer aussi souvent qu'on veut.")
-        print("  ce n'est PAS une garantie — entre deux passages, la porte peut se fermer.")
+        print(f"\n  {len(rows)} position(s) · {len(worse)} whose exit got worse")
+        print("  the probe is free: it can be run as often as you like.")
+        print("  this is NOT a guarantee: between two runs, the door can close.")
 
 
 if __name__ == "__main__":
