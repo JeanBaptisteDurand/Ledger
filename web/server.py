@@ -907,7 +907,7 @@ def a_run():
     if not S["signed"]:
         return False, "a signed mandate comes first"
     p = S["proposal"] or {}
-    label = "coffres" if S["universe"] == "vaults" else "pools"
+    label = "vaults" if S["universe"] == "vaults" else "pools"
     n = 1 + sum(1 for b in S["bots"] if b["name"].startswith("single round"))
     return a_bot_add({"name": f"single round {n} · {label}", "universe": S["universe"], "ticks": p.get("ticks") or 3, "interval_s": 0})
 
@@ -1073,7 +1073,7 @@ def a_watch():
                 pass
             S["watch"] = {"ts": int(time.time()), "rows": rows, "sell_if": sell_if}
             worse = [r for r in rows if (r.get("delta_bps") or 0) > 0 or r.get("blocked")]
-            sold = [r for r in rows if r.get("action") == "VENDU"]
+            sold = [r for r in rows if r.get("action") == "SORTI"]
             if not rows:
                 say("watch: no position held")
             else:
