@@ -155,7 +155,7 @@ await page.getByRole('group', { name: 'Filter the journal' }).getByRole('button'
 
 // ───────────── 6 · the requests: a one-shot round (ten slices) raises them; leave one refused, sign the next
 await chip('Or run one round now').click()
-s = await until((x) => x.bots.some((b) => /tour unique/.test(b.name) && b.status === 'done'), 'un tour unique terminé', 420000, 2000)
+s = await until((x) => x.bots.some((b) => /single round/.test(b.name) && b.status === 'done'), 'un tour unique terminé', 420000, 2000)
 s = await until((x) => x.escalation && x.escalation.possible, 'une demande hors bornes est là', 120000)
 const q0 = s.escalation_queue.length; const p0 = s.escalation.pool_id
 await btn('Leave refused').click()
@@ -215,13 +215,13 @@ const freshMandate = async () => {
   await until((x) => !!x.vault, 'session rouverte', 180000)
   await api('/chat', { prompt: '0.5 WETH cautiously' }); await until((x) => !!x.proposal && !x.signed, 'bornes prêtes', 120000)
 }
-for (const [label, signer, line] of [['APDU client · bench', 'python', /client officiel en APDU/], ['Signer Kit · bench', 'dmk', /Signer Kit \+ DMK/]]) {
+for (const [label, signer, line] of [['APDU client · bench', 'python', /official client, in direct APDUs/], ['Signer Kit · bench', 'dmk', /Signer Kit \+ DMK/]]) {
   await freshMandate()
   await page.goto(URL + '/connexion', { waitUntil: 'domcontentloaded' }); await sleep(1500); await reveal()
   if (!/\/connexion$/.test(page.url())) fail('connecté, /connexion renvoie ailleurs : ' + page.url())
   await btn(label).click(); s = await until((x) => x.signer === signer, 'chemin = ' + label)
   await liveMap(); await btn('Sign on Ledger', true).click()
-  s = await until((x) => x.signed && x.log.some((l) => /mandat signé sur l'appareil/.test(l) && line.test(l)), `mandat signé par « ${label} », sur la Flex du banc`, 180000)
+  s = await until((x) => x.signed && x.log.some((l) => /mandate signed on the device/.test(l) && line.test(l)), `mandat signé par « ${label} », sur la Flex du banc`, 180000)
 }
 await page.goto(URL + '/connexion', { waitUntil: 'domcontentloaded' }); await sleep(1500); await reveal()
 await btn('My Ledger · this browser').click(); s = await until((x) => x.signer === 'browser', 'chemin = my Ledger · this browser')

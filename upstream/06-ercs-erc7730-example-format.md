@@ -8,7 +8,8 @@ The example at `ERCS/erc-7730.md` lines 862–864 uses `"format": "number"` twic
 { "path": "salt",         "label": "Salt",   "format": "bytes32" }
 ```
 
-Neither `number` nor `bytes32` is a format defined by the specification, and the reference linter rejects them
+Neither `number` nor `bytes32` is a format defined by the specification: the ERC's own schema
+(`assets/erc-7730/erc7730-v2.schema.json`) does not list them, and Ledger's python-erc7730 linter rejects them
 (`Value "number" is not valid: Input should be 'raw', 'addressName', … or 'chainId'`). Anyone who copies the
 example gets an invalid descriptor.
 

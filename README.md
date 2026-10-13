@@ -158,9 +158,9 @@ addresses proven by the device; the MCP key is derived, never stored.
 
 **Five upstream findings** (`FEEDBACK.md`): clear signing closed without a partner token, silently; a one-line
 chainId bug in the official Python client (every chain ≥ 256); the Signer Kit detects blind signing, reports it to
-Ledger and not to the developer; `signMessage` drops any message containing one non-ASCII character and strands the
-app; two clients on one app and the Secure SDK answers `0x6901` to everything, with Speculos delivering each reply to
-every waiting request.
+Ledger and not to the developer; `signMessage` drops any message containing one non-ASCII character; two clients on
+one emulated app, and Speculos delivers each reply to every waiting request, so a pending command looks refused (the
+Secure SDK itself does the right thing, checked against today's code).
 
 **What it does not catch.** A switch flipped after the purchase is watched, not prevented; the price of the token;
 anything on a live network (the demo runs on a fork — `MAINNET.md` says what changes).
@@ -548,9 +548,9 @@ du banc : même compte, même coffre, cinq positions. Sur le banc, bouton **« m
 Trois limites, dites : WebHID/Web Bluetooth = Chrome, Edge, Brave (pas Firefox ni Safari) ; le Key Ring
 n'apparaît pas dans ce parcours — le client n'a aucun secret à garder, c'est la brique qu'on retirerait ; et
 **un seul client à la fois sur l'appareil** : une signature en attente n'est prise que par l'onglet qui l'a
-demandée, parce qu'un second client pendant qu'un humain lit l'écran tue la signature et laisse l'app
-répondre `0x6901` à tout (`FEEDBACK.md` § 8 — trouvé en laissant un onglet du banc ouvert dans un autre
-navigateur).
+demandée, parce qu'un second client pendant qu'un humain lit l'écran se fait refuser ses commandes (`0x6901`)
+et, sur Speculos, croise les réponses avec la signature en cours (`FEEDBACK.md` § 8 — trouvé en laissant un onglet
+du banc ouvert dans un autre navigateur).
 
 ![le parcours SaaS : connecté avec sa Ledger, mandat signé dans la page](captures/front-saas.png)
 
@@ -790,22 +790,22 @@ tant que l'adresse y garde le même nonce et assez d'ETH. **Tester avec une adre
 
 ## Cinq trouvailles amont, en construisant ceci
 
-- **Deux clients sur une app : un sondage de trop pendant qu'un humain lit, et l'app répond `0x6901` à tout.**
+- **Deux clients sur une app émulée : Speculos croise leurs réponses, et une commande en attente paraît refusée.**
   Un onglet du banc oublié dans un autre navigateur, connecté au même compte, a lancé la même signature que
   la page testée : deux sessions DMK, un `B0010000` arrivé pendant que l'écran « Transaction Check ? » attendait
-  le porteur. Le SDK refuse le nouveau venu (`SWO_COMMAND_NOT_ACCEPTED`, verrou TOCTOU d'`os_io_legacy.c`) —
-  mais la commande en attente est refusée aussi, et **plus rien n'est accepté, même `GET_APP_AND_VERSION`,
-  jusqu'au redémarrage** (émulateur, trois fois). Speculos aggrave : un `APDUBridge` par requête HTTP, aucun
-  verrou commun, chaque réponse livrée à toutes les requêtes en attente. Parade ici : signature en attente liée
+  le porteur. Le SDK refuse le nouveau venu (`0x6901`, `os_io_legacy.c`) et laisse la commande en attente
+  tranquille : vérifié le 13 octobre contre le code du jour. C'est Speculos qui livre aussi ce refus à la requête
+  qui attendait (un `APDUBridge` par requête HTTP, aucun verrou commun : 16 essais croisés sur 20), et l'invite,
+  que personne n'a validée, laisse l'app attendre. Parade ici : signature en attente liée
   à l'onglet qui l'a demandée, sessions de signature sans le rafraîchisseur du DMK (`b001000000` chaque seconde,
   délai 800 ms) — et le parcours repasse avec un porteur qui met 20 s par écran (`FEEDBACK.md` § 8).
 
-- **`signMessage` du Signer Kit jette tout message qui contient un seul caractère non ASCII — et laisse l'app coincée.**
+- **`signMessage` du Signer Kit jette tout message qui contient un seul caractère non ASCII.**
   Le kit dimensionne son tampon et écrit le champ longueur avec `message.length` (des caractères UTF-16), puis
   encode le message en UTF-8 (des octets) : dès qu'un « é » ou un tiret long apporte un octet de plus, l'ajout
   déborde, l'erreur est enregistrée et jamais lue, et le kit envoie un premier bloc sans un octet de message.
-  L'app répond `9000` et attend, le kit échoue (`InvalidStatusWordError`), et l'app reste en `SIGNING_MESSAGE`
-  (`0x6980` pour tout message suivant) jusqu'à redémarrage. On avait d'abord cru à une limite de longueur
+  L'app répond `9000` et attend, le kit échoue (`InvalidStatusWordError`) ; le message suivant est refusé
+  (`0x6980`), ce refus remet l'app à zéro, et le suivant signe. On avait d'abord cru à une limite de longueur
   (~229 octets) ; rejoué le 10 octobre : 600 octets d'ASCII signent, dix « é » échouent. Notre message est en
   ASCII pur, sans `statement` (`FEEDBACK.md` § 7).
 - **Le Signer Kit détecte le blind signing, le rapporte à Ledger, et ne le dit pas au développeur.**
@@ -818,10 +818,11 @@ tant que l'adresse y garde le même nonce et assez d'ETH. **Tester avec une adre
   `eip712/InputData.py` : `sig_ctx["chainid"].append(chainid & (0xff << (i * 8)))` — l'octet n'est pas
   redécalé, donc `bytearray.append` reçoit 0x2100 pour Base (8453) et lève `ValueError`. Leurs tests
   tournent en chainId 1. Correctif : `bytearray(chainid.to_bytes(8, "big"))`. Contourné dans
-  [`ledger/sign_mandate.py`](ledger/sign_mandate.py) (`patch_chainid_bug`), PR à ouvrir.
-- **`ledger-app-builder:latest` n'est pas synchrone avec `master`.** L'app inclut `nbgl_icons.h`
-  (13 août 2026) ; une image téléchargée avant la mi-septembre porte un SDK Flex de juin et la
-  compilation échoue. `docker pull` avant chaque build, et `-j4` plutôt que `-j` sans limite.
+  [`ledger/sign_mandate.py`](ledger/sign_mandate.py) (`patch_chainid_bug`). Le même correctif a été proposé la
+  veille de notre dépôt par un autre développeur : [#1114](https://github.com/LedgerHQ/app-ethereum/pull/1114).
+- **Une image `ledger-app-builder` locale périmée casse la compilation dans l'app, pas dans l'outil.** L'app
+  inclut `nbgl_icons.h` (13 août 2026) ; notre image, téléchargée avant la mi-septembre, portait un SDK Flex de
+  juin. `docker pull` avant chaque build (le README d'app-builder le dit), et `-j4` plutôt que `-j` sans limite.
 
 ---
 

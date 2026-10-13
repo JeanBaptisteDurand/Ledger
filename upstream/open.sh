@@ -2,13 +2,12 @@
 # Opens the pull requests and issues of this folder under the GitHub account that runs it. Nothing runs without
 # an explicit item: `upstream/open.sh 1` opens item 1, `upstream/open.sh all` opens them all. Needs `gh` logged in.
 #
-#   1  LedgerHQ/app-ethereum        PR   client: chain id >= 256         (patch)
 #   2  LedgerHQ/device-sdk-ts       issue signMessage, non-ASCII
 #   3  LedgerHQ/device-sdk-ts       issue isBlindSign in the output
-#   4  LedgerHQ/ledger-secure-sdk   issue 0x6901 latch
 #   5  LedgerHQ/speculos            issue APDUBridge per request
 #   6  ethereum/ERCs                PR   ERC-7730 example formats         (patch)
-#   7  LedgerHQ/ledger-app-builder  issue latest vs master
+#   1  already proposed upstream (LedgerHQ/app-ethereum#1114): a comment there, not a new PR
+#   (4 and 7 were withdrawn on 13 October: see README.md)
 set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORK="${WORK:-/tmp/pds-upstream}"
@@ -44,17 +43,16 @@ pr() {  # repo, file, patch, branch
 }
 
 items=("$@")
-[[ "${items[*]:-}" == "all" ]] && items=(1 2 3 4 5 6 7)
-[[ ${#items[@]} -eq 0 ]] && { echo "usage: $0 <1..7|all>"; exit 2; }
+[[ "${items[*]:-}" == "all" ]] && items=(2 3 5 6)
+[[ ${#items[@]} -eq 0 ]] && { echo "usage: $0 <2|3|5|6|all>"; exit 2; }
 for item in "${items[@]}"; do
   case "$item" in
-    1) pr LedgerHQ/app-ethereum 01-app-ethereum-client-chainid.md 01-app-ethereum-client-chainid.patch fix/client-eip712-chainid ;;
+    1) echo "item 1 is already proposed upstream: https://github.com/LedgerHQ/app-ethereum/pull/1114 (add a comment there)" ;;
     2) issue LedgerHQ/device-sdk-ts 02-device-sdk-ts-signmessage-non-ascii.md ;;
     3) issue LedgerHQ/device-sdk-ts 03-device-sdk-ts-isblindsign-in-output.md ;;
-    4) issue LedgerHQ/ledger-secure-sdk 04-ledger-secure-sdk-6901-latch.md ;;
+    4|7) echo "item $item was withdrawn on 13 October: see README.md" ;;
     5) issue LedgerHQ/speculos 05-speculos-apdubridge-per-request.md ;;
     6) pr ethereum/ERCs 06-ercs-erc7730-example-format.md 06-ercs-erc7730-example-format.patch fix/erc-7730-example-formats ;;
-    7) issue LedgerHQ/ledger-app-builder 07-ledger-app-builder-latest-vs-master.md ;;
-    *) echo "item inconnu : $item" >&2; exit 2 ;;
+    *) echo "unknown item: $item" >&2; exit 2 ;;
   esac
 done

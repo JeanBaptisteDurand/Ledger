@@ -6,12 +6,20 @@ builds its own `APDUBridge`. Its `endpoint_lock` therefore serialises nothing, a
 
 **What happens.** Two concurrent `/apdu` POSTs are both written to the app, and each response is handed to every
 waiting request. We watched a `B0010000` (transport connect) receive the answer of an `e002…` (`GET_PUBLIC_KEY`):
-the connecting client parsed an address as a version. Combined with the Secure SDK's TOCTOU latch (a separate
-issue, `0x6901` on the pending command), the app then refuses everything until restart.
+the connecting client parsed an address as a version. It also makes a pending command look refused: while a
+review is on screen, the `0x6901` the SDK sends a second client is also delivered to the request waiting for the
+review, though the device keeps waiting for the user.
 
-**How to reproduce.** Speculos `latest`, app-ethereum 1.22.4 (Flex), the HTTP API; two DMK clients (or two
-`curl` loops) posting to `/apdu` at the same time — a `GET_PUBLIC_KEY` from one, `GET_APP_AND_VERSION` from the
-other.
+**How to reproduce.** Speculos 0.26.8 (same code on master abc6b7d), app-ethereum 1.22.4 for Flex,
+`--api-port 5000`. Run 20 times:
+
+```
+curl -s -X POST -d '{"data":"e002000015058000002c8000003c800000000000000000000000"}' localhost:5000/apdu &
+curl -s -X POST -d '{"data":"b001000000"}' localhost:5000/apdu &
+wait
+```
+
+In 16 runs out of 20, one request got the other's answer.
 
 **Suggestion.** One bridge per process (or per seph), with the lock held from the write to the matching reply,
 and the callback list cleared when a request completes — so that at most one `/apdu` is in flight and each

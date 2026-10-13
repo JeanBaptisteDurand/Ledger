@@ -3,13 +3,15 @@
 *Written for Ledger Dev Rel, as the N3XT brief asks: "where the documentation lost you, which workflow
 was confusing, what context was missing, and one concrete suggestion. Be blunt."*
 
-Everything below was hit while building [Netout](README.md) (working title: Porte de sortie). Each item says what we expected,
+Everything below was hit while building [Net·Out](README.md) (working title: Porte de sortie). Each item says what we expected,
 what happened, and the one change that would fix it. Nothing here is second-hand: every claim has a
 file, a line, or a command.
 
 ---
 
-*The pull requests and issues these notes call for are written and ready to open in [`upstream/`](upstream/) — one file each, two patches, a script.*
+*The issues and the pull request these notes call for are written and ready to open in [`upstream/`](upstream/): four items,
+one patch, a script, all checked against the upstream code of 13 October. The fix of § 2 was proposed upstream the day
+before ([#1114](https://github.com/LedgerHQ/app-ethereum/pull/1114)).*
 
 ## 1. Clear signing is closed to anyone without a partner token, and it fails silently
 
@@ -82,8 +84,8 @@ chainId  8453 (Base)     → ValueError: byte must be in range(0, 256)
 chainId 42161 (Arbitrum) → ValueError
 ```
 
-Broken: Base, Arbitrum, Avalanche, zkSync, Linea, Scroll. Your three EIP-712 fixtures use chainId 1, 5
-and 137 — all below 256 — which is why nobody has seen it.
+Broken: Base, Arbitrum, Avalanche, zkSync, Linea, Scroll. Your filtered EIP-712 fixtures use chainId 1 or none
+(5 and 137 appear only in unfiltered inputs), all below 256, which is why nobody had seen it.
 
 **The fix, one line**, byte-identical for every value that works today (verified for 0, 1, 5, 137):
 
@@ -91,12 +93,13 @@ and 137 — all below 256 — which is why nobody has seen it.
 sig_ctx["chainid"] = bytearray(int(chainid).to_bytes(8, "big"))
 ```
 
-**One concrete suggestion.** Take the fix and add one fixture at chainId 8453. We are happy to open the
-PR. Until then we monkey-patch it (`ledger/sign_mandate.py`, `patch_chainid_bug`).
+**One concrete suggestion.** Merge [#1114](https://github.com/LedgerHQ/app-ethereum/pull/1114), opened on 12 October
+with the same one-line fix (we reproduce the bug at chain 8453), and add one fixture at chainId 8453. Until then we
+monkey-patch it (`ledger/sign_mandate.py`, `patch_chainid_bug`).
 
 ---
 
-## 3. `ledger-app-builder:latest` is not in sync with `app-ethereum` master
+## 3. A stale local `ledger-app-builder` image fails inside the app, not in the toolchain
 
 **What happened.** `make BOLOS_SDK=$FLEX_SDK` on app-ethereum 1.22.4 failed:
 
@@ -111,10 +114,9 @@ carried a Flex SDK from **3 June**. After `docker pull`, the SDK is from 18 Sept
 **Why it hurts.** The error points at the app, not at the toolchain. We spent an hour looking for a
 missing generated header in a repository that was fine.
 
-**One concrete suggestion.** Two lines in the app-builder README: *"pull the image before every build;
-`latest` tracks the SDK, not your checkout."* Better still, have the Makefile print the SDK's API level
-and commit date at the start of a build — a one-line `git -C $BOLOS_SDK log -1` in the banner would have
-saved the hour.
+**One concrete suggestion.** The app-builder README already says to `docker pull`; the error does not. Have the
+Makefile print the SDK's API level and commit date at the start of a build: a one-line `git -C $BOLOS_SDK log -1`
+in the banner would have saved the hour.
 
 ---
 
@@ -174,8 +176,9 @@ hook at all.
 
 ## 6. `"format": "number"` in the ERC-7730 spec's own example is not a valid format
 
-The example at `ERCS/erc-7730.md` lines 855-857 uses `"format": "number"` twice and `"format":
-"bytes32"` once. Neither is defined by the spec, and the reference linter rejects them:
+The example at `ERCS/erc-7730.md` lines 862-864 uses `"format": "number"` twice and `"format":
+"bytes32"` once. Neither is defined by the spec: the ERC's own schema does not list them, and Ledger's
+python-erc7730 linter rejects them:
 
 ```
 Value "number" is not valid: Input should be 'raw', 'addressName', … or 'chainId'
@@ -186,7 +189,7 @@ open that PR too.
 
 ---
 
-## 7. `signMessage` drops the whole message as soon as it contains one non-ASCII character — and strands the app
+## 7. `signMessage` drops the whole message as soon as it contains one non-ASCII character
 
 **What happened.** We wired Sign-In with Ethereum (EIP-4361) through the Signer Kit
 (`device-signer-kit-ethereum` 1.18.1, `signMessage`). Our first SIWE message, with a French `statement`
@@ -200,7 +203,7 @@ chunked correctly — and with `"é"` repeated ten times (10 characters, 20 byte
 <= 9000                                                                       (the app waits for the rest)
    SendSignPersonalMessageTask → InvalidStatusWordError                       (no second chunk is ever sent)
 => e00800001e … 00000005 68656c6c6f                                           ("hello", right after)
-<= 6980                                                                       (SWO_COMMAND_NOT_ALLOWED: the app is stuck)
+<= 6980                                                                       (SWO_COMMAND_NOT_ALLOWED; this refusal resets the app)
 ```
 
 **Where.** `internal/app-binder/task/SendSignPersonalMessageTask.ts`: l. 51 sizes the `ByteArrayBuilder` with
@@ -208,24 +211,22 @@ chunked correctly — and with `"é"` repeated ten times (10 characters, 20 byte
 are **UTF-16 character counts**. L. 64 then calls `addAsciiStringToData(message)`, which (`ByteArrayBuilder.ts`
 l. 229) encodes the string with `TextEncoder` — **UTF-8 bytes**. One accented letter is two bytes: the buffer is
 one byte short, `addBufferToData` (l. 198) records a `DataOverflowError` and drops the whole message, `build()`
-returns the header alone, and `getErrors()` is never read. `SignPersonalMessageCommand.parseResponse` turns the
-app's intermediate `9000` into `InvalidStatusWordError("R is missing")`.
+returns the header alone, and `getErrors()` is never read. `parseResponse` returns no data for the app's
+intermediate `9000`, and the task (l. 96–100) reports `InvalidStatusWordError("no signature returned")`.
 
-**Why it hurts twice.** Any message with an accent, a typographic dash, an emoji or a non-Latin script fails —
-that is most SIWE statements outside English. And on the device side, `handle_sign_personal_message`
-(`src/features/sign_message/cmd_sign_message.c`) sets `appState = APP_STATE_SIGNING_MESSAGE` **before** parsing
-the first chunk: once the client gives up, the app answers `0x6980` to every following message until it is quit
-and reopened. A user sees "it worked yesterday, now nothing signs".
+**Why it hurts.** Any message with an accent, a typographic dash, an emoji or a non-Latin script fails, which is
+common in free-form `personal_sign` messages (a SIWE `statement` must be ASCII: ERC-4361 says so, and we had missed
+it). The next message is then refused with `0x6980`, because the app still waits for the announced bytes; that
+refusal resets the app, and the message after it signs.
 
 **One concrete suggestion.** Encode once — `const bytes = new TextEncoder().encode(message)` — and use
 `bytes.length` for both the builder size and the length field (the app counts bytes); check `getErrors()`
-wherever a builder may overflow. On the app, arm `APP_STATE_SIGNING_MESSAGE` only after the first chunk parses, or
-drop back to idle on a parse error. Our workaround: a SIWE message in plain ASCII, without `statement` — 217 bytes.
+wherever a builder may overflow. Our workaround: a SIWE message in plain ASCII, without `statement` — 217 bytes.
 Reproduction: `ledger/dmk/repro_signmessage_bug.cjs` (any string with a non-ASCII character).
 
 ---
 
-## 8. Two clients on one app: one stray poll during a pending command, and the app answers `0x6901` to everything
+## 8. Two clients on one emulated app: Speculos crosses their answers, and a pending command looks refused
 
 **What happened.** Our own page, left open in a forgotten tab (a browser kept alive by a previous tool
 session), was logged into the same account as the page under test. When the server put a signature in
@@ -241,21 +242,22 @@ at the proxy between the browser and Speculos (app-ethereum 1.22.4, API level 26
 06:56:05.439  e002…, b001000000, e020…, e01a…  -> 6901, 6901, 6901, 6901 …   every APDU, until Speculos was restarted
 ```
 
-Reproduced three times. `b001000000` (`GET_APP_AND_VERSION`) is answered by the OS layer, not the app, and it
-was refused too: nothing was accepted again without a relaunch.
+Reproduced three times. Every APDU kept getting `6901` while the opt-in prompt stayed on screen, unanswered: each
+time we restarted Speculos instead of answering it.
 
-**Where.** `status_words.h`: `SWO_COMMAND_NOT_ACCEPTED 0x6901`. `io_legacy/src/os_io_legacy.c` (~l. 397):
-*"TOCTOU: reject a new command while a previous one still awaits its reply"* — a latch `io_reply_pending`,
-armed when a command is accepted, released in `io_legacy_apdu_tx` when the app replies. Refusing the newcomer
-is the right call. What we observed is that the *pending* command was refused as well and the latch never
-released — consistent with the reply going out through a path that does not clear it. Not verified on
-hardware (we have no Flex): emulator only.
+**What it actually is** (checked on 13 October against today's code, and on a separate Speculos).
+`io_legacy/src/os_io_legacy.c` (l. 397–411) refuses a new command with `SWO_COMMAND_NOT_ACCEPTED 0x6901` while a
+previous one still awaits its reply, and leaves the pending one alone; the latch is released when the app replies
+(l. 516–521). With a review on screen, a second client's `b001000000` gets `6901`; once the prompt is answered on
+the device, `b001…` and `e002…` are answered normally, with no restart. The SDK does the right thing. What made
+the pending command look refused is Speculos handing one answer to two clients, and what made it last is a prompt
+nobody answered.
 
-**Speculos makes it worse before the app has a say.** `speculos/api/apdu.py` builds one `APDUBridge` per
+**Speculos crosses the answers.** `speculos/api/apdu.py` builds one `APDUBridge` per
 HTTP request (flask-restful instantiates a `Resource` per request), so its `endpoint_lock` serializes nothing,
 and every bridge appends itself to `seph.apdu_callbacks` for the life of the process: two concurrent `/apdu`
 POSTs are both written to the app, and each response is handed to every waiting request. We watched a
-`B0010000` receive the address answer of an `e002…`.
+`B0010000` receive the address answer of an `e002…`; in a two-`curl` test, 16 runs out of 20 crossed.
 
 **Why it is easy to be the second client.** The DMK session refresher sends `b001000000` every second
 (`DEVICE_SESSION_REFRESHER_POLLING_INTERVAL = 1e3`, `PINGER_TIMEOUT = 800`). Any second DMK instance — a
@@ -274,7 +276,7 @@ of the EIP-712 filters, the pending `e00c` is refused with `6901` 1.2 s later, a
 the review and gets signed by a holder whose signature no longer has anywhere to go. The rule that holds:
 a tab without a token adopts only a request *older than itself* (the asking tab was reloaded), never one
 born while it was already open. Tested: refusal on the device, two tabs of the same account, bench
-restarted under the page — all three pass (`ledger/FRONTEND_FLO/scripts/tests-appareil.mjs`).
+restarted under the page — all three pass (`front/scripts/tests-appareil.mjs`).
 
 **One unexplained run out of six.** Once, on a freshly started Speculos and with a slow holder, the first
 EIP-712 signature after the Transaction Check opt-in came back as "This transaction cannot be clear-signed"
@@ -282,10 +284,9 @@ EIP-712 signature after the Transaction Check opt-in came back as "This transact
 Speculos plus slow holder was replayed twice afterwards and passed both times, as did three other runs.
 We note it; we could not reproduce it.
 
-**Two concrete suggestions.** In the SDK, when a newcomer is refused with `0x6901`, leave the pending command
-and its latch untouched — one stray poll should cost the poller, not the signer. In Speculos, make
-`APDUBridge` a singleton per `SeProxyHal` (and unregister callbacks when an exchange ends), so concurrent
-exchanges are serialized instead of mixed.
+**One concrete suggestion.** In Speculos, make `APDUBridge` a singleton per `SeProxyHal` (and unregister callbacks
+when an exchange ends), so concurrent exchanges are serialized instead of mixed
+([`upstream/05`](upstream/05-speculos-apdubridge-per-request.md)).
 
 ---
 

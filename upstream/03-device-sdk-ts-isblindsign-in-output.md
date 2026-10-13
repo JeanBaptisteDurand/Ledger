@@ -25,4 +25,6 @@ of the device action; it never reaches the caller.
 2. Log one warning per session when `originToken` is absent and a descriptor lookup returns `403`:
    *"no originToken: clear signing disabled, the device will display raw data."*
 
-Integrators can then refuse to continue a flow that would blind-sign, instead of discovering it on the screen.
+Integrators could then reject or flag a blind signature in code instead of relying on the user to read the screen.
+Detection runs after signing (#1398); the no-context case is already known after `BuildContext`, so it could also
+appear in the intermediate value before the device is asked to sign.

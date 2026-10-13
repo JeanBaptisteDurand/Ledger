@@ -84,7 +84,7 @@ const before = (await state(A)).log.length
 await A.getByRole('button', { name: 'Sign on Ledger', exact: true }).first().click()
 s = await until(A, (x) => x.signed, 'mandat signé par l’onglet demandeur', 180000)
 const bHint = await B.locator('.device-hint').count()
-const errors = (s?.log || []).slice(before).filter((l) => /erreur|6901|6980/i.test(l))
+const errors = (s?.log || []).slice(before).filter((l) => /erreur|error|failed|6901|6980/i.test(l))
 log(`onglet B a montré une consigne d’appareil : ${bHint ? 'OUI' : 'non'} · lignes d’erreur : ${errors.length}`)
 if (bHint) fail('l’onglet B a tenté de signer')
 if (errors.length) fail('des erreurs d’appareil pendant la signature : ' + errors.join(' / '))
