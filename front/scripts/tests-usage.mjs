@@ -175,6 +175,14 @@ await liveMap()
 await page.getByRole('button', { name: /Watch and analyst/ }).first().click(); await sleep(800)   // pin the phase in the rail: its drawer opens
 if (!(await page.locator('.drawer[data-open]').getByText('And which one has the most refusals?').count())) note('la carte vivante ne montre pas la conversation avec l’analyste dans son tiroir')
 if (!(await page.locator('.drawer[data-open]').getByLabel('Your question').count())) fail('la carte vivante n’a pas de champ pour parler à l’analyste')
+// the bots' board: every bot, its numbers, its decisions; stop and restart from there
+await btn('Bots', true).click(); await sleep(800)
+if (!(await page.locator('.bots__bot').count())) fail('le volet Bots ne liste aucun bot')
+if (!(await page.locator('.bots__row').count())) fail('le volet Bots ne montre aucune décision')
+await page.locator('.bots__bot').last().locator('.bots__pick').click(); await sleep(400)
+if (!(await has('Avg exit of entries'))) note('le volet Bots ne montre pas la performance du bot choisi')
+await page.screenshot({ path: `${OUT}/09b-demo-bots.png`, fullPage: false })
+await btn('Bots', true).click(); await sleep(300)
 
 // ───────────── 8 · the account: key, config, copy, history, reset cancelled
 await go('Account')

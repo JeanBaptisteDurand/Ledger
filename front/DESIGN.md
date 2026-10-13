@@ -906,6 +906,11 @@ Everything here is a departure that is **in the code or in the decision record t
 - **The scene's third word is `SOLUTION`**, not the name: `NET·OUT` appears once, on the Flex's own screen at the landing, as the revelation. `THE SOLUTION` measures 132.3 px at 26 px on the OLED's fitter and would have fallen to 22 px against the other two at 26, so the article was dropped (SOLUTION, 91.2 px, fits at 26). Posters regenerated.
 - **The catch line under the name says its two halves in the titles' heat**: "The NET value before you enter. The way OUT, yours to sign.", NET and OUT in capitals, incandescent (`.hot`), the held warmth of the ignition.
 
+### The bots' board, TARE's twin (2026-10-13, the co-author)
+
+- **A second module beside the map**, in TARE's place and grammar (`src/components/demo/Bots.tsx`): the bots the holder launched, each with its state dot (incandescent while its round runs, green when running, dim when stopped), its universe, pace and slices, its rounds, entries, refusals, exceptions and spend, and Stop or Restart. The chosen bot gets a performance strip (entries, refusals with the blocked ones counted, exceptions, positions held, spend, the average measured exit of its entries against the mandate) and its decisions newest first: the tick, the position, what the bot saw against what the contract measured, the verdict badge, the reason for a refusal.
+- **One module at a time.** TARE while a round runs and for twelve seconds after the decision; the bots' board on the agents phase once a bot exists. « Bots » and « TARE » in the rail pin either one at any phase. The map keeps the agents focus under both.
+
 ### The subject changed under the form
 
 - **The hero was built before the subject was settled.** It was an exercise in form, it succeeded, and it is kept. What it says has been rewritten from `UPDATE.md`: the three stop words, the three descriptions and the counter. The scene, its materials, its timings, the ramp, the typography and the four motifs are **frozen**; not one file in `src/scene/` or `src/motion/` was touched in this pass.

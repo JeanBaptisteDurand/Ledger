@@ -204,7 +204,12 @@ await shot('06-compte')
 
 // 11 · the demo: the live map and the cockpit with everything that happened, then the replay
 await liveMap(); await shot('07-demo-map', false)
-await page.getByRole('button', { name: /Watch and analyst/ }).first().click(); await sleep(1200); await shot('08-demo-watch', false)
+await page.getByRole('button', { name: 'Bots', exact: true }).first().click(); await sleep(1200)
+const botRows = await page.locator('.bots__row').count()
+if (botRows < 1) fail('le volet Bots de la carte vivante ne montre aucune décision'); else log(`ok  volet Bots : ${botRows} décisions du bot choisi, ${await page.locator('.bots__bot').count()} bots`)
+await shot('08-demo-bots', false)
+await page.getByRole('button', { name: 'TARE', exact: true }).first().click(); await sleep(1200); await shot('08b-demo-tare', false)
+await page.getByRole('button', { name: /Watch and analyst/ }).first().click(); await sleep(1200); await shot('08c-demo-watch', false)
 
 // 12 · log out from the account page, come back through the bench's device: same account, same mandate
 await go('Account')

@@ -16,6 +16,12 @@ sends you to `/connexion`, then back where you were going.
 | `/trades` | account | my trading agents (add, live, stopped, restart), the out-of-bounds requests they raise (read and sign on the Ledger, or leave refused, the device mirror beside), the positions and their re-probe, the journal decision by decision with its filters |
 | `/account` | account | my funds signed on the Ledger (the vault, **a deposit from the device, a withdrawal to it**), my analyst (the whole conversation, the tool cited under every answer), the address, the MCP key and the Claude configuration (one-click copy), what I did, the bench's log |
 
+Beside the map, one module at a time, in the same grammar: **TARE** while a round runs and for a few seconds after the
+decision (the four steps of the counterfactual, the figure, the verdict), then **the bots' board** (every bot you launched
+with its state, universe, pace and slices, its rounds, entries, refusals, exceptions and spend, stop and restart; the
+chosen bot's performance and its decisions newest first, with what it saw, what the contract measured, and why). Two
+buttons in the rail, « Bots » and « TARE », pin either one at any phase.
+
 The demo's live map carries the same gestures in its drawer: the sentence for the bounds, the funds, the
 agents (with the map's slots filling as bots are launched), the request, the re-probe and a compact analyst. The map's
 Ledger node names the four gestures the device makes, never a purchase: the sign-in, the deposit, the mandate and the

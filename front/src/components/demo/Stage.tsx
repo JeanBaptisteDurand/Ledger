@@ -22,6 +22,7 @@ import { SchemaMap, type MapFocus } from '../landing/SchemaMap'
 import { AnalystThread } from '../account/analyst'
 import { activity, Agents, Door, Funds, mapLive, Measure, rowOf, STRATEGY, STRATEGY_IDEAS, useSteps, type Activity, type Phase } from './live'
 import { TarePanel } from './Tare'
+import { BotsPanel } from './Bots'
 
 type Act = 'setup' | 'agents' | 'request' | 'watch'
 const ACTS: { id: Act; label: string; phases: Phase[] }[] = [
@@ -47,6 +48,7 @@ export function Stage() {
   const [sentence, setSentence] = useState(STRATEGY)
   const { steps, a, s, ask } = useSteps({ asking, setAsking, sentence })
   const [pinned, setPinned] = useState<Act | null>(null)
+  const [pinnedPanel, setPinnedPanel] = useState<'tare' | 'bots' | null>(null)   // the module beside the map, pinned by the rail
   const stage = useRef<HTMLDivElement>(null)
   const { act: benchAct } = useBench()
   // TARE stays open a few seconds after a round ends, so the verdict is read before the phase moves on.
@@ -77,7 +79,11 @@ export function Stage() {
   const auto = actOf(a.phase)
   const act = pinned ?? auto
   const live = mapLive(s, a)
-  const tare = (act === 'agents' && (running || !!a.lastRow)) || (hold && !pinned)
+  // Beside the map, one module at a time: TARE while a round runs and for a few seconds after the decision, the bots'
+  // board on the agents phase once a bot exists. The two buttons in the rail pin either one at any phase.
+  const tare = pinnedPanel === 'tare' || (pinnedPanel !== 'bots' && ((act === 'agents' && running) || (hold && !pinned)))
+  const bots = !tare && (pinnedPanel === 'bots' || (act === 'agents' && s.bots.length > 0))
+  const togglePanel = (p: 'tare' | 'bots') => setPinnedPanel((v) => (v === p ? null : p))
   const setup: Setup = { sentence, setSentence, ask, asking }
   const toggleFull = () => { if (document.fullscreenElement) document.exitFullscreen(); else stage.current?.requestFullscreen?.() }
   return (
@@ -99,15 +105,17 @@ export function Stage() {
           })}
         </ol>
         <div className="live-stage__tools">
+          <button type="button" className="btn-ghost btn-ghost--quiet btn-ghost--small t-button-cap" aria-pressed={pinnedPanel === 'bots'} onClick={() => togglePanel('bots')}>Bots</button>
+          <button type="button" className="btn-ghost btn-ghost--quiet btn-ghost--small t-button-cap" aria-pressed={pinnedPanel === 'tare'} onClick={() => togglePanel('tare')} disabled={!a.lastRow && !running}>TARE</button>
           <button type="button" className="btn-ghost btn-ghost--quiet btn-ghost--small t-button-cap" onClick={startOver} disabled={resetting || !!s.signing}>{resetting ? 'Resetting…' : 'Start over'}</button>
           {pinned ? <button type="button" className="btn-ghost btn-ghost--quiet btn-ghost--small t-button-cap" onClick={() => setPinned(null)}>Follow</button> : <span className="t-kicker text-page-text-faint">following the bench</span>}
           <button type="button" className="btn-ghost btn-ghost--quiet btn-ghost--small t-button-cap" onClick={toggleFull}>{full ? 'Exit fullscreen' : 'Fullscreen'}</button>
         </div>
       </div>
 
-      <div className={`live-stage__body live-stage__body--map ${tare ? 'has-tare' : ''}`}>
-        <div className="live-stage__map"><SchemaMap live={live} focus={tare ? FOCUS.tare : FOCUS[act]} fit /></div>
-        {tare ? <TarePanel s={s} row={s.escalation?.possible ? (rowOf(s, s.escalation) ?? a.lastRow) : a.lastRow} running={running} /> : null}
+      <div className={`live-stage__body live-stage__body--map ${tare || bots ? 'has-tare' : ''}`}>
+        <div className="live-stage__map"><SchemaMap live={live} focus={tare ? FOCUS.tare : bots ? FOCUS.agents : FOCUS[act]} fit /></div>
+        {tare ? <TarePanel s={s} row={s.escalation?.possible ? (rowOf(s, s.escalation) ?? a.lastRow) : a.lastRow} running={running} /> : bots ? <BotsPanel s={s} /> : null}
         <div className="live-stage__side">
           <Now steps={steps} a={a} s={s} />
           <div className="live-stage__flex"><LiveScreen live={s.speculos} signing={s.signing} real={false} /></div>

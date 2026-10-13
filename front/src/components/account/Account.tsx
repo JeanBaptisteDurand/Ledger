@@ -112,8 +112,8 @@ function Funds({ s }: { s: BenchState }) {
     return (
       <Panel lift={2}>
         <Kicker>No vault yet</Kicker>
-        <p className="t-body-md m-0 max-w-[60ch] text-pretty text-page-text-mute">{s.anvil ? 'One click deploys a vault in your name. Nothing is signed yet: the mandate comes after.' : 'The Base fork is not running: the session cannot open. Start the bench at the root of the repository.'}</p>
-        <div className="mt-5"><button type="button" className="btn-ghost btn-ghost--hot t-button-cap" onClick={open} disabled={busy || !s.anvil}>{busy ? 'Opening…' : 'Open the session'}</button></div>
+        <p className="t-body-md m-0 max-w-[60ch] text-pretty text-page-text-mute">{s.anvil ? 'One click deploys a vault in your name. Nothing is signed yet: the mandate comes after.' : 'One click starts the Base fork and deploys a vault in your name. Nothing is signed yet: the mandate comes after.'}</p>
+        <div className="mt-5"><button type="button" className="btn-ghost btn-ghost--hot t-button-cap" onClick={open} disabled={busy}>{busy ? 'Opening…' : 'Open the session'}</button></div>
       </Panel>
     )
   }
