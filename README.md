@@ -15,11 +15,28 @@ Ce que ce domaine ne donne pas : une Flex par visiteur. Il n'y en a qu'une, ému
 choisissent sont le même porteur, et elle signe une chose à la fois ; un écran abandonné en pleine revue est refusé
 par le banc au bout de trois minutes. Une vraie Ledger en USB (Chrome, Edge ou Brave)
 ouvre son propre compte, si elle porte l'app Ethereum compilée avec la clé de test ([Prérequis](#prérequis)) ; ce
-chemin n'a pas encore été rejoué en ligne.
+chemin a été rejoué en ligne le 13 octobre, en photos plus bas.
 
 En local, une commande fait la même chose : `scripts/site.sh`, puis **<http://127.0.0.1:5173>** ; `PORTEUR=1
 scripts/site.sh` y ajoute une Flex qui approuve seule chaque écran, pour une démonstration sans appareil. La vidéo suit
 le script de [`VIDEO.md`](VIDEO.md). Tout ce qui est dit ici a une commande ; rien n'est inventé.
+
+### Le système, sur une feuille
+
+![The Net·Out system on one sheet: the holder's Ledger Flex signs the sign-in, the deposit, the mandate, each exception and the withdrawal through Ledger's Signer Kit in the browser; the server runs the bots; the ExitVault contract measures the exit inside every entry with TARE's counterfactual; the analyst reads ten read-only MCP tools](captures/site/schema.png)
+
+La carte du site, telle que l'accueil la montre et que la démo l'allume : la Ledger signe cinq gestes et jamais un
+achat ; les bots achètent par une clé de session bornée au coffre ; le contrat mesure la sortie dans chaque entrée ;
+l'analyste lit, et ne peut rien faire.
+
+### La vraie Ledger, sur le site en ligne
+
+![Photos of a real Ledger Flex over USB on https://netout.tech: the Sign-In with Ethereum message, then an exception read in clear with EXIT COST (bps) 1889, Hold to sign, and the position entered under the exception](captures/ledger-reelle/planche.jpg)
+
+Une vraie Ledger Flex, en USB depuis Chrome, sur <https://netout.tech>, le 13 octobre : la connexion Sign-In with
+Ethereum ; puis une dérogation lue en clair, dont l'écran porte **EXIT COST (bps) 1889**, le nombre que le contrat
+venait de mesurer sur la carte ; « Hold to sign » ; puis l'entrée sous dérogation. Le mandat du même compte, signé par
+la même Flex, est sur la carte. Les sept photos, décrites une à une : [`captures/ledger-reelle/`](captures/ledger-reelle/).
 
 Le porteur signe **une fois**, sur sa Ledger, un mandat de trois nombres lus en clair sur l'écran : un budget, une perte
 de sortie tolérée, une échéance. Un contrat à son nom, [`ExitVault`](contracts/src/ExitVault.sol), l'applique **à
@@ -53,7 +70,7 @@ Base a **27 % de la position de son plus gros déposant bloquée**, et cinq coff
 | Brique | Ici |
 |---|---|
 | **Signer Kit + DMK** (1.18.1 / 1.9.1) | dans le navigateur du porteur (WebHID pour une vraie Flex, Speculos en banc) : la connexion Sign-In with Ethereum, le dépôt, le mandat, chaque dérogation, le retrait. Jamais un achat. |
-| **Clear signing** (ERC-7730) | nos descripteurs du mandat, de la dérogation et du retrait, compilés et signés avec la clé de test de l'app Ethereum 1.22.4 : la Flex affiche les champs, le kit rapporte `isBlindSign=false`. Vérifié sur la Flex émulée et sur une vraie Flex. |
+| **Clear signing** (ERC-7730) | nos descripteurs du mandat, de la dérogation et du retrait, compilés et signés avec la clé de test de l'app Ethereum 1.22.4 : la Flex affiche les champs, le kit rapporte `isBlindSign=false`. Vérifié sur la Flex émulée et sur une vraie Flex, en ligne ([photos](captures/ledger-reelle/)). |
 | **Agent Stack** (wallet-cli 2.1.0) | l'analyste, un vrai agent : un modèle de langage (Claude par son CLI, ou gpt-4o-mini par l'API d'OpenAI sur le site en ligne) sur un MCP en lecture seule de dix outils, dont `earn yields` de Ledger ; il cite l'outil sous chaque nombre et ne peut rien signer. |
 | **Ring CLI** (Ledger Key Ring Protocol) | le secret maître dont dérive la clé MCP de chaque compte (`HMAC-SHA256(maître, adresse)`, jamais stockée), scellé sous la graine de l'opérateur. |
 
@@ -93,7 +110,7 @@ du haut porte « The product », « Demo » et « Sign in » ; connecté, elle a
 
 ### Sommaire
 
-[Le site, route par route](#le-site-route-par-route) · [`DEPLOY.md`](DEPLOY.md) · [In English, on one page](#in-english-on-one-page) · [Le problème](#le-problème) · [Le mécanisme](#le-mécanisme) ·
+[Le système](#le-système-sur-une-feuille) · [La vraie Ledger](#la-vraie-ledger-sur-le-site-en-ligne) · [Le site, route par route](#le-site-route-par-route) · [`DEPLOY.md`](DEPLOY.md) · [In English, on one page](#in-english-on-one-page) · [Le problème](#le-problème) · [Le mécanisme](#le-mécanisme) ·
 [Le banc, dans le navigateur](#le-banc-dans-le-navigateur) · [L'agent, et pourquoi il se fait piéger](#lagent-et-pourquoi-il-se-fait-piéger) ·
 [La seconde instance](#la-seconde-instance--dix-coffres-erc-4626-réels-même-mandat-même-refus) · [L'escalade](#lescalade---hors-bornes-ne-veut-pas-dire-non-) ·
 [Plusieurs agents](#plusieurs-agents) · [Le MCP](#le-mcp--lecture-seule-pour-analyser-après-coup) · [L'analyste](#lanalyste--le-vrai-agent) ·
@@ -114,7 +131,11 @@ du haut porte « The product », « Demo » et « Sign in » ; connecté, elle a
 its screen with the mouse (a click taps, a drag to the left turns the page, a long press signs). There is one emulated
 Flex for every visitor, so one holder and one signature at a time; a real Ledger over USB opens its own account.
 Its deposit is a real Base transaction that the bench only publishes on the fork: test it with an address that holds
-no ETH on Base. How it
+no ETH on Base.
+
+**A real device.** Photos of a real Ledger Flex signing on the live site, over USB from Chrome: the sign-in message,
+then an exception whose screen shows EXIT COST (bps) 1889, the number the contract had just measured
+([`captures/ledger-reelle/`](captures/ledger-reelle/)). The system on one sheet: [`captures/site/schema.png`](captures/site/schema.png). How it
 is served, and what was tested from outside: [`DEPLOY.md`](DEPLOY.md).
 
 **The measure.** The exit is measured by **TARE**, our ETHOnline 2026 instrument (finalist, Uniswap Foundation prize,

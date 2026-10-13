@@ -125,7 +125,9 @@ La prochaine ouverture de session relance le fork au bloc 50 614 000.
   le même compte, et elle signe une chose à la fois. Une vraie Ledger ouvre son propre compte. Une signature abandonnée
   en pleine revue ne la bloque plus : un écran resté trois minutes sans un geste ni une commande est refusé sur
   l'appareil par le banc (`PDS_STALE_SCREEN_S`), et la connexion en un clic dit, en attendant, que la Flex est occupée.
-- **La vraie Ledger en ligne** n'a pas été rejouée sur ce domaine. Elle demande Chrome, Edge ou Brave (WebHID) et l'app
+- **La vraie Ledger en ligne** a été rejouée sur ce domaine le 13 octobre, dans Chrome : la connexion et une dérogation,
+  en photos ([`captures/ledger-reelle/`](captures/ledger-reelle/)) ; le mandat du même compte, signé par la même Flex,
+  est sur la carte. Le dépôt et le retrait n'ont pas été filmés. Elle demande Chrome, Edge ou Brave (WebHID) et l'app
   Ethereum compilée avec la clé de test. Le dépôt qu'elle signe est une vraie transaction Base, que le banc ne publie
   que sur le fork : elle resterait valable sur le réseau principal au même nonce. Tester avec une adresse sans ETH sur Base.
 - **L'analyste et le stratège coûtent** : ils tournent sur la clé OpenAI posée sur le serveur, et chaque question d'un
