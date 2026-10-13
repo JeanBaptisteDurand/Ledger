@@ -2,6 +2,7 @@
 // Usability pass on the emulated Flex: everything a person can click, in the order a person meets it, with the
 // wrong inputs, the empty states, the three signing paths, the menu on a phone, a device restart, the bench page.
 // Needs: the bench (8099), the front (5173), Speculos, and NO holder running — this script starts its own.
+// Online: FRONT_URL=https://netout.tech BENCH_SSH=vps-ovh node scripts/tests-usage.mjs
 //
 //   node scripts/tests-usage.mjs [dossier de captures]
 import { chromium } from 'playwright'
@@ -12,6 +13,11 @@ import { fileURLToPath } from 'node:url'
 
 const URL = process.env.FRONT_URL || 'http://127.0.0.1:5173'
 const BENCH = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
+// Online (FRONT_URL=https://netout.tech BENCH_SSH=vps-ovh): the bench runs on the server. The holder taps the emulated
+// Flex through the site's own /speculos relay, and the restarts of the bench or the emulator go through ssh.
+const REMOTE = process.env.BENCH_SSH
+const RBENCH = process.env.BENCH_DIR || '/home/ubuntu/Ledger'
+const HOLDER_ENV = { ...process.env, ...(REMOTE ? { SPECULOS_URL: URL + '/speculos' } : {}) }
 const OUT = process.argv[2] || 'design-shots/usage'
 fs.mkdirSync(OUT, { recursive: true })
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
@@ -19,7 +25,7 @@ const T0 = Date.now(); let failed = false; const notes = []
 const log = (...a) => console.log(`[${((Date.now() - T0) / 1000).toFixed(1).padStart(6)}s] ${a.join(' ')}`)
 const fail = (m) => { failed = true; log('ÉCHEC : ' + m) }
 const note = (m) => { notes.push(m); log('note : ' + m) }
-const porteur = (slow = '1') => { const out = fs.openSync('/tmp/porteur-usage.log', 'a'); return spawn('python3', ['-u', `${BENCH}/scripts/porteur.py`, '1800', slow], { stdio: ['ignore', out, out] }) }
+const porteur = (slow = '1') => { const out = fs.openSync('/tmp/porteur-usage.log', 'a'); return spawn('python3', ['-u', `${BENCH}/scripts/porteur.py`, '1800', slow], { stdio: ['ignore', out, out], env: HOLDER_ENV }) }
 let holder = porteur()
 const kill = () => { try { holder.kill() } catch {} }
 
@@ -227,7 +233,7 @@ else note('la porte ne montre pas l’écran de la Flex')
 await shot('11-porte-connectee')
 log('— redémarrage de l’émulateur sous la page, puis une signature dans la page')
 await freshMandate()
-execSync(`cd ${BENCH} && FORCE=1 ledger/speculos.sh up >/dev/null 2>&1`)
+execSync(REMOTE ? `ssh ${REMOTE} 'cd ${RBENCH} && FORCE=1 ledger/speculos.sh up' >/dev/null 2>&1` : `cd ${BENCH} && FORCE=1 ledger/speculos.sh up >/dev/null 2>&1`)
 kill(); await sleep(1000); holder = porteur()
 await liveMap(); await btn('Sign on Ledger', true).click()
 s = await until((x) => x.signed && !x.signing && !x.pending, 'après un redémarrage de l’émulateur, la page se reconnecte et signe', 180000)
@@ -247,8 +253,8 @@ if (wide > 390) fail(`sur téléphone, /account déborde : ${wide}px`)
 await m.context().close()
 
 // ───────────── 11 · the bench page: its own deposit and withdrawal
-await page.goto('http://127.0.0.1:8099/', { waitUntil: 'domcontentloaded' }); await sleep(2500)
-if (await page.locator('#b-deposit').count()) {
+if (REMOTE) log('la page du banc reste sur la machine du banc (elle n’est pas publiée en ligne) : étape sautée')
+else if ((await page.goto('http://127.0.0.1:8099/', { waitUntil: 'domcontentloaded' }), await sleep(2500), await page.locator('#b-deposit').count())) {
   await page.fill('#dep-amount', '0.2'); await page.click('#b-deposit')
   s = await until((x) => !x.pending && !x.signing && x.log.some((l) => /0\.2 ETH, gardés en WETH/.test(l)), 'banc : dépôt de 0.2 ETH signé', 180000)
   await page.fill('#wd-amount', '0.1'); await page.click('#b-withdraw')

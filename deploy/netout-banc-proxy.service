@@ -1,0 +1,7 @@
+[Unit]
+Description=Net·Out — relais de la prise Unix vers le banc (127.0.0.1:8199), sans réseau entre Caddy et l'hôte
+Requires=netout-banc-proxy.socket
+After=netout-banc-proxy.socket netout-banc.service
+
+[Service]
+ExecStart=/usr/lib/systemd/systemd-socket-proxyd --connections-max=512 127.0.0.1:8199

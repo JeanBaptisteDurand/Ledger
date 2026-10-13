@@ -13,8 +13,8 @@ sends you to `/connexion`, then back where you were going.
 | `/` and `/home` | anyone | the scene, then the whole explanation: the claim, the trap, the principle, the agent goes in anyway, one signature, the system on one sheet, two kinds of agents, when it overflows step by step, measured end to end, the account, the findings, the bricks, the limits, the call |
 | `/demo` | anyone | the live map: the system's map revealed as the journey goes (a node rises in when reached, an edge is drawn between reached nodes), one colour code (orange acts, gold waits for you on the Flex, green signed or entered, red refused), the NOW card above the Flex with the one button for the next step, the four phases in drawers, the recap under the stage. It drives the real bench and signs in with the emulated Flex in one click |
 | `/connexion` | anyone | on the home's surface: choose the Ledger (USB or the emulated Flex) and the signing path, sign the login message, the live Flex beside. Signed in, the door stays: it is where the device and the path are changed |
-| `/trades` | account | my trading agents (add, live, stopped, restart), the out-of-bounds requests they raise (read and sign on the Ledger, or leave refused, the device mirror beside), the positions and their re-probe, the journal decision by decision with its filters |
-| `/account` | account | my funds signed on the Ledger (the vault, **a deposit from the device, a withdrawal to it**), my analyst (the whole conversation, the tool cited under every answer), the address, the MCP key and the Claude configuration (one-click copy), what I did, the bench's log |
+| `/trades` | account | my trading agents (add, live, stopped, restart), the out-of-bounds requests they raise (read and sign on the Ledger, or leave refused, the device mirror beside), the positions and their re-probe, the journal decision by decision with its filters. While a signature waits on the emulated Flex, its live screen docks at the bottom left |
+| `/account` | account | my funds signed on the Ledger (the vault, **a deposit from the device, a withdrawal to it**), my analyst (the whole conversation, the tool cited under every answer), the address, the MCP key and the Claude configuration (one-click copy), what I did, the bench's log. While a signature waits on the emulated Flex, its live screen docks at the bottom left |
 
 Beside the map, one module at a time, in the same grammar: **TARE** while a round runs and for a few seconds after the
 decision (the four steps of the counterfactual, the figure, the verdict), then **the bots' board** (every bot you launched
@@ -98,6 +98,25 @@ accepted reset. It prints its usability remarks at the end (240 s on 11 October,
 
 ```bash
 node scripts/tests-usage.mjs
+```
+
+By hand, with no holder at all: every approval is a mouse gesture on the Flex picture the page itself shows (a click is a
+tap, a drag to the left turns the page, a hold signs), and a page that asks for a signature without showing the Flex
+fails the run, by name. It is how a juror meets the site, and it is the test that made the Flex dock on `/account` and
+`/trades`:
+
+```bash
+APPROVER=page node scripts/parcours-app.mjs
+```
+
+Online, the same scripts run against <https://netout.tech>: `FRONT_URL` names the site and `BENCH_SSH` the server. The
+holder then taps the emulated Flex through the site's own `/speculos` relay, and the restarts of the bench or the
+emulator go through ssh ([`../DEPLOY.md`](../DEPLOY.md)).
+
+```bash
+APPROVER=page FRONT_URL=https://netout.tech node scripts/parcours-app.mjs
+FRONT_URL=https://netout.tech BENCH_SSH=vps-ovh node scripts/tests-usage.mjs
+FRONT_URL=https://netout.tech BENCH_SSH=vps-ovh node scripts/tests-appareil.mjs
 ```
 
 Final campaign of 12 October, late evening, on a quiet host, all green: the usability pass (`tests-usage.mjs`, 39 checks, 323 s),

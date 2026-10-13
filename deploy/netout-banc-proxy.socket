@@ -1,0 +1,9 @@
+[Unit]
+Description=Net·Out — la prise Unix par laquelle le Caddy en conteneur joint le banc
+
+[Socket]
+ListenStream=/home/ubuntu/netout/sock/banc.sock
+SocketMode=0660
+
+[Install]
+WantedBy=sockets.target

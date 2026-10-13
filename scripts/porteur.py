@@ -3,9 +3,11 @@
 Hold to sign, Reject transaction). Jamais contre un vrai appareil.
 
     python3 scripts/porteur.py [durée en s] [lenteur : secondes de lecture avant de signer]
+    SPECULOS_URL=https://netout.tech/speculos python3 scripts/porteur.py   # la Flex du site en ligne, par son relais
 """
-import requests, time, sys, json
-U="http://127.0.0.1:5013"; T0=time.time(); LIMIT=float(sys.argv[1]) if len(sys.argv)>1 else 720
+import requests, time, sys, json, os
+U=os.environ.get("SPECULOS_URL", "http://127.0.0.1:5013").rstrip("/")   # en ligne : https://netout.tech/speculos (le relais du banc)
+T0=time.time(); LIMIT=float(sys.argv[1]) if len(sys.argv)>1 else 720
 SLOW=float(sys.argv[2]) if len(sys.argv)>2 else 0  # un humain qui lit : attente avant de signer
 REJECT=len(sys.argv)>3 and sys.argv[3]=="reject"  # un porteur qui refuse tout ce qu'on lui propose de signer
 def ev():

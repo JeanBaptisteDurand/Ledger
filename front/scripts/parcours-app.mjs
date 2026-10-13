@@ -3,6 +3,9 @@
 // the Vite proxy) and the emulated Flex. An automatic holder must approve the device screens:
 //   python3 ../scripts/porteur.py 3600 2 &
 //   node scripts/parcours-app.mjs [output dir]
+// Or a person approves, with no holder at all: APPROVER=page makes every approval a gesture on the Flex picture the
+// page itself shows (a click is a tap, a drag to the left turns the page, a hold signs) — as a juror would on the site.
+//   APPROVER=page FRONT_URL=https://netout.tech node scripts/parcours-app.mjs
 // The pages: /connexion (the door), /account (funds, analyst, keys, history), /demo#map (the live map: bounds, the
 // mandate), /trades (agents, requests, positions, journal). The Ledger signs: the sign-in, the deposit, the mandate,
 // each exception, the withdrawal.
@@ -34,9 +37,12 @@ const state = () => page.evaluate(() => fetch('/api/state').then((r) => r.json()
 const api = (path, body = {}) => page.evaluate(([p, b]) => fetch('/api' + p, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(b) }).then((r) => r.json()), [path, body])
 async function until(pred, label, timeout = 120000, every = 1200) {
   const t = Date.now(); let s
-  while (Date.now() - t < timeout) { s = await state(); if (pred(s)) { log('ok  ' + label); return s } await sleep(every) }
+  while (Date.now() - t < timeout) { s = await state(); if (pred(s)) { log('ok  ' + label); await handFree(); return s } await sleep(every) }
   fail(`${label} : pas atteint en ${timeout / 1000}s`); return s
 }
+// a person finishes their gesture on the device before they click anything else on the page (APPROVER=page)
+let handBusy = false
+const handFree = async () => { while (handBusy) await sleep(100) }
 const btn = (name, exact = false) => page.getByRole('button', { name, exact }).first()
 const chip = (text) => page.locator('button.segment', { hasText: text }).first()
 /** The sheets reveal on scroll (Florent's motion): walk the page once so everything is on, then come back up. */
@@ -50,6 +56,54 @@ const liveMap = async () => { await go('Demo'); await sleep(1500) }   // the dem
 const shot = async (name, full = true) => { if (full) await reveal(); await page.screenshot({ path: `${OUT}/${name}.png`, fullPage: full }) }
 
 for (let i = 0; i < 120; i++) { try { const r = await fetch(URL + '/speculos/events?currentscreenonly=true'); if (r.ok) break } catch {} await sleep(500) }
+
+// APPROVER=page · a person at the page: they read the Flex screen and answer it on the picture the page shows. If the
+// device waits and the page shows no Flex, a person could not sign there: that is a failure of the page, named.
+const BY_HAND = process.env.APPROVER === 'page'
+let handOn = BY_HAND, handGestures = 0
+const screenNow = () => page.evaluate(() => fetch('/speculos/events?currentscreenonly=true').then((r) => r.json()).then((j) => j.events || []).catch(() => [])).catch(() => [])
+async function gesture(kind, x = 0, y = 0) {
+  const img = page.locator('.device-frame img:visible').first()
+  if (!(await img.count())) return false
+  await img.scrollIntoViewIfNeeded().catch(() => {})
+  const box = await img.boundingBox(); if (!box) return false
+  const [w, h] = await img.evaluate((i) => [i.naturalWidth || 480, i.naturalHeight || 600])
+  const at = (dx, dy) => [box.x + (dx / w) * box.width, box.y + (dy / h) * box.height]
+  handBusy = true
+  try {
+  if (kind === 'swipe') { const [a, b] = at(400, 300); const [c, d] = at(80, 300); await page.mouse.move(a, b); await page.mouse.down(); await sleep(150); await page.mouse.move(c, d, { steps: 6 }); await page.mouse.up() }
+  else { const [a, b] = at(x, y); await page.mouse.move(a, b); await page.mouse.down(); await sleep(kind === 'hold' ? 3200 : 150); await page.mouse.up() }
+  handGestures++; await sleep(800); return true
+  } finally { handBusy = false }
+}
+async function byHand() {
+  let missed = '', seen = ''
+  while (handOn) {
+    try {
+      // a person answers the device when the page asked for a signature (or while signing in), not a screen in passing
+      const st = await page.evaluate(() => fetch('/api/state').then((r) => r.json()).catch(() => null)).catch(() => null)
+      if (!st || (st.address && !st.signing && !st.pending)) { seen = ''; await sleep(500); continue }
+      const e = await screenNow(); const tx = e.map((x) => x.text || '').filter(Boolean); const low = tx.join(' | ').toLowerCase()
+      if (tx.join('|') !== seen) { seen = tx.join('|'); await sleep(450); continue }   // the same screen twice: it has settled
+      const find = (f) => e.find((x) => f((x.text || '').trim().toLowerCase()))
+      let hit, act = null
+      if ((hit = find((t) => t.includes('maybe later')))) act = ['tap', 240, hit.y + 10]
+      else if ((hit = find((t) => t.includes('hold to sign')))) { await sleep(1000); act = ['hold', 240, hit.y + 10] }   // a person reads before signing
+      else if ((hit = find((t) => t.includes('reject transaction')))) act = ['tap', 240, hit.y + 10]
+      else if ((hit = find((t) => t.includes('accept risk')))) act = ['tap', 240, hit.y + 10]
+      else if (low.includes('reject') || low.includes('swipe to review')) act = ['swipe']
+      if (act) {
+        if (await gesture(...act)) missed = ''
+        else { const where = page.url().replace(URL, '') || '/'; if (missed !== where) { missed = where; fail(`${where} : la Flex émulée attend (« ${tx.slice(0, 3).join(' · ')} ») et la page ne la montre pas — une personne ne pourrait pas signer ici`) } await sleep(1500) }
+        continue
+      }
+    } catch { /* the page navigates under the hand: look again */ }
+    await sleep(500)
+  }
+}
+const handLoop = BY_HAND ? byHand() : null
+if (BY_HAND) log('approbations : à la main, par des gestes sur la Flex que montre la page (pas de porteur)')
+const handDone = async () => { handOn = false; await handLoop; if (BY_HAND) log(`gestes sur la Flex de la page : ${handGestures}`) }
 
 // 0 · the door: /connexion, the client's path, on the emulated Flex
 await page.goto(URL + '/connexion', { waitUntil: 'domcontentloaded' }); await sleep(1500)
@@ -113,7 +167,7 @@ if (process.env.PARCOURS === 'fonds') {
   if (BigInt(s.weth || '0') > before) fail('le coffre n’a pas baissé après le retrait')
   log(`retrait (${((Date.now() - t) / 1000).toFixed(1)} s) · coffre ${(Number(s.weth) / 1e18).toFixed(4)} WETH`)
   await shot('03-compte')
-  await api('/logout')
+  await api('/logout'); await handDone()
   log(failed ? 'PARCOURS (fonds) : des échecs' : `PARCOURS (fonds) : tout est passé — chaîne ${s.chain_id ?? '?'}, ${s.network}`)
   await browser.close(); process.exit(failed ? 1 : 0)
 }
@@ -235,5 +289,6 @@ await page.waitForURL('**/trades', { timeout: 15000 }).then(() => log('ok  recon
 await shot('09-retour-trades')
 await api('/signer', { signer: 'browser' })   // leave the bench on the client's path
 
+await handDone()
 log(failed ? 'PARCOURS : des échecs' : 'PARCOURS : tout est passé')
 await browser.close(); process.exit(failed ? 1 : 0)

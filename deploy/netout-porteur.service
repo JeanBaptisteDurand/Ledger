@@ -1,0 +1,13 @@
+[Unit]
+Description=Net·Out — un porteur automatique sur la Flex émulée (vidéo, démo sans appareil) ; arrêté par défaut
+After=netout-banc.service
+
+# Il approuve ce que la Flex émulée présente, après 2 s de lecture : sudo systemctl start netout-porteur, puis stop.
+# Jamais contre un vrai appareil : il ne parle qu'à l'émulateur, sur 127.0.0.1:5013.
+[Service]
+User=ubuntu
+WorkingDirectory=/home/ubuntu/Ledger
+Environment=SPECULOS_URL=http://127.0.0.1:5013
+ExecStart=/home/ubuntu/Ledger/.venv/bin/python3 -u scripts/porteur.py 86400 2
+Restart=on-failure
+RestartSec=5

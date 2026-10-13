@@ -1,0 +1,24 @@
+[Unit]
+Description=Net·Out — le banc (fork de Base, Flex émulée, serveur du compte) derrière netout.tech
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+User=ubuntu
+WorkingDirectory=/home/ubuntu/Ledger
+Environment=PORT=8199
+Environment=TARE_ROOT=/home/ubuntu/ETH_Online_2026
+Environment=SPECULOS_URL=http://127.0.0.1:5013
+Environment=HOME=/home/ubuntu
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/home/ubuntu/netout/banc.sh
+# le serveur lance anvil (le fork) et les bots en enfants : un redémarrage ne tue que le serveur, il les retrouve
+KillMode=process
+Restart=on-failure
+RestartSec=5
+# le VPS porte aussi l'e-learning : le banc plafonne, il ne déborde pas sur les autres
+MemoryHigh=1600M
+MemoryMax=2200M
+
+[Install]
+WantedBy=multi-user.target

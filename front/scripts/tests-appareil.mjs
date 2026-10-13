@@ -5,27 +5,33 @@
 //   2. two tabs of the same account → only the tab that asked signs (the other never touches the device)
 //   3. the bench restarts → the pages recover the account's state by themselves
 // Needs: the bench, the front (5173), and NO automatic holder running (this script starts its own).
+// Online: FRONT_URL=https://netout.tech BENCH_SSH=vps-ovh node scripts/tests-appareil.mjs
 import { chromium } from 'playwright'
 import { spawn, execSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-const URL = 'http://127.0.0.1:5173'
+const URL = process.env.FRONT_URL || 'http://127.0.0.1:5173'
 const BENCH = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')  // the repository root: the bench
+// Online (FRONT_URL=https://netout.tech BENCH_SSH=vps-ovh): the bench runs on the server. The holder taps the emulated
+// Flex through the site's own /speculos relay, and the restarts of the bench or the emulator go through ssh.
+const REMOTE = process.env.BENCH_SSH
+const RBENCH = process.env.BENCH_DIR || '/home/ubuntu/Ledger'
+const HOLDER_ENV = { ...process.env, ...(REMOTE ? { SPECULOS_URL: URL + '/speculos' } : {}) }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 const T0 = Date.now(); let failed = false
 const log = (...a) => console.log(`[${((Date.now() - T0) / 1000).toFixed(1).padStart(6)}s] ${a.join(' ')}`)
 const fail = (m) => { failed = true; log('ÉCHEC : ' + m) }
-const porteur = (mode) => { const out = fs.openSync(`/tmp/porteur-tests-${mode || 'normal'}.log`, 'a'); return spawn('python3', ['-u', `${BENCH}/scripts/porteur.py`, '600', '1', ...(mode ? [mode] : [])], { stdio: ['ignore', out, out] }) }
+const porteur = (mode) => { const out = fs.openSync(`/tmp/porteur-tests-${mode || 'normal'}.log`, 'a'); return spawn('python3', ['-u', `${BENCH}/scripts/porteur.py`, '600', '1', ...(mode ? [mode] : [])], { stdio: ['ignore', out, out], env: HOLDER_ENV }) }
 const kill = (p) => { try { p.kill() } catch {} }
 
-const sessions = JSON.parse(fs.readFileSync(`${BENCH}/accounts/sessions.json`, 'utf8'))
+const sessions = JSON.parse(REMOTE ? execSync(`ssh ${REMOTE} cat ${RBENCH}/accounts/sessions.json`, { encoding: 'utf8' }) : fs.readFileSync(`${BENCH}/accounts/sessions.json`, 'utf8'))
 const token = Object.keys(sessions).pop()
 const browser = await chromium.launch({ headless: true, args: ['--disable-3d-apis'] })   // no WebGL: the hero shows its poster, the pages stay fast
 const mk = async () => {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 1000 }, locale: 'en-GB' })
-  await ctx.addCookies([{ name: 'pds_session', value: token, domain: '127.0.0.1', path: '/' }])
+  await ctx.addCookies([{ name: 'pds_session', value: token, domain: new globalThis.URL(URL).hostname, path: '/', secure: URL.startsWith('https') }])
   await ctx.addInitScript(() => { try { localStorage.setItem('pdsTransport', 'speculos') } catch {} })
   const page = await ctx.newPage(); page.on('dialog', (d) => d.accept()); return page
 }
@@ -86,8 +92,11 @@ await B.close()
 
 // 3 · the bench restarts under the page
 log('— 3 · redémarrage du banc sous la page')
-execSync(`pkill -f "web/server.py" || true`); await sleep(1200)
-spawn('bash', ['-c', `cd ${BENCH} && . .venv/bin/activate && nohup python3 web/server.py > /tmp/pds-web.log 2>&1 &`], { stdio: 'ignore', detached: true })
+if (REMOTE) execSync(`ssh ${REMOTE} sudo -n systemctl restart netout-banc`)   // the server only: the fork and the bots live on
+else {
+  execSync(`pkill -f "web/server.py" || true`); await sleep(1200)
+  spawn('bash', ['-c', `cd ${BENCH} && . .venv/bin/activate && nohup python3 web/server.py > /tmp/pds-web.log 2>&1 &`], { stdio: 'ignore', detached: true })
+}
 s = await until(A, (x) => x.signed && !!x.vault, 'état retrouvé après redémarrage (mandat, coffre)', 60000)
 const txt = await A.innerText('body')
 log(`la page affiche de nouveau le mandat : ${/Exit mandate · signed/i.test(txt) ? 'oui' : 'non'}`)

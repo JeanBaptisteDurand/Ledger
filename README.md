@@ -2,15 +2,23 @@
 
 **Un agent ne peut pas entrer dans une position dont il ne sait pas sortir.**
 
-### La démo — `scripts/site.sh`, puis **<http://127.0.0.1:5173>**
+### La démo en ligne — **<https://netout.tech>**
 
-Une commande lance le banc (un fork de Base, une Ledger Flex émulée, le serveur) et le site, et ouvre la porte dans le
-navigateur ; `PORTEUR=1 scripts/site.sh` y ajoute une Flex qui approuve seule chaque écran, pour une démonstration sans
-appareil. La vidéo suit le script de [`VIDEO.md`](VIDEO.md). Tout ce qui est dit ici a une commande ; rien n'est inventé.
+Le site entier, avec le banc derrière lui : un fork de Base épinglé au bloc 50 614 000, une Ledger Flex émulée (Speculos,
+l'app Ethereum compilée avec la clé de test) et le serveur du compte. **Sign in with the emulated Flex** connecte en un
+clic. La Flex s'affiche à côté de la page dès qu'elle attend une signature, et l'on y signe à la souris : un clic appuie,
+un glissé vers la gauche tourne la page, un appui long signe. Ensuite la carte vivante : le coffre, le dépôt, le mandat,
+les bots, les demandes hors bornes, le volet TARE, le retrait. [Route par route](#le-site-route-par-route) ; comment
+c'est servi : [`DEPLOY.md`](DEPLOY.md).
 
-Le site est en ligne sur **<https://netout.tech>** : la scène, l'explication et la carte. La démo vivante (la Flex, les
-agents, le volet TARE) demande le banc, qui tourne sur la machine de démonstration avec `scripts/site.sh` ; la porte en
-ligne le dit.
+Ce que ce domaine ne donne pas : une Flex par visiteur. Il n'y en a qu'une, émulée et partagée : tous ceux qui la
+choisissent sont le même porteur, et elle signe une chose à la fois. Une vraie Ledger en USB (Chrome, Edge ou Brave)
+ouvre son propre compte, si elle porte l'app Ethereum compilée avec la clé de test ([Prérequis](#prérequis)) ; ce
+chemin n'a pas encore été rejoué en ligne.
+
+En local, une commande fait la même chose : `scripts/site.sh`, puis **<http://127.0.0.1:5173>** ; `PORTEUR=1
+scripts/site.sh` y ajoute une Flex qui approuve seule chaque écran, pour une démonstration sans appareil. La vidéo suit
+le script de [`VIDEO.md`](VIDEO.md). Tout ce qui est dit ici a une commande ; rien n'est inventé.
 
 Le porteur signe **une fois**, sur sa Ledger, un mandat de trois nombres lus en clair sur l'écran : un budget, une perte
 de sortie tolérée, une échéance. Un contrat à son nom, [`ExitVault`](contracts/src/ExitVault.sol), l'applique **à
@@ -69,9 +77,22 @@ qui a un LLM ne peut pas agir. Une consigne injectée peut faire *choisir* un pi
 | ![les trades](captures/site/trades.png) | ![le compte](captures/site/compte.png) |
 | Trades : agents, demandes hors bornes avec le miroir de l'appareil, positions, journal. | Compte : dépôt et retrait signés sur la Ledger, l'analyste, la clé MCP, l'historique. |
 
+### Le site, route par route
+
+| Route | Ce que c'est |
+|---|---|
+| [`/`](https://netout.tech/) | **l'accueil** : la scène de Florent, puis l'explication entière, du trou dans les politiques d'agents à la carte du système |
+| [`/demo`](https://netout.tech/demo) | **la carte vivante** : le système allumé par le banc, la carte NOW qui dit quoi faire, la Flex à côté, les volets Bots, TARE et « Watch and analyst », et « Start over » |
+| [`/connexion`](https://netout.tech/connexion) | **la porte** : la Flex émulée ou une vraie Ledger en USB, le chemin de signature, la connexion SIWE ; connecté, on y revient pour changer d'appareil |
+| [`/trades`](https://netout.tech/trades) | **les trades** : les agents (nom, univers, tranches, rythme, arrêt, relance, historique), les demandes hors bornes avec le miroir de l'appareil, les positions et le resondage, le journal filtrable |
+| [`/account`](https://netout.tech/account) | **le compte** : le dépôt et le retrait signés sur la Ledger, l'analyste, la clé MCP et sa configuration, l'historique |
+
+Sans adresse prouvée, `/trades` et `/account` renvoient à la porte, qui ramène ensuite à la page demandée. La barre
+du haut porte « The product », « Demo » et « Sign in » ; connecté, elle ajoute Trades et Account.
+
 ### Sommaire
 
-[In English, on one page](#in-english-on-one-page) · [Le problème](#le-problème) · [Le mécanisme](#le-mécanisme) ·
+[Le site, route par route](#le-site-route-par-route) · [`DEPLOY.md`](DEPLOY.md) · [In English, on one page](#in-english-on-one-page) · [Le problème](#le-problème) · [Le mécanisme](#le-mécanisme) ·
 [Le banc, dans le navigateur](#le-banc-dans-le-navigateur) · [L'agent, et pourquoi il se fait piéger](#lagent-et-pourquoi-il-se-fait-piéger) ·
 [La seconde instance](#la-seconde-instance--dix-coffres-erc-4626-réels-même-mandat-même-refus) · [L'escalade](#lescalade--hors-bornes-ne-veut-pas-dire-non) ·
 [Plusieurs agents](#plusieurs-agents) · [Le MCP](#le-mcp--lecture-seule-pour-analyser-après-coup) · [L'analyste](#lanalyste--le-vrai-agent) ·
@@ -597,7 +618,8 @@ front/                        le site (Vite + React) : le héros de Florent, l'e
   src/components/demo/        /demo : la carte vivante allumée par le banc, la carte NOW, le volet TARE pendant un tour
   scripts/parcours-app.mjs    le parcours complet par les pages du front (Chromium headless)
 scripts/site.sh               le site en une commande (banc, Flex émulée, front ; PORTEUR=1 pour une Flex qui approuve seule)
-scripts/deploy-static.sh      le site statique en ligne (netout.tech, Caddy du VPS OVH)
+scripts/deploy.sh             le site en ligne : le front et le banc sur le serveur de netout.tech (DEPLOY.md)
+deploy/                       ce que ce serveur porte : le bloc Caddy, les services systemd du banc, de sa prise Unix, du porteur
   scripts/tests-appareil.mjs  refus sur l'appareil, deux onglets du même compte, redémarrage du banc
   scripts/tests-usage.mjs     tout ce qu'une personne peut cliquer, dans l'ordre où elle le rencontre, avec les mauvaises saisies
   scripts/fetch-models.sh     les deux modèles 3D du héros (assets officiels de Ledger, non commités)
@@ -632,6 +654,10 @@ d'écrire. Sans `MANDATE_FILE`, les six autres suites passent (31 tests) et `Led
   LedgerScene    1   la scène complète, avec la signature venue de l'appareil
   Withdrawal     6   le dépôt depuis la Ledger devient du WETH ; le retrait autorisé par signature, exécuté par n'importe qui, jamais rejoué ni modifié
 ```
+
+Le site de bout en bout, par ses pages : `front/scripts/parcours-app.mjs` (avec un porteur, ou `APPROVER=page` : à la
+main, par des gestes sur la Flex que la page montre), `tests-usage.mjs`, `tests-appareil.mjs` ([`front/APP.md`](front/APP.md)).
+Les mêmes tournent contre le site en ligne avec `FRONT_URL=https://netout.tech BENCH_SSH=<serveur>` ([`DEPLOY.md`](DEPLOY.md)).
 
 ## Prérequis
 

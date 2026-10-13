@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Le CLI claude tel que le banc Net·Out le voit sur le serveur (deploy/banc.sh le met en tête du PATH). Il passe la
+# main au vrai CLI dès qu'il est connecté (jeton dans /home/ubuntu/netout/claude.env, ou /login fait ici), sans
+# redémarrer le banc. Avant, il le dit en une phrase, que l'analyste affiche ; le stratège passe en repli déterministe.
+if [ -s /home/ubuntu/netout/claude.env ]; then set -a; . /home/ubuntu/netout/claude.env; set +a; fi
+if [ -n "${CLAUDE_CODE_OAUTH_TOKEN:-}${ANTHROPIC_API_KEY:-}" ] || [ -s "${HOME:-/home/ubuntu}/.claude/.credentials.json" ]; then
+  exec /usr/local/bin/claude "$@"
+fi
+echo "le CLI claude n'est pas encore connecté sur ce serveur : l'analyste ne peut pas tourner (sur le serveur : claude, puis /login)" >&2
+exit 1

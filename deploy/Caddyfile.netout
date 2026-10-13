@@ -1,0 +1,23 @@
+# netout.tech : Net·Out (Ledger N3XT), à ajouter au Caddyfile du serveur. Le site statique est monté dans le conteneur
+# sur /usr/share/caddy ; /api, /speculos et /dist vont au banc (fork de Base, Flex émulée, serveur) qui tourne sur
+# l'hôte, par la prise Unix /run/netout/banc.sock (systemd netout-banc-proxy). Voir DEPLOY.md.
+www.netout.tech {
+	redir https://netout.tech{uri} permanent
+}
+
+netout.tech {
+	encode gzip
+	@bench path /api/* /speculos/* /dist/*
+	handle @bench {
+		reverse_proxy unix//run/netout/banc.sock
+	}
+	handle {
+		root * /usr/share/caddy
+		@assets path /assets/*
+		@shell not path /assets/*
+		header @assets Cache-Control "public, max-age=31536000, immutable"
+		header @shell Cache-Control "no-cache"
+		try_files {path} /index.html
+		file_server
+	}
+}

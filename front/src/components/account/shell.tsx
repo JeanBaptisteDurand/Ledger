@@ -13,6 +13,8 @@ import { initSmoothScroll, setPageLocked } from '../../motion/scroll'
 import { blurFade, focusSheets, treatTitle } from '../../motion/landing'
 import { BenchProvider, useBench } from '../../app/useBench'
 import { Skeleton, Toasts } from '../../app/ui'
+import { LiveScreen } from '../../app/device'
+import { getTransport } from '../../app/ledger'
 import { navigate, rememberNext, type Route } from '../../app/router'
 import { Band } from '../landing/primitives'
 
@@ -56,8 +58,25 @@ function Shell({ route, hero, skip, children }: { route: Route; hero: HeroCopy; 
         ) : children}
       </main>
       <Footer product />
+      {state && address && !offline ? <DeviceDock /> : null}
       <Toasts />
     </div>
+  )
+}
+
+/** The account's pages sign too (the deposit, the withdrawal, an exception). While a signature waits on the emulated
+ *  Flex, its live screen comes beside the page, as on the demo and the door: a click is a tap, a drag to the left turns
+ *  the page, a hold signs. A real Ledger has its own screen: nothing shows then. */
+function DeviceDock() {
+  const { state } = useBench()
+  if (!state?.speculos) return null
+  const waiting = state.signing ?? state.pending?.kind ?? null
+  const emulated = state.signer !== 'browser' || getTransport() === 'speculos'
+  if (!waiting || !emulated) return null
+  return (
+    <aside className="device-dock blink-in" aria-label="The emulated Flex, waiting for your signature">
+      <LiveScreen live signing={waiting} real={false} />
+    </aside>
   )
 }
 
