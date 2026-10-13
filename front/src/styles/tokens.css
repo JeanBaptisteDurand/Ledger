@@ -1473,6 +1473,10 @@ footer { position: relative; }
 .live-stage__flex .device-frame { margin: 0 auto; padding: 10px; }
 .live-stage__flex .device-frame img { max-width: 200px; }
 .live-stage__flex .t-caption, .live-stage__flex .t-micro-cap { display: none; }
+/* The account menu in the bar (Nav.tsx, AccountMenu): the address opens it; Account, Sign out. */
+.nav-account { position: relative; }
+.nav-account__menu { position: absolute; right: 0; top: calc(100% + 10px); min-width: 180px; display: flex; flex-direction: column; align-items: stretch; padding: 6px; border: 1px solid var(--color-page-hairline-strong); border-radius: var(--radius-md); background: color-mix(in srgb, var(--color-page-surface-lift) 96%, transparent); backdrop-filter: blur(14px); box-shadow: 0 18px 50px rgb(0 0 0 / 0.5); z-index: 30; }
+.nav-account__menu .nav-link { justify-content: flex-start; }
 /* The emulated Flex, docked on the account's pages while a signature waits on it (account/shell.tsx, DeviceDock). Bottom
    left: the toasts hold the bottom right. */
 .device-dock { position: fixed; left: var(--spacing-xl); bottom: var(--spacing-xl); z-index: 29; padding: 14px 16px; border: 1px solid var(--color-page-hairline-strong); border-radius: var(--radius-md); background: color-mix(in srgb, var(--color-page-surface-lift) 94%, transparent); backdrop-filter: blur(14px); box-shadow: 0 18px 60px rgb(0 0 0 / 0.55); max-width: min(300px, calc(100vw - 32px)); }

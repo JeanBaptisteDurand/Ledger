@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { linkProps, useRoute, type Route } from '../app/router'
 import { useBench } from '../app/useBench'
 import { Wordmark } from './Wordmark'
@@ -73,9 +73,13 @@ export function Nav({ hiddenUntilRelease, solid = false, account }: { hiddenUnti
               </li>
             ))}
             <li className="ml-2">
-              <a {...linkProps(door.to)} className={doorClass} title={door.title} aria-current={route === door.to ? 'page' : undefined}>
-                {door.label}
-              </a>
+              {address ? (
+                <AccountMenu address={address} label={door.label} title={door.title} className={doorClass} current={route === '/account'} />
+              ) : (
+                <a {...linkProps(door.to)} className={doorClass} title={door.title} aria-current={route === door.to ? 'page' : undefined}>
+                  {door.label}
+                </a>
+              )}
             </li>
           </ul>
         </nav>
@@ -103,9 +107,51 @@ export function Nav({ hiddenUntilRelease, solid = false, account }: { hiddenUnti
               </a>
             </li>
           ))}
+          {address ? (
+            <li>
+              <a href="/connexion" className="t-button-cap nav-link w-full" onClick={(e) => { e.preventDefault(); void signOut() }}>Sign out</a>
+            </li>
+          ) : null}
         </ul>
       </nav>
     </header>
+  )
+}
+
+/** Signing out from anywhere: the bench forgets the session, the page lets go of the Ledger, and a full load of the door
+ *  starts the next sign-in from nothing (no state left in the page). */
+async function signOut() {
+  try { await fetch('/api/logout', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}', credentials: 'same-origin' }) } catch { /* the bench may be down: the page still leaves */ }
+  try { await window.LedgerWeb?.disconnect() } catch { /* no Ledger session in this page */ }
+  window.location.assign('/connexion')
+}
+
+/** The address in the bar opens a small menu: the account, and signing out. Escape or a click outside closes it. */
+function AccountMenu({ address, label, title, className, current }: { address: string; label: string; title: string; className: string; current: boolean }) {
+  const [open, setOpen] = useState(false)
+  const root = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!open) return
+    const away = (e: MouseEvent) => { if (root.current && !root.current.contains(e.target as Node)) setOpen(false) }
+    const key = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
+    document.addEventListener('mousedown', away)
+    document.addEventListener('keydown', key)
+    return () => { document.removeEventListener('mousedown', away); document.removeEventListener('keydown', key) }
+  }, [open])
+  return (
+    <div ref={root} className="nav-account">
+      {/* a link, like the other doors of the bar, so it keeps their look; a click opens the menu, a middle click the account */}
+      <a href="/account" role="button" className={className} title={title} aria-haspopup="menu" aria-expanded={open} aria-current={current ? 'page' : undefined}
+        onClick={(e) => { e.preventDefault(); setOpen((v) => !v) }}>
+        {label}
+      </a>
+      {open ? (
+        <div className="nav-account__menu" role="menu" aria-label={`Account ${address}`}>
+          <a {...linkProps('/account')} role="menuitem" className="t-button-cap nav-link" onClick={(e) => { linkProps('/account').onClick(e); setOpen(false) }}>Account</a>
+          <a href="/connexion" role="menuitem" className="t-button-cap nav-link" onClick={(e) => { e.preventDefault(); void signOut() }}>Sign out</a>
+        </div>
+      ) : null}
+    </div>
   )
 }
 
