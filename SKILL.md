@@ -11,6 +11,8 @@ Run from repo root. Python tools need `. .venv/bin/activate`; Ledger JS tools li
 
 > **Read-only first.** The MCP (`mcp/pds_mcp.py`) never signs, never sends, never launches anything. It serves the data
 > that led to each decision and the data needed to analyse positions. Every tool call needs `key` (or `PDS_MCP_KEY`).
+> Over HTTP (`POST https://netout.tech/api/mcp`, MCP Streamable HTTP) the account key travels as
+> `Authorization: Bearer <key>`: `claude mcp add --transport http netout https://netout.tech/api/mcp --header "Authorization: Bearer <key>"`.
 > The master key is read from the Ledger Key Ring when sealed (`scripts/ring-seal.sh`), else from `mcp/.mcp-key`;
 > **each account has its own key**, derived (`HMAC-SHA256(master, address)`), never stored, that opens only that
 > account's files (`PDS_ACCOUNT`, `PDS_JOURNAL`, `PDS_MANDATE`, `PDS_BOTS`) — the bench hands it out under **mon compte**.
@@ -53,7 +55,7 @@ Run from repo root. Python tools need `. .venv/bin/activate`; Ledger JS tools li
 | "leave it refused", "no, don't sign that one" | bench → **laisser refusé** on the out-of-bounds card (`POST /api/escalate_no`): the request is closed without a signature, the refusal is remembered (no bot re-proposes that position), and the next queued request, if any, takes its place |
 | "which bot took this position", "show me the bots" (MCP) | tools `bots` (live and stopped, rounds, buys/refusals, exceptions, spend, refusal reasons, positions) and `operations(bot=<name>)`; `positions` rows carry `bot` |
 | "log in with my Ledger", "connect my Ledger to the site" | bench header → **se connecter avec ma Ledger** (EIP-4361 Sign-In with Ethereum, signed in the browser via the Signer Kit + WebHID; the server verifies with `cast wallet verify`) — or, with a bench-side signer, the address read on the device (`/api/login_device`). One account = one proven address = `accounts/<address>/` (profile, mandate, journal, notifications, events) |
-| "my MCP key", "the config to paste into Claude", "what did I do on the site" | bench → **mon compte** (`/api/account`, `?reveal=1` for the key): derived key, ready-to-paste `mcpServers` config bound to that account's files, and the event log (login, session, strategy, mandate_signed, run, run_done, notified, exception_signed, watch, analysis) |
+| "my MCP key", "the config to paste into Claude", "plug my own agent in", "what did I do on the site" | site → **/account**: the derived key, the `claude mcp add --transport http` command and the JSON for `/api/mcp` (served by the site, nothing to install); bench → `/api/account` (`?reveal=1` for the key): derived key, ready-to-paste stdio `mcpServers` config bound to that account's files, and the event log (login, session, strategy, mandate_signed, run, run_done, notified, exception_signed, watch, analysis) |
 | "who does what", "show me the architecture" | http://127.0.0.1:8099/schema.html — the agents, the tools, and the three bricks of the brief on one page |
 | "sign on MY Ledger, in my browser" (SaaS path) | bench → **ma Ledger · navigateur**, then **USB (WebHID)** (a real Ledger, Chromium browsers) or **émulée (banc)** (the emulator through the `/speculos/*` same-origin proxy); the page signs what the server parks in `pending` and posts it to `/api/signed` |
 | "rebuild the browser bundle" | `cd ledger/dmk && npm run build:web` → `web/dist/ledger-web.js` |
