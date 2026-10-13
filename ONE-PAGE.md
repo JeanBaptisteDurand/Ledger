@@ -2,7 +2,7 @@
 
 **An agent cannot enter a position it cannot net out.**
 
-Live demo: **https://netout.tech** · Code: this repository · Full README (French, with an English page): [README.md](README.md)
+Live demo: **https://netout.tech** · Code: this repository · Full README (in English, then the complete documentation in French): [README.md](README.md)
 · Photos of a real Ledger Flex signing on the live site: [captures/ledger-reelle/](captures/ledger-reelle/)
 
 ![The Net·Out system on one sheet](captures/site/schema.png)

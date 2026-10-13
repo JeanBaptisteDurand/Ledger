@@ -1,198 +1,245 @@
-# NET·OUT
+# Net·Out
 
-**Un agent ne peut pas entrer dans une position dont il ne sait pas sortir.**
+**An agent cannot enter a position it cannot net out.**
 
-### La démo en ligne — **<https://netout.tech>**
+### Live demo — **<https://netout.tech>**
 
-Le site entier, avec le banc derrière lui : un fork de Base épinglé au bloc 50 614 000, une Ledger Flex émulée (Speculos,
-l'app Ethereum compilée avec la clé de test) et le serveur du compte. **Sign in with the emulated Flex** connecte en un
-clic. La Flex s'affiche à côté de la page dès qu'elle attend une signature, et l'on y signe à la souris : un clic appuie,
-un glissé vers la gauche tourne la page, un appui long signe. Ensuite la carte vivante : le coffre, le dépôt, le mandat,
-les bots, les demandes hors bornes, le volet TARE, le retrait. [Route par route](#le-site-route-par-route) ; comment
-c'est servi : [`DEPLOY.md`](DEPLOY.md).
+The whole site, with the bench behind it: a Base fork pinned at block 50,614,000, an emulated Ledger Flex (Speculos,
+running the Ethereum app built with the test key) and the account server. **Sign in with the emulated Flex** connects
+in one click. The Flex appears next to the page whenever it waits for a signature, and you sign on it with the mouse: a
+click taps, a drag to the left turns the page, a long press signs. Then the live map: the vault, the deposit, the
+mandate, the bots, the requests out of bounds, the TARE panel, the withdrawal. [Route by route](#the-site-route-by-route)
+· how it is served: [`DEPLOY.md`](DEPLOY.md).
 
-Ce que ce domaine ne donne pas : une Flex par visiteur. Il n'y en a qu'une, émulée et partagée : tous ceux qui la
-choisissent sont le même porteur, et elle signe une chose à la fois ; un écran abandonné en pleine revue est refusé
-par le banc au bout de trois minutes. Une vraie Ledger en USB (Chrome, Edge ou Brave)
-ouvre son propre compte, si elle porte l'app Ethereum compilée avec la clé de test ([Prérequis](#prérequis)) ; ce
-chemin a été rejoué en ligne le 13 octobre, en photos plus bas.
+What this domain does not give is one Flex per visitor. There is one, emulated and shared: everyone who picks it is the
+same holder, it signs one thing at a time, and a screen abandoned mid-review is rejected by the bench after three
+minutes. A real Ledger over USB (Chrome, Edge or Brave) opens its own account, if it runs the Ethereum app built with the
+test key ([prerequisites](#prérequis), in French). That path was replayed online on 13 October, photos below.
 
-En local, une commande fait la même chose : `scripts/site.sh`, puis **<http://127.0.0.1:5173>** ; `PORTEUR=1
-scripts/site.sh` y ajoute une Flex qui approuve seule chaque écran, pour une démonstration sans appareil. La vidéo suit
-le script de [`VIDEO.md`](VIDEO.md). Tout ce qui est dit ici a une commande ; rien n'est inventé.
-
-### Le système, sur une feuille
+Locally, one command does the same: `scripts/site.sh`, then **<http://127.0.0.1:5173>**. `PORTEUR=1 scripts/site.sh`
+adds a Flex that approves every screen by itself, for a demo without a device. Every claim in this file has a command
+behind it.
 
 ![The Net·Out system on one sheet: the holder's Ledger Flex signs the sign-in, the deposit, the mandate, each exception and the withdrawal through Ledger's Signer Kit in the browser; the server runs the bots; the ExitVault contract measures the exit inside every entry with TARE's counterfactual; the analyst reads ten read-only MCP tools](captures/site/schema.png)
 
-La carte du site, telle que l'accueil la montre et que la démo l'allume : la Ledger signe cinq gestes et jamais un
-achat ; les bots achètent par une clé de session bornée au coffre ; le contrat mesure la sortie dans chaque entrée ;
-l'analyste lit, et ne peut rien faire.
-
-### La vraie Ledger, sur le site en ligne
+The site's map, as the home page shows it and the demo lights it up: the Ledger signs five things and never a purchase,
+the bots buy through a session key bounded to the vault, the contract measures the exit inside every entry, and the
+analyst reads and can do nothing.
 
 ![Photos of a real Ledger Flex over USB on https://netout.tech: the Sign-In with Ethereum message, then an exception read in clear with EXIT COST (bps) 1889, Hold to sign, and the position entered under the exception](captures/ledger-reelle/planche.jpg)
 
-Une vraie Ledger Flex, en USB depuis Chrome, sur <https://netout.tech>, le 13 octobre : la connexion Sign-In with
-Ethereum ; puis une dérogation lue en clair, dont l'écran porte **EXIT COST (bps) 1889**, le nombre que le contrat
-venait de mesurer sur la carte ; « Hold to sign » ; puis l'entrée sous dérogation. Le mandat du même compte, signé par
-la même Flex, est sur la carte. Les sept photos, décrites une à une : [`captures/ledger-reelle/`](captures/ledger-reelle/).
-
-Le porteur signe **une fois**, sur sa Ledger, un mandat de trois nombres lus en clair sur l'écran : un budget, une perte
-de sortie tolérée, une échéance. Un contrat à son nom, [`ExitVault`](contracts/src/ExitVault.sol), l'applique **à
-chaque entrée** : il achète, puis simule la revente intégrale dans la même transaction, et refuse si la sortie coûte
-plus que le mandat n'autorise. Ce qui déborde revient sur l'appareil **avec le nombre** : le porteur lit le coût de
-sortie réel et signe une dérogation à usage unique, ou laisse refusé. Les fonds partent de sa Ledger (un envoi d'ETH, la
-seule transaction qu'elle signe) et y reviennent sur une autorisation de retrait lue en clair.
-
-**Vos Agent Policies bornent ce qu'un agent dépense. Personne ne borne ce qu'il peut ressortir.** Un plafond par
-jour, une liste de contrats, un glissement maximal : tout le monde borne ce qu'un agent **engage**. Personne ne vérifie
-ce qu'il pourra **récupérer**. Ça vaut pour un jeton qu'un hook empêche de revendre, pour un coffre à rendement dont on
-ne sort qu'après sept jours de file d'attente, et pour toute position qu'on prend en une transaction et qu'on quitte en
-trois semaines, ou jamais.
-
-### La mesure : TARE
-
-Le moteur qui mesure la sortie est [**TARE**](https://github.com/JeanBaptisteDurand/ETH_Online_2026), notre
-instrument d'ETHOnline 2026 (**finaliste, prix Uniswap Foundation « Best Uniswap Stack Contribution »**). Il ne change
-pas le pool, il change le hook : sur un fork épinglé au bloc **50 614 000**, `anvil_setCode` remplace le bytecode du
-hook par 89 octets inertes, le même swap est coté deux fois, et l'écart est ce que le hook prend, à l'entrée et à la
-sortie. Sur **125 072 mesures** de la longue traîne WETH de Base, **six pools réels laissent entrer pour 0 bps et
-prennent 9 990 bps à la sortie**, indiscernables de 77 pools sains avant d'acheter. Ici, TARE ne tourne plus après coup :
-il tourne **dans le coffre, à chaque entrée** (`buy()` : achat puis revente simulée, même transaction), dans le veilleur
-(`watch.py` resonde chaque position et sort tant qu'on peut), et sous les yeux du jury, dans le volet TARE de la carte
-vivante. Seconde instance : **dix coffres ERC-4626 réels** (Morpho, Base), même mandat, même refus. Le standard écrit le
-piège lui-même (`previewRedeem` doit ignorer les limites de retrait) ; au bloc des mesures, le plus gros coffre WETH de
-Base a **27 % de la position de son plus gros déposant bloquée**, et cinq coffres sur dix refusent même le dépôt.
-
-### Les quatre briques Ledger, un rôle chacune
-
-| Brique | Ici |
-|---|---|
-| **Signer Kit + DMK** (1.18.1 / 1.9.1) | dans le navigateur du porteur (WebHID pour une vraie Flex, Speculos en banc) : la connexion Sign-In with Ethereum, le dépôt, le mandat, chaque dérogation, le retrait. Jamais un achat. |
-| **Clear signing** (ERC-7730) | nos descripteurs du mandat, de la dérogation et du retrait, compilés et signés avec la clé de test de l'app Ethereum 1.22.4 : la Flex affiche les champs, le kit rapporte `isBlindSign=false`. Vérifié sur la Flex émulée et sur une vraie Flex, en ligne ([photos](captures/ledger-reelle/)). |
-| **Agent Stack** (wallet-cli 2.1.0) | l'analyste, un vrai agent : un modèle de langage (Claude par son CLI, ou gpt-4o-mini par l'API d'OpenAI sur le site en ligne) sur un MCP en lecture seule de dix outils, dont `earn yields` de Ledger ; il cite l'outil sous chaque nombre et ne peut rien signer. |
-| **Ring CLI** (Ledger Key Ring Protocol) | le secret maître dont dérive la clé MCP de chaque compte (`HMAC-SHA256(maître, adresse)`, jamais stockée) ; [`scripts/ring-seal.sh`](scripts/ring-seal.sh) le scelle sous la graine de l'opérateur. Initialisé le 13 octobre avec une vraie Flex en USB, en local sur le Mac de l'opérateur : le MCP y déchiffre ce secret au démarrage. Le serveur de netout.tech n'a pas de Ledger branchée : là, le Ring n'est pas initialisé et le secret maître est un fichier en clair. |
-
-[Ligne à ligne](#les-briques-ledger-du-brief-ligne-à-ligne), avec les versions et les fichiers.
-
-### Les agents, et la frontière entre eux
-
-Les **bots** agissent sans modèle de langage : nommés, lancés, arrêtés par le porteur, ils choisissent sur ce qu'ils
-voient (la profondeur, l'entrée, le rendement affiché) et ne voient jamais la sortie ; leur clé ne peut appeler que le
-coffre. **L'analyste** comprend : c'est le vrai agent, et il ne peut rien faire. Celui qui agit n'a pas de LLM ; celui
-qui a un LLM ne peut pas agir. Une consigne injectée peut faire *choisir* un piège à un bot ; elle ne peut pas lui faire
-*dépasser* le mandat.
-
-### Ce que vous verrez
-
-| | |
-|---|---|
-| ![la porte](captures/site/porte.png) | ![la carte vivante](captures/site/carte-vivante.png) |
-| La porte : la Flex émulée ou une vraie Ledger, le chemin de signature, la connexion. | La carte vivante : le système allumé par le banc, la carte NOW, la Flex en direct. |
-| ![le volet TARE](captures/site/volet-tare.png) | ![le volet Bots](captures/site/volet-bots.png) |
-| TARE pendant un tour : les quatre étapes du contrefactuel, le nombre, le verdict. | Les bots : chacun, ses nombres, ses décisions, arrêt et relance. |
-| ![les trades](captures/site/trades.png) | ![le compte](captures/site/compte.png) |
-| Trades : agents, demandes hors bornes avec le miroir de l'appareil, positions, journal. | Compte : dépôt et retrait signés sur la Ledger, l'analyste, la clé MCP, l'historique. |
-
-### Le site, route par route
-
-| Route | Ce que c'est |
-|---|---|
-| [`/`](https://netout.tech/) | **l'accueil** : la scène de Florent, puis l'explication entière, du trou dans les politiques d'agents à la carte du système |
-| [`/demo`](https://netout.tech/demo) | **la carte vivante** : le système allumé par le banc, la carte NOW qui dit quoi faire, la Flex à côté, les volets Bots, TARE et « Watch and analyst », et « Start over » |
-| [`/connexion`](https://netout.tech/connexion) | **la porte** : la Flex émulée ou une vraie Ledger en USB, le chemin de signature, la connexion SIWE ; connecté, on y revient pour changer d'appareil |
-| [`/trades`](https://netout.tech/trades) | **les trades** : les agents (nom, univers, tranches, rythme, arrêt, relance, historique), les demandes hors bornes avec le miroir de l'appareil, les positions et le resondage, le journal filtrable |
-| [`/account`](https://netout.tech/account) | **le compte** : le dépôt et le retrait signés sur la Ledger, l'analyste, la clé MCP et sa configuration, l'historique |
-
-Sans adresse prouvée, `/trades` et `/account` renvoient à la porte, qui ramène ensuite à la page demandée. La barre
-du haut porte « The product », « Demo » et « Sign in » ; connecté, elle ajoute Trades et Account.
-
-### Sommaire
-
-[Le système](#le-système-sur-une-feuille) · [La vraie Ledger](#la-vraie-ledger-sur-le-site-en-ligne) · [Le site, route par route](#le-site-route-par-route) · [`DEPLOY.md`](DEPLOY.md) · [In English, on one page](#in-english-on-one-page) ([`ONE-PAGE.md`](ONE-PAGE.md)) · [Le problème](#le-problème) · [Le mécanisme](#le-mécanisme) ·
-[Le banc, dans le navigateur](#le-banc-dans-le-navigateur) · [L'agent, et pourquoi il se fait piéger](#lagent-et-pourquoi-il-se-fait-piéger) ·
-[La seconde instance](#la-seconde-instance--dix-coffres-erc-4626-réels-même-mandat-même-refus) · [L'escalade](#lescalade---hors-bornes-ne-veut-pas-dire-non-) ·
-[Plusieurs agents](#plusieurs-agents) · [Le MCP](#le-mcp--lecture-seule-pour-analyser-après-coup) · [L'analyste](#lanalyste--le-vrai-agent) ·
-[Les briques Ledger](#les-briques-ledger-du-brief-ligne-à-ligne) · [En SaaS](#en-saas--la-ledger-reste-chez-le-client) · [Les mots](#les-mots-une-fois-pour-toutes) ·
-[Ce qui tourne](#ce-qui-tourne) · [Prérequis](#prérequis) · [Ce que ça n'attrape pas](#ce-que-ça-nattrape-pas--dit-avant-quon-nous-le-demande) ·
-[Cinq trouvailles amont](#cinq-trouvailles-amont-en-construisant-ceci) · [`FEEDBACK.md`](FEEDBACK.md) · [`upstream/`](upstream/) · [`VIDEO.md`](VIDEO.md) · [Licence](#licence)
-
-*« Porte de sortie » est le nom de travail : les documents, le banc et les identifiants techniques l'emploient encore.*
+A real Ledger Flex, over USB from Chrome, on <https://netout.tech>, on 13 October: the Sign-In with Ethereum message,
+then an exception read in clear whose screen shows **EXIT COST (bps) 1889**, the number the contract had just measured
+on the map, "Hold to sign", then the entry under the exception. The mandate of the same account, signed by the same
+Flex, is on the map. The seven photos, described one by one: [`captures/ledger-reelle/`](captures/ledger-reelle/).
 
 ---
 
-## In English, on one page
+## Contents
 
-**The sentence.** An agent cannot enter a position it cannot net out. (Working title: Porte de sortie, the exit door.)
+| | |
+|---|---|
+| **The product** | [The problem](#the-problem) · [What it does](#what-it-does) · [The measure: TARE](#the-measure-tare) · [Ledger's four bricks](#ledgers-four-bricks-one-role-each) · [The agents](#the-agents-and-the-line-between-them) |
+| **The evidence** | [What is proven](#what-is-proven) · [What you will see](#what-you-will-see) · [The site, route by route](#the-site-route-by-route) · [What it does not catch](#what-it-does-not-catch) |
+| **Using it** | [Plug your own agent in](#plug-your-own-agent-in) · [Run it](#run-it) · [`DEPLOY.md`](DEPLOY.md) · [`MAINNET.md`](MAINNET.md) |
+| **For Ledger** | [Upstream findings](#upstream-findings) · [`FEEDBACK.md`](FEEDBACK.md) · [`upstream/`](upstream/) · [`SKILL.md`](SKILL.md) · [`AGENTS.md`](AGENTS.md) |
+| **The rest** | [Team](#team) · [AI attribution](#ai-attribution) · [License](#license) · [`ONE-PAGE.md`](ONE-PAGE.md) · [Full documentation, in French](#documentation-complète-en-français) |
 
-**Live.** <https://netout.tech> serves the whole site with the bench behind it: a Base fork pinned at block
-50 614 000, an emulated Ledger Flex, the account server. *Sign in with the emulated Flex* takes one click; you sign on
-its screen with the mouse (a click taps, a drag to the left turns the page, a long press signs). There is one emulated
-Flex for every visitor, so one holder and one signature at a time; a real Ledger over USB opens its own account.
-Its deposit is a real Base transaction that the bench only publishes on the fork: test it with an address that holds
-no ETH on Base.
+## The problem
 
-**A real device.** Photos of a real Ledger Flex signing on the live site, over USB from Chrome: the sign-in message,
-then an exception whose screen shows EXIT COST (bps) 1889, the number the contract had just measured
-([`captures/ledger-reelle/`](captures/ledger-reelle/)). The system on one sheet: [`captures/site/schema.png`](captures/site/schema.png). How it
-is served, and what was tested from outside: [`DEPLOY.md`](DEPLOY.md).
+Agent policies bound what an agent **spends**: a daily cap, an allow-list, a maximum slippage. Ledger's Agent Policies
+bound exactly that. Nothing bounds what the agent can **get back**. That goes for a token whose hook blocks the resale,
+for a yield vault you only leave after a seven-day queue, and for any position taken in one transaction and left in
+three weeks, or never.
 
-**The measure.** The exit is measured by **TARE**, our ETHOnline 2026 instrument (finalist, Uniswap Foundation prize,
-“Best Uniswap Stack Contribution”): on a fork pinned at block 50 614 000 it swaps the hook's bytecode for 89 inert bytes,
-quotes the same swap twice, and the gap is what the hook takes. Here it runs inside the vault at every entry, in the
-watcher that re-probes every position, and in front of the jury, in the TARE panel of the live map.
+On Base it is not hypothetical. Across **125,072 measurements** of Base's long tail of WETH pools, **six real Uniswap v4
+pools let you in for 0 bps and take 9,990 bps on the way out**, and before buying they look like 77 healthy pools. The
+same hook sets both prices, and an agent only reads the entry. On the yield side, the ERC-4626 standard writes the trap
+itself (`previewRedeem` must ignore withdrawal limits): at the block we measured, **Base's largest WETH vault had 27 % of
+its largest depositor's position locked**, and five of ten real vaults refused even the deposit.
 
-**The gap.** Everything today bounds what an agent *spends* — a daily cap, an allow-list, a maximum slippage;
-Ledger's Agent Policies bound exactly that. Nothing bounds what it can *get back*. A token whose hook blocks
-the resale, a yield vault with a seven-day exit queue: the same closed door, invisible at entry.
+## What it does
 
-**The mechanism.** The holder signs **once**, on the Ledger, a mandate of three numbers read in clear on the
-screen: budget, tolerated round-trip loss in basis points, expiry. A vault contract at the holder's address
-(`ExitVault`) applies it at **every** entry: it buys, then simulates the full resale in the same transaction, and
-refuses if the exit costs more than the mandate. For an ERC-4626 vault it performs the real deposit and
-redemption, reverted, and reads the largest depositor's door. What overflows comes back to the device **with the
-number**: the holder reads the real exit cost and signs a one-time exception — or leaves the refusal. If the exit
-worsens before execution, the exception is void. The holder also funds the vault from the Ledger (one ETH transfer,
-the only transaction it signs) and takes funds back through a clear-signed withdrawal authorisation.
+The holder signs a mandate **once**, on their Ledger: three numbers read in clear on the screen, a budget, a tolerated
+round-trip loss in basis points, an expiry. A contract in their name, [`ExitVault`](contracts/src/ExitVault.sol),
+applies it at **every** entry: it buys, simulates the full resale in the same transaction, and reverts if the exit costs
+more than the mandate allows. For an ERC-4626 vault it performs the real deposit and redemption, reverted, and reads the
+largest depositor's door.
 
-**What is proven, on a Base fork pinned at block 50 614 000.** Six real Uniswap v4 traps, indistinguishable before
-buying: 0 bps at entry, 9 990 bps at exit. Ten real Morpho WETH vaults under the same mandate: the largest has 27 %
-of its biggest depositor's position locked, five refuse deposits outright. 38 Foundry tests, 8 suites. The whole
-journey — Sign-In with Ethereum, mandate, bots, refusals, exception, watch-and-sell, vault exception, analyst,
-account, reconnection, deposit and withdrawal — runs in a real browser against the emulated Flex, and the mandate
-was clear-signed on a physical Flex over USB (`ecrecover` matches).
+What overflows comes back to the device **with the number**: the holder reads the real exit cost and signs a single-use
+exception, or leaves it refused. If the exit worsens before execution, the exception is void. Funds leave the Ledger as
+one ETH transfer, the only transaction it signs, and come back on a withdrawal authorisation read in clear.
 
-**The agents.** Execution bots (no language model) that the holder names, starts and stops; they never see the
-exit — the contract measures it; their key can only call the holder's vault. The one real agent is the **analyst**:
-a language model on a read-only MCP of ten tools (Claude through its CLI; OpenAI's gpt-4o-mini on the live site), citing the
-tool behind every number; it cannot sign, send or stop anything.
+> **The agent** chooses which position, when and how much, alone, as often as it wants, inside the mandate.
+> **The human** signs once, on the Flex: the budget, the tolerated round-trip loss, the expiry.
+> **The contract** applies it at every purchase. The agent can neither raise the threshold, nor change the rule, nor
+> touch the key: for that, you go back to the device.
 
-**Ledger's bricks, one role each.** Signer Kit + DMK in the holder's browser (WebHID for a real Ledger, Speculos
-for the bench), with our own EIP-712 descriptors — compiled with the test key of a 1.22.4 build of the official app,
-because the clear-signing registry answers 403 without a partner token. Agent Stack: the analyst, its MCP, Ledger's
-`wallet-cli` as one of its tools, our skills in Ledger's format. Ring CLI: the master secret from which every
-account's MCP key is derived is sealed under the operator's seed (`scripts/ring-seal.sh`): the Key Ring was
-initialised on 13 October with a real Flex over USB, locally on the operator's Mac, where the MCP decrypts that secret
-at startup. The server behind netout.tech has no Ledger plugged in: there the Ring is not initialised and the secret
-is a plain file.
+## The measure: TARE
 
-**As a service.** The Ledger stays with the client: SIWE in the browser, a vault in their name, the mandate signed in
-the page, one session key per bench that can only call that vault, a webhook when something overflows. Accounts are
-addresses proven by the device; the MCP key is derived, never stored, and plugs the holder's own agent into their
-account over HTTP (`POST /api/mcp`): the analyst's ten read-only tools, that account only, nothing to install.
+The engine that measures the exit is [**TARE**](https://github.com/JeanBaptisteDurand/ETH_Online_2026), our ETHOnline
+2026 instrument (**finalist, Uniswap Foundation prize "Best Uniswap Stack Contribution"**). It does not change the pool,
+it changes the hook: on a fork pinned at block **50,614,000**, `anvil_setCode` replaces the hook's bytecode with 89 inert
+bytes, the same swap is quoted twice, and the gap is what the hook takes, on the way in and on the way out.
 
-**Five upstream findings** (`FEEDBACK.md`): clear signing closed without a partner token, silently; a one-line
-chainId bug in the official Python client (every chain ≥ 256); the Signer Kit detects blind signing, reports it to
-Ledger and not to the developer; `signMessage` drops any message containing one non-ASCII character; two clients on
-one emulated app, and Speculos delivers each reply to every waiting request, so a pending command looks refused (the
-Secure SDK itself does the right thing, checked against today's code).
+Here TARE no longer runs after the fact. It runs **inside the vault, at every entry** (`buy()`: the purchase, then the
+simulated resale, in the same transaction), in the watcher (`watch.py` re-probes every position and exits while it still
+can), and in front of the jury, in the TARE panel of the live map.
 
-**What it does not catch.** A switch flipped after the purchase is watched, not prevented; the price of the token;
-anything on a live network (the demo runs on a fork — `MAINNET.md` says what changes).
+## Ledger's four bricks, one role each
 
-**Run it.** `scripts/site.sh` for the site on your machine (the bench, the emulated Flex, the front); `./scripts/demo.sh`
-for the command line. Prerequisites below.
+| Brick | Here |
+|---|---|
+| **Signer Kit + DMK** (1.18.1 / 1.9.1) | in the holder's browser (WebHID for a real Flex, Speculos for the bench): Sign-In with Ethereum, the deposit, the mandate, each exception, the withdrawal. Never a purchase. |
+| **Clear signing** (ERC-7730) | our descriptors for the mandate, the exception and the withdrawal, compiled and signed with the test key of the Ethereum app 1.22.4, served to the kit by our own context module: the Flex shows every field, the kit reports `isBlindSign=false`. Checked on the emulated Flex and on a real Flex, online ([photos](captures/ledger-reelle/)). |
+| **Agent Stack** (wallet-cli 2.1.0) | the analyst, a real agent: a language model (Claude through its CLI, or OpenAI's gpt-4o-mini on the live site) on a read-only MCP of ten tools, one of them Ledger's `earn yields`. It cites the tool behind every number and cannot sign anything. The same MCP is served over HTTP for the holder's own agent. [`SKILL.md`](SKILL.md) and [`AGENTS.md`](AGENTS.md) follow Ledger's skill format. |
+| **Ring CLI** (Ledger Key Ring Protocol) | the master secret every account's MCP key is derived from (`HMAC-SHA256(master, address)`, never stored). [`scripts/ring-seal.sh`](scripts/ring-seal.sh) seals it under the operator's seed. Initialised on 13 October with a real Flex over USB on the operator's Mac, where the MCP decrypts it at startup. The server behind netout.tech has no Ledger plugged in, so there the secret is a plain file. |
+
+Line by line, with versions and files: [les briques Ledger du brief](#les-briques-ledger-du-brief-ligne-à-ligne), in
+French.
+
+## The agents, and the line between them
+
+The **bots** act without a language model. The holder names, starts and stops each one, with its own universe (v4 pools
+or ERC-4626 vaults), size and pace. They choose on what they see (depth, entry price, advertised yield) and never see
+the exit, and their key can only call the vault. The **analyst** understands: it is the real agent, and it can do
+nothing. The one that acts has no LLM, and the one with an LLM cannot act. An injected instruction can make a bot
+*choose* a trap. It cannot make it *exceed* the mandate.
+
+## What is proven
+
+On a Base fork pinned at block 50,614,000:
+
+- six real Uniswap v4 traps, indistinguishable before buying (0 bps at entry, 9,990 bps at exit), refused by the vault;
+- ten real ERC-4626 WETH vaults under the same mandate: the largest has 27 % of its biggest depositor's position
+  locked, five refuse deposits outright;
+- **38 Foundry tests in 8 suites**, all green, one of them replaying the scene with the signature that came from the
+  device;
+- the whole journey (Sign-In with Ethereum, mandate, bots, refusals, exception, watch-and-sell, vault exception,
+  analyst, account, reconnection, deposit and withdrawal) runs in a real browser against the emulated Flex, on the
+  local bench and on the live site;
+- the mandate was clear-signed on a physical Flex over USB (`ecrecover` matches), and a real Flex signed the sign-in and
+  an exception on the live site.
+
+```bash
+./scripts/demo.sh                     # signs the mandate on the emulated device -> mandate.json
+cd contracts
+MANDATE_FILE=../mandate.json forge test --fork-url "$BASE_RPC_URL" --fork-block-number 50614000 -vv
+```
+
+## What you will see
+
+| | |
+|---|---|
+| ![The door](captures/site/porte.png) | ![The live map](captures/site/carte-vivante.png) |
+| The door: the emulated Flex or a real Ledger, the signing path, the sign-in. | The live map: the system lit up by the bench, the NOW card, the Flex live. |
+| ![The TARE panel](captures/site/volet-tare.png) | ![The Bots panel](captures/site/volet-bots.png) |
+| TARE during a round: the four steps of the counterfactual, the number, the verdict. | The bots: each one, its numbers, its decisions, stop and restart. |
+| ![Trades](captures/site/trades.png) | ![Account](captures/site/compte.png) |
+| Trades: the agents, the out-of-bounds requests with the device mirror, the positions, the journal. | Account: deposit and withdrawal signed on the Ledger, the analyst, the MCP key, the history. |
+
+## The site, route by route
+
+| Route | What it is |
+|---|---|
+| [`/`](https://netout.tech/) | **home**: Florent's scene, then the whole explanation, from the gap in agent policies to the map of the system |
+| [`/demo`](https://netout.tech/demo) | **the live map**: the system lit up by the bench, the NOW card that says what to do, the Flex beside it, the Bots, TARE and "Watch and analyst" panels, and "Start over" |
+| [`/connexion`](https://netout.tech/connexion) | **the door**: the emulated Flex or a real Ledger over USB, the signing path, the SIWE sign-in. Once signed in, come back here to switch devices |
+| [`/trades`](https://netout.tech/trades) | **trades**: the agents (name, universe, slices, pace, stop, restart, history), the out-of-bounds requests with the device mirror, the positions and the re-probe, the filterable journal |
+| [`/account`](https://netout.tech/account) | **the account**: deposit and withdrawal signed on the Ledger, the analyst, the MCP key with the command that plugs your own agent in, the history |
+
+Without a proven address, `/trades` and `/account` send you to the door, which brings you back afterwards.
+
+## Plug your own agent in
+
+Each account has an MCP key, derived from the master secret and its address and never stored. The account page shows
+it, with this command and the JSON for any MCP client that speaks HTTP:
+
+```bash
+claude mcp add --transport http netout https://netout.tech/api/mcp --header "Authorization: Bearer <your key>"
+```
+
+Your agent gets the analyst's ten read-only tools (`bots`, `operations`, `decision`, `positions`, `mandate`,
+`compare_entry_exit`, `universe_facts`, `hook_analysis`, `vault_openness`, `ledger_earn_yields`), on that account only.
+It can read everything and sign, send or stop nothing. An unknown key gets a 403. Nothing to install: the site serves
+the MCP (`POST /api/mcp`, MCP Streamable HTTP).
+
+## What it does not catch
+
+A switch flipped after the purchase is watched, not prevented: the watcher re-probes every position and exits while it
+can. The price of the token is not its business. And nothing here runs on a live network: the demo is a fork, and
+[`MAINNET.md`](MAINNET.md) says what changes. The full list, said before anyone asks:
+[ce que ça n'attrape pas](#ce-que-ça-nattrape-pas--dit-avant-quon-nous-le-demande), in French.
+
+## Upstream findings
+
+Building this, we hit real problems in Ledger's stack and filed them on 13 October, each checked against that day's
+code: [device-sdk-ts#1987](https://github.com/LedgerHQ/device-sdk-ts/issues/1987) (`signMessage` drops any message
+with one non-ASCII character), [device-sdk-ts#1988](https://github.com/LedgerHQ/device-sdk-ts/issues/1988) (the Signer
+Kit detects blind signing but does not tell the developer), [speculos#685](https://github.com/LedgerHQ/speculos/issues/685)
+(two clients on one emulated app get each other's answers) and [ethereum/ERCs#2069](https://github.com/ethereum/ERCs/pull/2069)
+(invalid formats in the ERC-7730 example). The one-line chainId bug in app-ethereum's Python client, which breaks
+EIP-712 filtering on every chain ≥ 256, had been proposed the day before
+([app-ethereum#1114](https://github.com/LedgerHQ/app-ethereum/pull/1114)): we confirmed it at chain 8453. The notes,
+with files and lines: [`FEEDBACK.md`](FEEDBACK.md).
+
+## Run it
+
+Online: open <https://netout.tech>, click **Sign in with the emulated Flex**, and follow the card above the Flex.
+
+Locally, with Docker, Foundry, Python 3.12+, Node 20+ and a Base RPC URL:
+
+```bash
+git clone https://github.com/JeanBaptisteDurand/Ledger && cd Ledger
+git clone https://github.com/JeanBaptisteDurand/ETH_Online_2026 ../ETH_Online_2026   # the TARE corpus
+cp ../ETH_Online_2026/.env.example ../ETH_Online_2026/.env                            # then set BASE_RPC_URL
+ledger/build/build-flex.sh                      # app-ethereum 1.22.4 with the test key, about 5 min
+(cd contracts && forge install)
+uv venv .venv && . .venv/bin/activate
+uv pip install -e ledger/build/app-ethereum/client -r ledger/requirements.txt
+(cd ledger/dmk && npm ci)
+scripts/site.sh                                 # the fork, the emulated Flex, the server and the site: http://127.0.0.1:5173
+```
+
+`./scripts/demo.sh` tells the same story on the command line. Prerequisites and every option:
+[prérequis](#prérequis), in French.
+
+## Team
+
+**Jean-Baptiste Durand** and **Florent Belotti**, École 42 Paris (42Blockchain). The contract, the bench, the agents,
+the MCP, the descriptors and the upstream feedback are Jean-Baptiste's. The scene, the home page, the demo and the
+site's design are Florent's. Built for the **Ledger N3XT** hackathon, 6 to 13 October 2026.
+
+## AI attribution
+
+Claude Code was a working tool during the hackathon, under the team's direction: the idea, the mechanism, the choices
+and the design are ours. In the product, two agents use a language model, the analyst and the strategist: OpenAI's
+`gpt-4o-mini` on the live site, Claude through its CLI locally. What does not come from a model is the measurements:
+every exit cost comes from the Base fork at block 50,614,000, measured in the transaction by the contract or by TARE's
+counterfactual, and the Foundry tests replay the refusals. The photos of the real Ledger are frames from a video of the
+device.
+
+## License
+
+Apache-2.0 ([`LICENSE`](LICENSE)), like TARE, for the code and the texts. Not covered, and under their own terms: the 3D
+models of the devices ([`front/public/references.txt`](front/public/references.txt)), Google's Draco decoder, the lens
+flare of `lensflare-threejs-vanilla`, and the two sounds of the hero.
+
+---
+
+## Documentation complète, en français
+
+*« Porte de sortie » est le nom de travail : les documents, le banc et les identifiants techniques l'emploient encore.*
+
+[Le problème](#le-problème) · [Le mécanisme](#le-mécanisme) · [Le banc, dans le navigateur](#le-banc-dans-le-navigateur) ·
+[L'agent, et pourquoi il se fait piéger](#lagent-et-pourquoi-il-se-fait-piéger) ·
+[La seconde instance](#la-seconde-instance--dix-coffres-erc-4626-réels-même-mandat-même-refus) ·
+[L'escalade](#lescalade---hors-bornes-ne-veut-pas-dire-non-) · [Plusieurs agents](#plusieurs-agents) ·
+[Le MCP](#le-mcp--lecture-seule-pour-analyser-après-coup) · [L'analyste](#lanalyste--le-vrai-agent) ·
+[Les briques Ledger](#les-briques-ledger-du-brief-ligne-à-ligne) · [En SaaS](#en-saas--la-ledger-reste-chez-le-client) ·
+[Les mots](#les-mots-une-fois-pour-toutes) · [Ce qui tourne](#ce-qui-tourne) · [Prérequis](#prérequis) ·
+[Ce que ça n'attrape pas](#ce-que-ça-nattrape-pas--dit-avant-quon-nous-le-demande) ·
+[Cinq trouvailles amont](#cinq-trouvailles-amont-en-construisant-ceci) · [`VIDEO.md`](VIDEO.md) · [Licence](#licence)
 
 ## Le problème
 
