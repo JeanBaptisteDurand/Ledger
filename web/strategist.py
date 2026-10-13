@@ -13,7 +13,9 @@ lit les mêmes intentions avec des règles simples, pour que le banc tourne touj
 from __future__ import annotations
 
 import json
+import os
 import re
+import shutil
 import subprocess
 
 WETH = "0x4200000000000000000000000000000000000006"
@@ -99,22 +101,61 @@ def _extract_json(text: str) -> dict | None:
         return None
 
 
+def llm_backend() -> str:
+    """Who proposes: `claude` (the CLI) or `openai` (the API). PDS_LLM decides; by default the claude CLI when it is
+    on the PATH, otherwise OpenAI when a key is set (the same rule as agent/analyst.py)."""
+    b = (os.environ.get("PDS_LLM") or "").strip().lower()
+    if b in ("claude", "openai"):
+        return b
+    if shutil.which("claude"):
+        return "claude"
+    return "openai" if os.environ.get("OPENAI_API_KEY") else "claude"
+
+
+def _propose_openai(prompt: str, timeout: int) -> dict | None:
+    import requests
+    api = os.environ.get("OPENAI_API_KEY")
+    if not api:
+        raise RuntimeError("no OPENAI_API_KEY")
+    url = os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1").rstrip("/") + "/chat/completions"
+    r = requests.post(url, headers={"Authorization": f"Bearer {api}"}, timeout=timeout, json={
+        "model": os.environ.get("OPENAI_MODEL", "gpt-4o-mini"), "temperature": 0.2,
+        "response_format": {"type": "json_object"},
+        "messages": [{"role": "system", "content": SYSTEM}, {"role": "user", "content": prompt}]})
+    if r.status_code != 200:
+        raise RuntimeError(f"OpenAI answered {r.status_code}")
+    return _extract_json(r.json()["choices"][0]["message"].get("content") or "")
+
+
 def propose(prompt: str, timeout: int = 120) -> dict:
     """Une intention en français -> des bornes chiffrées, prêtes à signer."""
-    try:
-        p = subprocess.run(
-            ["claude", "-p", "--append-system-prompt", SYSTEM, prompt],
-            capture_output=True, text=True, timeout=timeout,
-        )
-        data = _extract_json(p.stdout or "") if p.returncode == 0 else None
+    if llm_backend() == "openai":
+        try:
+            data = _propose_openai(prompt, timeout)
+        except Exception as e:  # noqa: BLE001
+            data, why = None, f"{type(e).__name__}: {str(e)[:80]}"
+        else:
+            why = "unusable model output"
         if data:
-            data["_source"] = "claude CLI (Claude Agent SDK, mode impression)"
+            data["_source"] = f"OpenAI {os.environ.get('OPENAI_MODEL', 'gpt-4o-mini')}"
         else:
             data = _fallback(prompt)
-            data["_source"] += f" — sortie du modele inexploitable (rc={p.returncode})"
-    except (FileNotFoundError, subprocess.TimeoutExpired) as e:
-        data = _fallback(prompt)
-        data["_source"] += f" — {type(e).__name__}"
+            data["_source"] += f" — {why}"
+    else:
+        try:
+            p = subprocess.run(
+                ["claude", "-p", "--append-system-prompt", SYSTEM, prompt],
+                capture_output=True, text=True, timeout=timeout,
+            )
+            data = _extract_json(p.stdout or "") if p.returncode == 0 else None
+            if data:
+                data["_source"] = "claude CLI (Claude Agent SDK, mode impression)"
+            else:
+                data = _fallback(prompt)
+                data["_source"] += f" — sortie du modele inexploitable (rc={p.returncode})"
+        except (FileNotFoundError, subprocess.TimeoutExpired) as e:
+            data = _fallback(prompt)
+            data["_source"] += f" — {type(e).__name__}"
 
     # Bornes dures : ce que le modele propose ne sort jamais du raisonnable.
     def clamp(k, lo, hi, cast=float):

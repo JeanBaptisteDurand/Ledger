@@ -11,6 +11,10 @@ Environment=TARE_ROOT=/home/ubuntu/ETH_Online_2026
 Environment=SPECULOS_URL=http://127.0.0.1:5013
 # le chemin du client par défaut : la signature se fait dans la page du visiteur (la Flex émulée par le relais, ou sa Ledger)
 Environment=PDS_SIGNER=browser
+# l'analyste et le stratège : l'API d'OpenAI, avec les mêmes outils MCP (la clé, lisible par ce seul compte, hors du dépôt)
+Environment=PDS_LLM=openai
+Environment=OPENAI_MODEL=gpt-4o-mini
+EnvironmentFile=-/home/ubuntu/netout/openai.env
 Environment=HOME=/home/ubuntu
 Environment=PYTHONUNBUFFERED=1
 ExecStart=/home/ubuntu/netout/banc.sh

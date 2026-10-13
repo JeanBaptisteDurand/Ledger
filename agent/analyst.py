@@ -21,9 +21,11 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -57,6 +59,86 @@ def mcp_key() -> str:
     return p.stdout.strip()
 
 
+OPENAI_URL = os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1").rstrip("/") + "/chat/completions"
+
+
+def llm_backend() -> str:
+    """Who answers: `claude` (the CLI, the Claude Agent SDK) or `openai` (the API, with the very same MCP tools).
+    PDS_LLM decides; by default the claude CLI when it is on the PATH, otherwise OpenAI when a key is set."""
+    b = (os.environ.get("PDS_LLM") or "").strip().lower()
+    if b in ("claude", "openai"):
+        return b
+    if shutil.which("claude"):
+        return "claude"
+    return "openai" if os.environ.get("OPENAI_API_KEY") else "claude"
+
+
+def _ask_openai(question: str, env: dict, key: str, timeout: int, max_turns: int) -> tuple[str, list[dict], int, str | None]:
+    """The same analyst on OpenAI's API: our MCP server runs as a subprocess with the ACCOUNT's environment, exactly
+    as the claude CLI runs it; we list its tools, hand them to the model as functions, and call them when it asks."""
+    import requests
+    api = os.environ.get("OPENAI_API_KEY")
+    if not api:
+        return "", [], 0, "no OpenAI key on this bench (OPENAI_API_KEY): the analyst cannot run"
+    model = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
+    menv = {**os.environ, **env, "PDS_MCP_KEY": key, "ANVIL_URL": os.environ.get("ANVIL_URL", "http://127.0.0.1:8545")}
+    proc = subprocess.Popen([sys.executable, str(MCP)], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                            stderr=subprocess.DEVNULL, text=True, env=menv)
+    seq = 0
+
+    def rpc(method: str, params: dict | None = None, notify: bool = False) -> dict | None:
+        nonlocal seq
+        msg: dict = {"jsonrpc": "2.0", "method": method}
+        if params is not None:
+            msg["params"] = params
+        if not notify:
+            seq += 1
+            msg["id"] = seq
+        proc.stdin.write(json.dumps(msg) + "\n")
+        proc.stdin.flush()
+        return None if notify else json.loads(proc.stdout.readline() or "{}")
+
+    used: list[dict] = []
+    turns, t0 = 0, time.time()
+    try:
+        rpc("initialize", {"protocolVersion": "2024-11-05", "capabilities": {}, "clientInfo": {"name": "analyst", "version": "1.0"}})
+        rpc("notifications/initialized", notify=True)
+        tools = (rpc("tools/list") or {}).get("result", {}).get("tools", [])
+        functions = [{"type": "function", "function": {"name": t["name"], "description": t["description"],
+                                                       "parameters": t["inputSchema"]}} for t in tools]
+        messages: list[dict] = [{"role": "system", "content": SYSTEM}, {"role": "user", "content": question}]
+        while turns < max_turns:
+            left = timeout - (time.time() - t0)
+            if left <= 5:
+                return "", used, turns, f"timed out ({timeout}s)"
+            r = requests.post(OPENAI_URL, headers={"Authorization": f"Bearer {api}"}, timeout=min(90, left),
+                              json={"model": model, "messages": messages, "tools": functions, "temperature": 0.2})
+            if r.status_code != 200:
+                return "", used, turns, f"OpenAI answered {r.status_code}: {r.text[:240]}"
+            m = r.json()["choices"][0]["message"]
+            turns += 1
+            calls = m.get("tool_calls") or []
+            if not calls:
+                return (m.get("content") or "").strip(), used, turns, None
+            messages.append({"role": "assistant", "content": m.get("content"), "tool_calls": calls})
+            for c in calls:
+                name = c["function"]["name"]
+                try:
+                    args = json.loads(c["function"].get("arguments") or "{}")
+                except ValueError:
+                    args = {}
+                used.append({"tool": name, "args": {k: v for k, v in args.items() if k != "key"}})
+                res = rpc("tools/call", {"name": name, "arguments": args}) or {}
+                text = "\n".join(x.get("text", "") for x in (res.get("result") or {}).get("content", [])) \
+                    or json.dumps(res.get("error") or {"error": "no result"})
+                messages.append({"role": "tool", "tool_call_id": c["id"], "content": text[:12000]})
+        return "", used, turns, f"no answer after {max_turns} turns"
+    except Exception as e:  # noqa: BLE001
+        return "", used, turns, f"OpenAI: {type(e).__name__}: {str(e)[:200]}"
+    finally:
+        proc.kill()
+
+
 def ask(question: str, timeout: int = 240, max_turns: int = 12, history: list[dict] | None = None,
         env: dict | None = None) -> dict:
     """Une question -> {answer, tools_used, turns}. Le modele ne voit que notre MCP.
@@ -71,6 +153,11 @@ def ask(question: str, timeout: int = 240, max_turns: int = 12, history: list[di
             f"Q : {h['question']}\nR : {(h.get('answer') or '')[:700]}" for h in history[-4:] if h.get("answer"))
         question = (f"Échanges précédents de cette conversation (pour le contexte ; ne les recopie pas, "
                     f"réinterroge les outils si la question y renvoie) :\n{transcript}\n\nNouvelle question : {question}")
+    if llm_backend() == "openai":
+        answer, tools_used, turns, error = _ask_openai(question, env, key, timeout, max_turns)
+        model = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
+        return {"question": question, "answer": answer, "tools_used": tools_used, "turns": turns, "error": error,
+                "source": f"OpenAI {model} (function calling) + MCP porte-de-sortie, read only"}
     # le MCP tourne avec l'environnement du COMPTE : ses fichiers, sa cle (derivee, jamais stockee)
     cfg = {"mcpServers": {"porte-de-sortie": {"command": sys.executable, "args": [str(MCP)],
                                               "env": {**env, "PDS_MCP_KEY": key,
