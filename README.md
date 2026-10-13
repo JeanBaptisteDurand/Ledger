@@ -451,7 +451,7 @@ décisions**, pour les analyser avec Claude.
 
 ```bash
 python3 mcp/pds_mcp.py --print-key      # la clé, créée au premier appel
-python3 mcp/pds_mcp.py --selftest       # les six outils, à vide
+python3 mcp/pds_mcp.py --selftest       # les dix outils, à vide
 ```
 
 ```json
@@ -483,12 +483,15 @@ et le JSON (`"type": "http"`, l'URL, l'en-tête `Authorization`), chacun avec so
 | `universe_facts` | pourquoi un piège est indiscernable avant l'achat, chiffres à l'appui |
 | `compare_entry_exit` | entrée contre sortie, opération par opération |
 | `hook_analysis` | ce que chaque hook prend, **remesuré en direct** par le contrefactuel de TARE, dans les deux sens |
+| `bots` | les bots du compte, actifs et arrêtés : univers, rythme, tours, achats et refus, dérogations, dépense, positions prises |
+| `vault_openness` | la porte des coffres ERC-4626 (Morpho WETH, Base), mesurée maintenant : un aller-retour réel, la part bloquée du plus gros déposant, les coffres pleins |
+| `ledger_earn_yields` | ce que dit `wallet-cli earn yields` (Agent Stack de Ledger) d'une position de rendement, et ce qu'il ne dit pas : la sortie |
 
 Le banc écoute sur le port **8099** (`PORT=… python3 web/server.py` pour en changer) : 8080 est trop
 souvent pris par un conteneur qui traîne, et une démo qui tombe sur la page de quelqu'un d'autre n'est
 pas une démo.
 
-Chaque appel exige la clé. Sans elle : `clé refusée`.
+Chaque appel exige la clé. Sans elle : `key refused` (et en HTTP, une clé inconnue reçoit 403).
 
 ## L'analyste — le vrai agent
 
