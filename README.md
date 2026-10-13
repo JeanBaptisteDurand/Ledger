@@ -643,7 +643,7 @@ SKILL.md · AGENTS.md          le projet au format des skills de Ledger, pour un
 FRONT.md                      le cahier des charges du front, écran par écran, routes et modèle de données (pour qui refait l'interface)
 INTERACTIONS.md               tous les gestes de l'utilisateur : ce que fait le site, ce qui part en web3, ce que montre la Ledger, comment c'est vérifié
 MAINNET.md                    du fork au réseau réel : ce qui change, dans quel ordre, avec la Ledger ; `PDS_NETWORK=live` existe (10 oct.)
-upstream/                     les PR et issues qu'on doit à Ledger, prêtes à ouvrir (textes, patchs, `open.sh`) — rien d'ouvert encore
+upstream/                     les retours déposés chez Ledger le 13 octobre : trois tickets, une PR (textes, patch, `open.sh`)
 captures/                     ce que l'appareil a affiché, page par page (dmk/ : par le Signer Kit, nos descripteurs — accueil, revue, contrat, bornes,
                               signature, et un mandat dont le budget est en USDC ; app-officielle/ : l'app de série, en brut)
 front/                        le site (Vite + React) : le héros de Florent, l'explication entière et le schéma sur l'accueil, la démo,

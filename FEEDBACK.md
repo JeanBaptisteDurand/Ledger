@@ -9,9 +9,12 @@ file, a line, or a command.
 
 ---
 
-*The issues and the pull request these notes call for are written and ready to open in [`upstream/`](upstream/): four items,
-one patch, a script, all checked against the upstream code of 13 October. The fix of § 2 was proposed upstream the day
-before ([#1114](https://github.com/LedgerHQ/app-ethereum/pull/1114)).*
+*The issues and the pull request these notes call for are filed (13 October), each checked against the upstream code
+of that day: [device-sdk-ts#1987](https://github.com/LedgerHQ/device-sdk-ts/issues/1987) (§ 7),
+[device-sdk-ts#1988](https://github.com/LedgerHQ/device-sdk-ts/issues/1988) (§ 1),
+[speculos#685](https://github.com/LedgerHQ/speculos/issues/685) (§ 8) and
+[ERCs#2069](https://github.com/ethereum/ERCs/pull/2069) (§ 6). The fix of § 2 was proposed upstream the day before
+([app-ethereum#1114](https://github.com/LedgerHQ/app-ethereum/pull/1114)). The texts are in [`upstream/`](upstream/).*
 
 ## 1. Clear signing is closed to anyone without a partner token, and it fails silently
 

@@ -1,16 +1,16 @@
-# Upstream — the pull requests and issues we owe Ledger, ready to open
+# Upstream — the issues and the pull request we filed for Ledger, 13 October 2026
 
-Everything here comes from `FEEDBACK.md`, with the exact file, line and reproduction. Nothing is opened yet:
-`open.sh` does it under the GitHub account that runs it (`gh auth status` first), one item at a time, and prints
-the URLs to paste into `FEEDBACK.md`.
+Everything here comes from `FEEDBACK.md`, with the exact file, line and reproduction. Filed on 13 October 2026, the
+links are in the table below. `open.sh` is what opened them, under the GitHub account that runs it (`gh auth status`
+first), one item at a time.
 
 | # | repository | kind | file here |
 |---|---|---|---|
 | 1 | `LedgerHQ/app-ethereum` (`client/`) | already proposed: [#1114](https://github.com/LedgerHQ/app-ethereum/pull/1114), 12 October, the same one-line fix; we confirm it at chain 8453 | `01-app-ethereum-client-chainid.md` + `.patch` |
-| 2 | `LedgerHQ/device-sdk-ts` | issue, with reproduction | `02-device-sdk-ts-signmessage-non-ascii.md` |
-| 3 | `LedgerHQ/device-sdk-ts` | issue | `03-device-sdk-ts-isblindsign-in-output.md` |
-| 5 | `LedgerHQ/speculos` | issue, with reproduction | `05-speculos-apdubridge-per-request.md` |
-| 6 | `ethereum/ERCs` | pull request, three words | `06-ercs-erc7730-example-format.md` + `.patch` |
+| 2 | `LedgerHQ/device-sdk-ts` | issue, with reproduction: [#1987](https://github.com/LedgerHQ/device-sdk-ts/issues/1987) | `02-device-sdk-ts-signmessage-non-ascii.md` |
+| 3 | `LedgerHQ/device-sdk-ts` | issue: [#1988](https://github.com/LedgerHQ/device-sdk-ts/issues/1988) | `03-device-sdk-ts-isblindsign-in-output.md` |
+| 5 | `LedgerHQ/speculos` | issue, with reproduction: [#685](https://github.com/LedgerHQ/speculos/issues/685) | `05-speculos-apdubridge-per-request.md` |
+| 6 | `ethereum/ERCs` | pull request, three words: [#2069](https://github.com/ethereum/ERCs/pull/2069) | `06-ercs-erc7730-example-format.md` + `.patch` |
 
 **Checked on 13 October 2026** against today's code (app-ethereum `5a48940`, device-sdk-ts `8528b2f`, speculos
 `abc6b7d`, ERCs `c9f4e26`), with live runs on a separate Speculos. Two drafts were withdrawn then. The `0x6901`
