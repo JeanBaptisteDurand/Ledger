@@ -110,95 +110,16 @@ dérogation, porte, sortie, resonder, le porteur.*
 
 ---
 
-## 9 · Ce que je changerais pour mieux mettre le produit en avant
+## 9 · Ce qui a été fait depuis, pour mettre le produit en avant
 
-Par ordre d'effet sur un jury qui a une minute par page.
+Tout ce que ce document demandait les 11 et 12 octobre est en place : une seule langue sur le site (l'anglais), un nom
+(**Net·Out**, écrit une fois partout), la scène et l'explication sur une même page, `/demo` qui montre le produit lui-même
+(la carte vivante allumée par le banc, la carte NOW, le volet TARE pendant un tour, le volet Bots, la Flex en direct), les
+pages du compte sur le registre du home (`/trades`, `/account`), le rapport du kit (`isBlindSign=false`) visible sous le
+mandat et dans le tiroir replié, la porte en deux clics (Flex émulée ou vraie Ledger), le pied de page positionné, et un
+site en une commande (`scripts/site.sh`). Les captures réelles du site sont dans `captures/site/`.
 
-1. **Une langue.** Fait le 11 octobre : tout le front est en anglais (scène, home, schéma, nav, pied de page, pages du
-   compte). Reste en français ce que le serveur envoie et que la page affiche tel quel : les messages `msg` des POST,
-   les textes du stratège et de l'analyste, les motifs d'arrêt des bots (`web/server.py`, `web/strategist.py`,
-   `agent/*.py`). C'est le prochain chantier si le jury lit les toasts.
-2. **Un nom.** L'appareil écrit `MONOLITH`, le site s'appelle *Porte de sortie*, le README dit « PORTE DE SORTIE ».
-   Le ring du home dit MONOLITH, celui du schéma dit SCHÉMA. Choisir le nom du produit et l'écrire une fois partout
-   (ring, nav, titre de l'onglet, description).
-3. **Montrer le produit, pas seulement la preuve.** Le home prouve (chiffres, frise, retours) mais ne **montre**
-   jamais une page du compte. Le jury ne branchera pas de Ledger : il faut une bande « ce que vous verrez » avec
-   trois écrans réels en image, pris par `scripts/parcours-app.mjs` : le mandat à côté du miroir de l'appareil, une
-   demande hors bornes avec ses deux issues (signer / laisser refusé), les positions avec un `BLOCKED`. Même grammaire
-   que les miroirs actuels, mais des captures, pas des maquettes.
-4. **La dérogation est le moment du produit.** « Ça revient sur l'appareil avec le nombre » est la phrase que
-   personne d'autre ne peut dire. Je lui donnerais la place du compteur : une bande où l'écran de la Flex émulée
-   affiche `EXIT COST (BPS) 2693` et où les deux issues ont le même poids. Aujourd'hui elle est au milieu du home,
-   en texte.
-5. **Deux portes au bout, pas une.** « Open your account » exige le banc et une Ledger. À côté, « Voir la
-   démonstration » : la vidéo du parcours de 124 s (ou la frise, déjà là, mais nommée comme telle), pour quelqu'un qui
-   lit depuis un lien.
-6. **Relier le home au schéma par bande.** Chaque bande du home a sa bande jumelle sur le schéma (le piège ↔ « Ce qui
-   est mesuré », une signature ↔ « Une signature, pas à pas », les briques ↔ « Les briques du sujet »). Un lien
-   discret vers la section jumelle du home (`/home#the-overflow`), dans le style de `Source`. Devenu sans objet le 12 octobre : les deux sont sur la même page.
-7. **Le rapport du kit, visible.** DESIGN.md le demande (« `isBlindSign=false · eip7730` est la preuve que l'appareil
-   a lu des champs et non un blob ») ; il n'apparaît que dans la frise. Je l'écrirais sous le miroir du mandat, sur
-   le home comme dans `/app`.
-8. **Le compte sur le registre du home.** Les pages du compte utilisent encore le registre du premier brief (titres
-   en capitales condensées, bandeaux pleins, trois cartes égales). Sans canvas, par choix (three.js ne s'y
-   télécharge pas), elles peuvent prendre le registre que le schéma vient d'adopter : takeaway, titre en bas de casse,
-   rangées à filets (`rows`, `kv`, `bricks-list`, `stats`), une seule couleur d'accent par écran. C'est la suite
-   logique de « le reste du frontend sur les règles de test4 ».
-9. **Le coût du schéma.** Il paie la scène entière (three.js 270 kB gzip, le FBX de 5,4 MB, le GLB) pour montrer le
-   trou seul. Une entrée « finie » qui ne charge pas les appareils demanderait de rouvrir `src/scene/` ; à décider.
-10. **Les métadonnées.** `index.html` : description en français, pas d'`og:image`, pas d'`og:title`. Mettre
-    `poster-home-landscape.jpg` en image de partage et la phrase du produit en description, dans la langue choisie.
-11. **Le « trusted by » qui manque, version honnête.** Une bande courte « mesuré sur » : Base, bloc 50 614 000,
-    Uniswap v4, Morpho, Ledger Flex (émulée et réelle), avec les versions des briques. Les versions sont déjà dans
-    `state.ledger_stack`.
-12. **Le pied de page**. Il passait sous le canvas sur le home (corrigé le 11 octobre : il est positionné). Y mettre
-    les trois liens qui manquent : README, FEEDBACK, le dépôt.
-
----
-
-## 10 · Pour un jury de hackathon : le visuel d'abord (11 octobre, après le passage en anglais)
-
-Classé par ce que le jury retient en une minute, puis par coût.
-
-1. **Fait le 12 octobre : la page `/demo` en trois modes.** Le rejeu (huit scènes, les vraies captures de la Flex), la carte du schéma allumée en direct par le banc (option A), le cockpit du présentateur (option B). Vérifié en direct : mandat clear-signé sur la Flex émulée, bots pools et coffres, la demande hors bornes sur Moonwell signée sur la Flex. Reste : la vidéo de repli pour un lien froid. L'idée d'origine : À gauche la Flex émulée en direct (le flux `/api/screen` et le
-   doigt existent déjà sur `/appareil`), à droite les panneaux du compte qui se remplissent, en bas la frise des
-   124 s qui avance. Un bouton « Play » lance `scripts/parcours-app.mjs` côté banc, ou rejoue un enregistrement
-   (événements + captures d'écran de la Flex en JSON) pour tourner sans appareil et sans réseau. Le moment clé : la
-   demande hors bornes, l'écran `EXIT COST (BPS) 2693`, les deux issues avec le même poids. Un fichier vidéo en
-   repli pour un lien froid.
-2. **La dérogation en plein écran.** C'est la phrase que personne d'autre ne peut dire : « ça revient sur l'appareil
-   avec le nombre ». Une bande du home où la Flex occupe le cadre devant le trou noir, l'écran affiche le coût lu, et
-   « read and sign » / « leave refused » sont deux vrais boutons. La version banc fait signer pour de vrai sur
-   l'émulateur, la version statique joue l'écran.
-3. **Un compte « jury » pré-rempli.** `?jury=1` (ou un compte de démonstration) avec des bots qui ont tourné, deux
-   achats, huit refus, une demande hors bornes en attente et une position bloquée : chaque page du compte montre
-   d'emblée son état le plus riche. Aujourd'hui un compte neuf affiche surtout des états vides.
-4. **L'explorateur de pièges.** Les six pools et les dix coffres en une table vivante : survoler un pool fait rouler
-   son `0 → 9 990`, la colonne « ce que l'agent voit » contre « ce que le contrat mesure ». Les données existent
-   (`universe_facts`, `vault_openness`, `hook_analysis` via le MCP).
-5. **Ce que vous verrez.** Trois captures réelles du compte sur le home (le mandat à côté du miroir, la demande hors
-   bornes, les positions), dans la grammaire des miroirs actuels. Le jury ne branchera pas de Ledger.
-6. **La carte du schéma, cliquable.** Un nœud cliqué allume ses arêtes et ouvre sa description (quatre portes :
-   pointeur, tape, clavier, patience), sans bibliothèque de diagramme.
-7. **Le trou sous le compte, sans WebGL.** Les pages du compte restent sans three.js par règle. Une image fixe du
-   ring (`poster-home-landscape.jpg`, déjà dans `public/`) sous les mêmes feuilles de verre leur donne la continuité
-   visuelle du home pour zéro kilo-octet de script.
-8. **Des compteurs vivants sur le home.** « Mesuré sur le fork, maintenant » : nombre de refus, de dérogations, de
-   positions, lus sur `/api/state` quand le banc tourne, les valeurs du 25 septembre sinon. Un seul compteur qui
-   roule par bande, jamais dans un tableau.
-9. **La porte de démonstration.** Sur `/connexion`, un bouton « Try it on the emulated Flex » qui fait tout en un
-   clic (appareil du banc, session, coffre), à côté du parcours réel en WebHID.
-10. **L'état de l'appareil dans la barre.** Un point incandescent à côté de l'adresse quand la Flex est allumée,
-    éteint sinon : le vocabulaire du hero (l'emphase par la luminosité) porté dans le chrome.
-11. **Un nom.** `MONOLITH` sur l'appareil et dans le ring, « Porte de sortie » dans la barre et l'onglet. Choisir, et
-    l'écrire une fois partout.
-12. **Le reste du français.** Ce que le serveur envoie s'affiche tel quel : « appareil du banc (adresse lue sur la
-    Ledger) » sur la page du compte et dans l'historique, les messages des POST, le stratège, l'analyste, les motifs
-    d'arrêt des bots. À traduire dans `web/server.py`, `web/strategist.py`, `web/accounts.py` et `agent/*.py`.
-
----
-
-## 11 · Le 12 octobre au soir (Jean-Baptiste)
+## 10 · Le 12 octobre au soir (Jean-Baptiste)
 
 La branche est fusionnée telle quelle. Ce qui manquait au produit a été remis dans ta charte, sans toucher à la scène, à
 l'accueil ni à la démo : `/trades` (les agents avec toutes leurs options, les demandes hors bornes, les positions, le

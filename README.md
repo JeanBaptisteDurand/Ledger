@@ -1,37 +1,92 @@
-# NETOUT
+# NET·OUT
 
-*Le nom de travail était « Porte de sortie » ; les documents et le banc l'emploient encore. Le produit s'appelle Netout :
-« to net out », solder une position en net, ce qui reste une fois la tare retirée, l'héritier de TARE.*
+**Un agent ne peut pas entrer dans une position dont il ne sait pas sortir.**
 
-> **Un agent ne peut pas entrer dans une position dont il ne sait pas sortir.**
->
-> *Inside the mandate the agent acts on its own. It can never enter a position it cannot exit —
-> the vault checks the way out in the same transaction. Anything else comes back to the Flex.*
+### La démo — `scripts/site.sh`, puis **<http://127.0.0.1:5173>**
 
-**Vos Agent Policies bornent ce qu'un agent dépense. Personne ne borne ce qu'il peut ressortir.**
+Une commande lance le banc (un fork de Base, une Ledger Flex émulée, le serveur) et le site, et ouvre la porte dans le
+navigateur ; `PORTEUR=1 scripts/site.sh` y ajoute une Flex qui approuve seule chaque écran, pour une démonstration sans
+appareil. La vidéo suit le script de [`VIDEO.md`](VIDEO.md). Tout ce qui est dit ici a une commande ; rien n'est inventé.
 
-Tout le monde borne ce qu'un agent **engage** : un plafond par jour, une liste de contrats, un
-glissement maximal. Personne ne vérifie ce qu'il pourra **récupérer**. Ça vaut pour un jeton qu'un hook
-empêche de revendre, pour un coffre à rendement dont on ne sort qu'après sept jours de file d'attente,
-et pour toute position qu'on prend en une transaction et qu'on quitte en trois semaines — ou jamais.
+Le porteur signe **une fois**, sur sa Ledger, un mandat de trois nombres lus en clair sur l'écran : un budget, une perte
+de sortie tolérée, une échéance. Un contrat à son nom, [`ExitVault`](contracts/src/ExitVault.sol), l'applique **à
+chaque entrée** : il achète, puis simule la revente intégrale dans la même transaction, et refuse si la sortie coûte
+plus que le mandat n'autorise. Ce qui déborde revient sur l'appareil **avec le nombre** : le porteur lit le coût de
+sortie réel et signe une dérogation à usage unique, ou laisse refusé. Les fonds partent de sa Ledger (un envoi d'ETH, la
+seule transaction qu'elle signe) et y reviennent sur une autorisation de retrait lue en clair.
 
-**L'instance démontrée ici est le swap Uniswap v4**, parce que c'est là qu'on sait prouver le nombre :
-un Ledger Flex émulé, un mandat lu et signé **sur l'appareil**, et un coffre qui refuse d'entrer là
-d'où on ne sort pas — sur un fork de Base épinglé au bloc **50 614 000**. Les coffres ERC-4626 sont la
-**seconde instance, construite** : dix coffres WETH réels de Base (Morpho), sous le même mandat, avec le
-même refus. Le standard y écrit le piège lui-même — `previewRedeem` doit ignorer les limites de retrait —
-et au bloc des mesures le plus gros coffre WETH de Base a **27 % de la position de son plus gros
-déposant bloquée**, pendant que cinq coffres sur dix refusent même le dépôt. Détail plus bas.
+**Vos Agent Policies bornent ce qu'un agent dépense. Personne ne borne ce qu'il peut ressortir.** Un plafond par
+jour, une liste de contrats, un glissement maximal : tout le monde borne ce qu'un agent **engage**. Personne ne vérifie
+ce qu'il pourra **récupérer**. Ça vaut pour un jeton qu'un hook empêche de revendre, pour un coffre à rendement dont on
+ne sort qu'après sept jours de file d'attente, et pour toute position qu'on prend en une transaction et qu'on quitte en
+trois semaines, ou jamais.
 
-```bash
-./scripts/demo.sh
-```
+### La mesure : TARE
+
+Le moteur qui mesure la sortie est [**TARE**](https://github.com/JeanBaptisteDurand/ETH_Online_2026), notre
+instrument d'ETHOnline 2026 (**finaliste, prix Uniswap Foundation « Best Uniswap Stack Contribution »**). Il ne change
+pas le pool, il change le hook : sur un fork épinglé au bloc **50 614 000**, `anvil_setCode` remplace le bytecode du
+hook par 89 octets inertes, le même swap est coté deux fois, et l'écart est ce que le hook prend, à l'entrée et à la
+sortie. Sur **125 072 mesures** de la longue traîne WETH de Base, **six pools réels laissent entrer pour 0 bps et
+prennent 9 990 bps à la sortie**, indiscernables de 77 pools sains avant d'acheter. Ici, TARE ne tourne plus après coup :
+il tourne **dans le coffre, à chaque entrée** (`buy()` : achat puis revente simulée, même transaction), dans le veilleur
+(`watch.py` resonde chaque position et sort tant qu'on peut), et sous les yeux du jury, dans le volet TARE de la carte
+vivante. Seconde instance : **dix coffres ERC-4626 réels** (Morpho, Base), même mandat, même refus. Le standard écrit le
+piège lui-même (`previewRedeem` doit ignorer les limites de retrait) ; au bloc des mesures, le plus gros coffre WETH de
+Base a **27 % de la position de son plus gros déposant bloquée**, et cinq coffres sur dix refusent même le dépôt.
+
+### Les quatre briques Ledger, un rôle chacune
+
+| Brique | Ici |
+|---|---|
+| **Signer Kit + DMK** (1.18.1 / 1.9.1) | dans le navigateur du porteur (WebHID pour une vraie Flex, Speculos en banc) : la connexion Sign-In with Ethereum, le dépôt, le mandat, chaque dérogation, le retrait. Jamais un achat. |
+| **Clear signing** (ERC-7730) | nos descripteurs du mandat, de la dérogation et du retrait, compilés et signés avec la clé de test de l'app Ethereum 1.22.4 : la Flex affiche les champs, le kit rapporte `isBlindSign=false`. Vérifié sur la Flex émulée et sur une vraie Flex. |
+| **Agent Stack** (wallet-cli 2.1.0) | l'analyste, un vrai agent : Claude sur un MCP en lecture seule de dix outils, dont `earn yields` de Ledger ; il cite l'outil sous chaque nombre et ne peut rien signer. |
+| **Ring CLI** (Ledger Key Ring Protocol) | le secret maître dont dérive la clé MCP de chaque compte (`HMAC-SHA256(maître, adresse)`, jamais stockée), scellé sous la graine de l'opérateur. |
+
+[Ligne à ligne](#les-briques-ledger-du-brief-ligne-à-ligne), avec les versions et les fichiers.
+
+### Les agents, et la frontière entre eux
+
+Les **bots** agissent sans modèle de langage : nommés, lancés, arrêtés par le porteur, ils choisissent sur ce qu'ils
+voient (la profondeur, l'entrée, le rendement affiché) et ne voient jamais la sortie ; leur clé ne peut appeler que le
+coffre. **L'analyste** comprend : c'est le vrai agent, et il ne peut rien faire. Celui qui agit n'a pas de LLM ; celui
+qui a un LLM ne peut pas agir. Une consigne injectée peut faire *choisir* un piège à un bot ; elle ne peut pas lui faire
+*dépasser* le mandat.
+
+### Ce que vous verrez
+
+| | |
+|---|---|
+| ![la porte](captures/site/porte.png) | ![la carte vivante](captures/site/carte-vivante.png) |
+| La porte : la Flex émulée ou une vraie Ledger, le chemin de signature, la connexion. | La carte vivante : le système allumé par le banc, la carte NOW, la Flex en direct. |
+| ![le volet TARE](captures/site/volet-tare.png) | ![le volet Bots](captures/site/volet-bots.png) |
+| TARE pendant un tour : les quatre étapes du contrefactuel, le nombre, le verdict. | Les bots : chacun, ses nombres, ses décisions, arrêt et relance. |
+| ![les trades](captures/site/trades.png) | ![le compte](captures/site/compte.png) |
+| Trades : agents, demandes hors bornes avec le miroir de l'appareil, positions, journal. | Compte : dépôt et retrait signés sur la Ledger, l'analyste, la clé MCP, l'historique. |
+
+### Sommaire
+
+[In English, on one page](#in-english-on-one-page) · [Le problème](#le-problème) · [Le mécanisme](#le-mécanisme) ·
+[Le banc, dans le navigateur](#le-banc-dans-le-navigateur) · [L'agent, et pourquoi il se fait piéger](#lagent-et-pourquoi-il-se-fait-piéger) ·
+[La seconde instance](#la-seconde-instance--dix-coffres-erc-4626-réels-même-mandat-même-refus) · [L'escalade](#lescalade--hors-bornes-ne-veut-pas-dire-non) ·
+[Plusieurs agents](#plusieurs-agents) · [Le MCP](#le-mcp--lecture-seule-pour-analyser-après-coup) · [L'analyste](#lanalyste--le-vrai-agent) ·
+[Les briques Ledger](#les-briques-ledger-du-brief-ligne-à-ligne) · [En SaaS](#en-saas--la-ledger-reste-chez-le-client) · [Les mots](#les-mots-une-fois-pour-toutes) ·
+[Ce qui tourne](#ce-qui-tourne) · [Prérequis](#prérequis) · [Ce que ça n'attrape pas](#ce-que-ça-nattrape-pas--dit-avant-quon-nous-le-demande) ·
+[Cinq trouvailles amont](#cinq-trouvailles-amont-en-construisant-ceci) · [`FEEDBACK.md`](FEEDBACK.md) · [`upstream/`](upstream/) · [`VIDEO.md`](VIDEO.md)
+
+*« Porte de sortie » est le nom de travail : les documents, le banc et les identifiants techniques l'emploient encore.*
 
 ---
 
 ## In English, on one page
 
 **The sentence.** An agent cannot enter a position it cannot net out. (Working title: Porte de sortie, the exit door.)
+
+**The measure.** The exit is measured by **TARE**, our ETHOnline 2026 instrument (finalist, Uniswap Foundation prize,
+“Best Uniswap Stack Contribution”): on a fork pinned at block 50 614 000 it swaps the hook's bytecode for 89 inert bytes,
+quotes the same swap twice, and the gap is what the hook takes. Here it runs inside the vault at every entry, in the
+watcher that re-probes every position, and in front of the jury, in the TARE panel of the live map.
 
 **The gap.** Everything today bounds what an agent *spends* — a daily cap, an allow-list, a maximum slippage;
 Ledger's Agent Policies bound exactly that. Nothing bounds what it can *get back*. A token whose hook blocks
@@ -718,5 +773,11 @@ lance ensuite avec un avertissement « non vérifiée ». Chargé le 2 octobre s
 
 ---
 
-Fait pour le hackathon **Ledger N3XT** (6-13 octobre 2026). Le moteur de mesure qui a trouvé les six
-pools est [TARE](https://github.com/JeanBaptisteDurand/ETH_Online_2026) — finaliste ETHOnline 2026, prix Uniswap Foundation.
+## L'équipe
+
+**Jean-Baptiste Durand** et **Florent Belotti**, école 42 Paris. Le contrat, le banc, les agents, le MCP, les
+descripteurs et les retours amont sont de Jean-Baptiste ; la scène, l'accueil, la démo et la charte du site sont de
+Florent. Le moteur de mesure est [TARE](https://github.com/JeanBaptisteDurand/ETH_Online_2026), notre projet
+d'ETHOnline 2026 : finaliste, prix Uniswap Foundation « Best Uniswap Stack Contribution ».
+
+Fait pour le hackathon **Ledger N3XT** (6-13 octobre 2026). Le script de la vidéo est dans [`VIDEO.md`](VIDEO.md).
