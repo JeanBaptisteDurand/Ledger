@@ -363,11 +363,6 @@ Les événements du compte (`GET /api/account`) : `{ts, kind, …détails}` (§ 
 
 ---
 
-## 7 bis · Peut-être, pour le jury (6 octobre) — à prévoir dans la maquette, pas encore servi
-
-- **Un univers « coffres USDC »** dans le sélecteur d'univers d'un bot, si le serveur le sert d'ici là (un juré
-  vient de Circle). Rien d'autre à dessiner : même table, même refus, en dollars.
-
 ## 8 · Repères
 
 - Captures de la maquette, pour le comportement, pas pour le style : `captures/front-a-z.png` (la page entière,
