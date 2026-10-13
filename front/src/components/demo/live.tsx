@@ -121,8 +121,8 @@ export function Door({ children }: { children?: ReactNode }) {
   if (offline || !state) {
     return (
       <div className="live-door">
-        <p className="t-body-lg m-0 max-w-[52ch] text-pretty text-page-text-mute">The bench is not running. Start it at the root of the repository, the page resumes on its own.</p>
-        <pre className="t-mono-data m-0 mt-6 is-info">{'. .venv/bin/activate\nledger/speculos.sh up && python3 web/server.py'}</pre>
+        <p className="t-body-lg m-0 max-w-[52ch] text-pretty text-page-text-mute">The bench is not running behind this page. On a machine with the bench, one command at the root of the repository starts it; the page resumes on its own.</p>
+        <pre className="t-mono-data m-0 mt-6 is-info">{'scripts/site.sh'}</pre>
       </div>
     )
   }

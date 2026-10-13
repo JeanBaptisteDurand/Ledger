@@ -8,6 +8,10 @@ Une commande lance le banc (un fork de Base, une Ledger Flex émulée, le serveu
 navigateur ; `PORTEUR=1 scripts/site.sh` y ajoute une Flex qui approuve seule chaque écran, pour une démonstration sans
 appareil. La vidéo suit le script de [`VIDEO.md`](VIDEO.md). Tout ce qui est dit ici a une commande ; rien n'est inventé.
 
+Le site est en ligne sur **<https://netout.tech>** : la scène, l'explication et la carte. La démo vivante (la Flex, les
+agents, le volet TARE) demande le banc, qui tourne sur la machine de démonstration avec `scripts/site.sh` ; la porte en
+ligne le dit.
+
 Le porteur signe **une fois**, sur sa Ledger, un mandat de trois nombres lus en clair sur l'écran : un budget, une perte
 de sortie tolérée, une échéance. Un contrat à son nom, [`ExitVault`](contracts/src/ExitVault.sol), l'applique **à
 chaque entrée** : il achète, puis simule la revente intégrale dans la même transaction, et refuse si la sortie coûte
@@ -593,6 +597,7 @@ front/                        le site (Vite + React) : le héros de Florent, l'e
   src/components/demo/        /demo : la carte vivante allumée par le banc, la carte NOW, le volet TARE pendant un tour
   scripts/parcours-app.mjs    le parcours complet par les pages du front (Chromium headless)
 scripts/site.sh               le site en une commande (banc, Flex émulée, front ; PORTEUR=1 pour une Flex qui approuve seule)
+scripts/deploy-static.sh      le site statique en ligne (netout.tech, Caddy du VPS OVH)
   scripts/tests-appareil.mjs  refus sur l'appareil, deux onglets du même compte, redémarrage du banc
   scripts/tests-usage.mjs     tout ce qu'une personne peut cliquer, dans l'ordre où elle le rencontre, avec les mauvaises saisies
   scripts/fetch-models.sh     les deux modèles 3D du héros (assets officiels de Ledger, non commités)

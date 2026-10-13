@@ -48,8 +48,8 @@ function Shell({ route, hero, skip, children }: { route: Route; hero: HeroCopy; 
         <Hero finished title={hero.title} catchLine={hero.catch} heading={hero.heading} />
         {offline ? (
           <Band id={skip} label="The bench">
-            <p className="t-body-lg m-0 max-w-[52ch] text-pretty text-page-text-mute">The bench is not running. Start it at the root of the repository, the page resumes on its own.</p>
-            <pre className="t-mono-data m-0 mt-6 is-info">{'. .venv/bin/activate\nledger/speculos.sh up && python3 web/server.py'}</pre>
+            <p className="t-body-lg m-0 max-w-[52ch] text-pretty text-page-text-mute">The bench is not running behind this page. On a machine with the bench, one command at the root of the repository starts it; the page resumes on its own.</p>
+            <pre className="t-mono-data m-0 mt-6 is-info">{'scripts/site.sh'}</pre>
           </Band>
         ) : !state || !address ? (
           <div className="mx-auto max-w-[1200px] px-6 py-16"><Skeleton rows={6} /></div>
