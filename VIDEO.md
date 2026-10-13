@@ -1,5 +1,7 @@
 # La vidéo — le script, 3 min 20
 
+**La vidéo en ligne : <https://youtu.be/8AGHwGirckI>**
+
 *Pour Florent et Jean-Baptiste, 12 octobre 2026. La version relue du script de Florent, avec les éléments à mettre au-devant :
 les quatre gestes de la Ledger, l'app recompilée, les retours amont, la prise en main, le dépôt et le retrait.
 Chaque chiffre vient du dépôt. Voix off en gras italique = ajouté ou changé.*

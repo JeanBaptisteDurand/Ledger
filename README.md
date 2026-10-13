@@ -4,6 +4,8 @@
 
 ### Live demo — **<https://netout.tech>**
 
+**The video:** <https://youtu.be/8AGHwGirckI>
+
 The whole site, with the bench behind it: a Base fork pinned at block 50,614,000, an emulated Ledger Flex (Speculos,
 running the Ethereum app built with the test key) and the account server. **Sign in with the emulated Flex** connects
 in one click. The Flex appears next to the page whenever it waits for a signature, and you sign on it with the mouse: a
@@ -43,7 +45,7 @@ Flex, is on the map. The seven photos, described one by one: [`captures/ledger-r
 | **The evidence** | [What is proven](#what-is-proven) · [What you will see](#what-you-will-see) · [The site, route by route](#the-site-route-by-route) · [What it does not catch](#what-it-does-not-catch) |
 | **Using it** | [Plug your own agent in](#plug-your-own-agent-in) · [Run it](#run-it) · [`DEPLOY.md`](DEPLOY.md) · [`MAINNET.md`](MAINNET.md) |
 | **For Ledger** | [Upstream findings](#upstream-findings) · [`FEEDBACK.md`](FEEDBACK.md) · [`upstream/`](upstream/) · [`SKILL.md`](SKILL.md) · [`AGENTS.md`](AGENTS.md) |
-| **The rest** | [Team](#team) · [AI attribution](#ai-attribution) · [License](#license) · [`ONE-PAGE.md`](ONE-PAGE.md) · [Full documentation, in French](#documentation-complète-en-français) |
+| **The rest** | [The video](https://youtu.be/8AGHwGirckI) · [Team](#team) · [AI attribution](#ai-attribution) · [License](#license) · [`ONE-PAGE.md`](ONE-PAGE.md) · [Full documentation, in French](#documentation-complète-en-français) |
 
 ## The problem
 
@@ -926,7 +928,7 @@ descripteurs et les retours amont sont de Jean-Baptiste ; la scène, l'accueil, 
 Florent. Le moteur de mesure est [TARE](https://github.com/JeanBaptisteDurand/ETH_Online_2026), notre projet
 d'ETHOnline 2026 : finaliste, prix Uniswap Foundation « Best Uniswap Stack Contribution ».
 
-Fait pour le hackathon **Ledger N3XT** (6-13 octobre 2026). Le script de la vidéo est dans [`VIDEO.md`](VIDEO.md).
+Fait pour le hackathon **Ledger N3XT** (6-13 octobre 2026). La vidéo : <https://youtu.be/8AGHwGirckI> ; son script est dans [`VIDEO.md`](VIDEO.md).
 
 ## Attribution IA
 
