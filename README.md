@@ -856,3 +856,12 @@ Florent. Le moteur de mesure est [TARE](https://github.com/JeanBaptisteDurand/ET
 d'ETHOnline 2026 : finaliste, prix Uniswap Foundation « Best Uniswap Stack Contribution ».
 
 Fait pour le hackathon **Ledger N3XT** (6-13 octobre 2026). Le script de la vidéo est dans [`VIDEO.md`](VIDEO.md).
+
+## Attribution IA
+
+Construit avec Claude Code. Sur le site en ligne, l'analyste et le stratège répondent avec `gpt-4o-mini` d'OpenAI ; en
+local, avec Claude par son CLI.
+
+Ce qui ne sort pas d'un modèle, ce sont les mesures : chaque coût de sortie vient du fork de Base au bloc 50 614 000,
+mesuré dans la transaction par le contrat ou par le contrefactuel de TARE, et les tests Foundry rejouent les refus.
+Les photos de la vraie Ledger sont des images d'une vidéo de l'appareil.
