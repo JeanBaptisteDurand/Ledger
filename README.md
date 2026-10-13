@@ -72,7 +72,7 @@ Base a **27 % de la position de son plus gros déposant bloquée**, et cinq coff
 | **Signer Kit + DMK** (1.18.1 / 1.9.1) | dans le navigateur du porteur (WebHID pour une vraie Flex, Speculos en banc) : la connexion Sign-In with Ethereum, le dépôt, le mandat, chaque dérogation, le retrait. Jamais un achat. |
 | **Clear signing** (ERC-7730) | nos descripteurs du mandat, de la dérogation et du retrait, compilés et signés avec la clé de test de l'app Ethereum 1.22.4 : la Flex affiche les champs, le kit rapporte `isBlindSign=false`. Vérifié sur la Flex émulée et sur une vraie Flex, en ligne ([photos](captures/ledger-reelle/)). |
 | **Agent Stack** (wallet-cli 2.1.0) | l'analyste, un vrai agent : un modèle de langage (Claude par son CLI, ou gpt-4o-mini par l'API d'OpenAI sur le site en ligne) sur un MCP en lecture seule de dix outils, dont `earn yields` de Ledger ; il cite l'outil sous chaque nombre et ne peut rien signer. |
-| **Ring CLI** (Ledger Key Ring Protocol) | le secret maître dont dérive la clé MCP de chaque compte (`HMAC-SHA256(maître, adresse)`, jamais stockée), scellé sous la graine de l'opérateur. |
+| **Ring CLI** (Ledger Key Ring Protocol) | le secret maître dont dérive la clé MCP de chaque compte (`HMAC-SHA256(maître, adresse)`, jamais stockée) ; [`scripts/ring-seal.sh`](scripts/ring-seal.sh) le scelle sous la graine de l'opérateur. Câblé, pas encore initialisé : `ring init` demande une fois une Flex en USB. |
 
 [Ligne à ligne](#les-briques-ledger-du-brief-ligne-à-ligne), avec les versions et les fichiers.
 
@@ -110,7 +110,7 @@ du haut porte « The product », « Demo » et « Sign in » ; connecté, elle a
 
 ### Sommaire
 
-[Le système](#le-système-sur-une-feuille) · [La vraie Ledger](#la-vraie-ledger-sur-le-site-en-ligne) · [Le site, route par route](#le-site-route-par-route) · [`DEPLOY.md`](DEPLOY.md) · [In English, on one page](#in-english-on-one-page) · [Le problème](#le-problème) · [Le mécanisme](#le-mécanisme) ·
+[Le système](#le-système-sur-une-feuille) · [La vraie Ledger](#la-vraie-ledger-sur-le-site-en-ligne) · [Le site, route par route](#le-site-route-par-route) · [`DEPLOY.md`](DEPLOY.md) · [In English, on one page](#in-english-on-one-page) ([`ONE-PAGE.md`](ONE-PAGE.md)) · [Le problème](#le-problème) · [Le mécanisme](#le-mécanisme) ·
 [Le banc, dans le navigateur](#le-banc-dans-le-navigateur) · [L'agent, et pourquoi il se fait piéger](#lagent-et-pourquoi-il-se-fait-piéger) ·
 [La seconde instance](#la-seconde-instance--dix-coffres-erc-4626-réels-même-mandat-même-refus) · [L'escalade](#lescalade---hors-bornes-ne-veut-pas-dire-non-) ·
 [Plusieurs agents](#plusieurs-agents) · [Le MCP](#le-mcp--lecture-seule-pour-analyser-après-coup) · [L'analyste](#lanalyste--le-vrai-agent) ·
@@ -171,8 +171,9 @@ tool behind every number; it cannot sign, send or stop anything.
 **Ledger's bricks, one role each.** Signer Kit + DMK in the holder's browser (WebHID for a real Ledger, Speculos
 for the bench), with our own EIP-712 descriptors — compiled with the test key of a 1.22.4 build of the official app,
 because the clear-signing registry answers 403 without a partner token. Agent Stack: the analyst, its MCP, Ledger's
-`wallet-cli` as one of its tools, our skills in Ledger's format. Ring CLI: a master secret sealed under the
-operator's seed, from which every account's MCP key is derived.
+`wallet-cli` as one of its tools, our skills in Ledger's format. Ring CLI: the master secret from which every
+account's MCP key is derived can be sealed under the operator's seed (`scripts/ring-seal.sh`); it is wired, not yet
+initialised, since `ring init` needs a Flex over USB once.
 
 **As a service.** The Ledger stays with the client: SIWE in the browser, a vault in their name, the mandate signed in
 the page, one session key per bench that can only call that vault, a webhook when something overflows. Accounts are
@@ -859,8 +860,9 @@ Fait pour le hackathon **Ledger N3XT** (6-13 octobre 2026). Le script de la vid�
 
 ## Attribution IA
 
-Construit avec Claude Code. Sur le site en ligne, l'analyste et le stratège répondent avec `gpt-4o-mini` d'OpenAI ; en
-local, avec Claude par son CLI.
+Claude Code a servi d'outil de travail pendant le hackathon, sous la direction de l'équipe : l'idée, le mécanisme, les
+choix et le design sont les nôtres. Dans le produit, deux agents utilisent un modèle de langage, l'analyste et le
+stratège : `gpt-4o-mini` d'OpenAI sur le site en ligne, Claude par son CLI en local.
 
 Ce qui ne sort pas d'un modèle, ce sont les mesures : chaque coût de sortie vient du fork de Base au bloc 50 614 000,
 mesuré dans la transaction par le contrat ou par le contrefactuel de TARE, et les tests Foundry rejouent les refus.
