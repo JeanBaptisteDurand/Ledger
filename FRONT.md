@@ -270,13 +270,13 @@ renvoyer à la précédente.
 | `POST /api/siwe/verify` | `{message, signature, address}` | `{ok, address}` + cookie | connexion, chemin navigateur |
 | `POST /api/login_device` | `{}` | `{ok, address}` + cookie | connexion par l'appareil du banc |
 | `POST /api/logout` | `{}` | `{ok}` (cookie effacé) | |
-| `POST /api/signer` | `{signer:'browser'|'dmk'|'python'}` | `{ok, signer}` | |
+| `POST /api/signer` | `{signer:'browser'\|'dmk'\|'python'}` | `{ok, signer}` | |
 | `POST /api/boot` | `{}` | `{ok, msg}` | ouvre la session : coffre au nom du compte |
 | `POST /api/chat` | `{prompt}` | `{ok, msg, proposal}` | le stratège (10–30 s) |
 | `POST /api/sign_mandate` | `{}` | `{ok, msg, pending_token}` | met le mandat en attente de signature |
-| `GET /api/descriptor?kind=mandate|exception` | — | le descripteur JSON | pour `LedgerWeb.signTypedData` |
+| `GET /api/descriptor?kind=mandate\|exception` | — | le descripteur JSON | pour `LedgerWeb.signTypedData` |
 | `POST /api/signed` | `{kind, signature, owner, report}` ou `{kind, error}` | `{ok, msg}` | rend la signature faite dans la page |
-| `POST /api/universe` | `{universe:'pools'|'vaults'}` | `{ok, universe}` | univers par défaut |
+| `POST /api/universe` | `{universe:'pools'\|'vaults'}` | `{ok, universe}` | univers par défaut |
 | `POST /api/run` | `{}` | `{ok, msg, pending_token}` | un bot d'un seul tour |
 | `POST /api/bots` | `{name, universe, ticks, interval_s, slice_weth?}` | `{ok, msg, bots[]}` | ajoute et lance |
 | `POST /api/bots/stop` | `{id}` | `{ok, msg, bots[]}` | |

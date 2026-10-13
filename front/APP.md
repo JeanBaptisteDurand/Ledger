@@ -127,7 +127,7 @@ Full journey (12 October, on the pages above, with Florent's branch merged), eve
 signed on the device, bounds (Claude), mandate clear-signed (`isBlindSign=false`), pools bot 2 buys / 8 refusals, exception
 with a queue of 3, « leave refused », re-probe and exit (one position sold at 310 → 600 bps), withdrawal of 0.1 WETH
 authorised on the device, vaults bot (Moonwell at 2 691 bps) stopped from the live table and its exception signed, the
-analyst through `bots` in 33 s, the account (80 gestures, the key, the configuration), the live map and the cockpit, logout
+analyst through `bots` in 33 s, the account (80 gestures, the key, the configuration), the live map and the cockpit (since removed, with the replay), logout
 and reconnection on the same state through the bench device, the SaaS door. The reference timings are the 10 and 11 October
 runs below (the 12 October host was shared with other workloads, which slows the emulator, not the product). The scripts run
 headless without WebGL: the hero shows its poster, everything else is the product.
@@ -146,5 +146,5 @@ bot and Moonwell exception, the analyst through `bots` in 20 s, the account, log
 - `src/app/ui.tsx` — the components of `DESIGN.md` as React
 - `src/components/account/shell.tsx` — the account pages' shell on the home's surface: the gate, the hero in its finished state, the sheet motion
 - `src/components/account/Account.tsx`, `src/components/account/analyst.tsx`, `src/components/trades/Trades.tsx` — the two account pages and the analyst's thread (full on the account, compact in the demo)
-- `src/components/demo/` — the demo: the replay (`content.ts`, `Demo.tsx`), the live stage (`Stage.tsx`, `live.tsx`)
+- `src/components/demo/` — the demo: its page and copy (`Demo.tsx`, `content.ts`), the live stage (`Stage.tsx`, `live.tsx`), the bots' board (`Bots.tsx`)
 - `scripts/shots-pages.mjs` — every page signed in, at 1440 and 390 px, with the page errors and overflows reported

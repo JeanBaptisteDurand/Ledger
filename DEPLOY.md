@@ -105,6 +105,15 @@ FRONT_URL=https://netout.tech BENCH_SSH=vps-ovh node front/scripts/tests-usage.m
 
 Pour une vidéo sans personne à la souris : `sudo systemctl start netout-porteur` sur le serveur, puis `stop`.
 
+Pour repartir d'un fork neuf, aux nombres du README (Moonwell à 2 693 : chaque passage le fait baisser d'un ou deux
+points) : « Start over » sur `/demo`, puis
+
+```bash
+ssh vps-ovh 'pkill -u ubuntu -f "[a]nvil --fork-url"; sudo systemctl restart netout-banc'
+```
+
+La prochaine ouverture de session relance le fork au bloc 50 614 000.
+
 ## Ce qui n'est pas fait
 
 - **Une Flex par visiteur.** Il n'y en a qu'une, émulée : tous ceux qui la choisissent partagent le même porteur, donc

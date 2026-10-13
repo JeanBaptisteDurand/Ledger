@@ -24,7 +24,7 @@ async function shoot(width, height, suffix) {
   let s = await state()
   if (!s.address) { await api('/login_device'); await sleep(800); s = await state() }
   if (!s.vault) { await api('/boot'); for (let i = 0; i < 60 && !(await state()).vault; i++) await sleep(2000) }
-  for (const [path, name] of [['/connexion', 'connexion'], ['/account', 'account'], ['/trades', 'trades'], ['/demo', 'demo-replay'], ['/demo#map', 'demo-map'], ['/demo#cockpit', 'demo-cockpit']]) {
+  for (const [path, name] of [['/connexion', 'connexion'], ['/account', 'account'], ['/trades', 'trades'], ['/demo', 'demo'], ['/demo#map', 'demo-map']]) {
     await page.goto(URL + path, { waitUntil: 'domcontentloaded' }); await sleep(2500)
     await page.evaluate(() => window.scrollTo(0, 0)); await sleep(300)
     const w = await page.evaluate(() => document.documentElement.scrollWidth)

@@ -102,8 +102,11 @@ Deux surfaces, un fil.
    you »).
 4. **Le schéma a rejoint le home** le 12 octobre : la carte du système, le principe, les deux sortes d'agents et les dix
    outils, une signature pas à pas, le compte, les limites et les clés, ce que le porteur garde. Il n'y a plus de page à part.
-5. **Le compte** (`/app`, `/compte`, `/appareil`) : calme, dense, sans canvas. La Ledger est dans le navigateur ; le
-   serveur ne la voit jamais.
+5. **La démo** (`/demo`) : la carte vivante, allumée par le banc. La carte NOW dit quoi faire, la Flex est à côté,
+   et les volets Bots, TARE et « Watch and analyst » s'ouvrent sur la même scène.
+6. **Le compte** (`/connexion`, `/trades`, `/account`) : sur la même surface, des feuilles de verre sur la scène
+   finie. La Ledger est dans le navigateur ; le serveur ne la voit jamais. Quand une signature attend la Flex émulée,
+   son écran vient en bas à gauche de la page.
 
 Le vocabulaire est fixé par le produit : *mandat, bornes, coffre, bot, tour, tranche, demande hors bornes,
 dérogation, porte, sortie, resonder, le porteur.*

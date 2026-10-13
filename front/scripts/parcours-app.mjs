@@ -256,7 +256,7 @@ for (const k of ['login', 'session', 'strategy', 'mandate_signed', 'bot_added', 
   if (!acc.events.some((e) => e.kind === k)) fail('événement manquant : ' + k)
 await shot('06-compte')
 
-// 11 · the demo: the live map and the cockpit with everything that happened, then the replay
+// 11 · the demo: the live map with everything that happened, and its panels (Bots, TARE, Watch and analyst)
 await liveMap(); await shot('07-demo-map', false)
 await page.getByRole('button', { name: 'Bots', exact: true }).first().click(); await sleep(1200)
 const botRows = await page.locator('.bots__row').count()

@@ -1,8 +1,8 @@
 # La vidéo — le script, 3 min 20
 
 *Pour Florent et Jean-Baptiste, 12 octobre 2026. La version relue du script de Florent, avec les éléments à mettre au-devant :
-les quatre gestes de la Ledger, l'app recompilée, les sept retours amont, la prise en main, le dépôt et le retrait. Le détail
-des raisons est dans VIDEO.md. Chaque chiffre vient du dépôt. Voix off en gras italique = ajouté ou changé.*
+les quatre gestes de la Ledger, l'app recompilée, les sept retours amont, la prise en main, le dépôt et le retrait.
+Chaque chiffre vient du dépôt. Voix off en gras italique = ajouté ou changé.*
 
 | Temps | À l'écran | Voix off |
 |---|---|---|
@@ -20,6 +20,17 @@ des raisons est dans VIDEO.md. Chaque chiffre vient du dépôt. Voix off en gras
 « ce que le hook prend à l'entrée » pour un bot coffres (un coffre n'a pas de hook : c'est la porte) ; « votre mandat en
 autorise 300 » comme un chiffre fixe (il dépend de la phrase : « prudemment » donne 150).
 
-**Pour tourner le direct sans attendre** : `PORTEUR=1 scripts/site.sh` lance le banc, le front et un porteur qui approuve
-chaque écran de la Flex émulée après 2 s ; la machine doit être à elle (pas d'autres conteneurs Docker, pas d'entraînement).
+**Pour tourner le direct en ligne**, sur <https://netout.tech> : la Flex émulée s'approuve à la souris, dans la page
+(un clic appuie, un glissé vers la gauche tourne la page, un appui long signe) ; elle vient d'elle-même en bas à gauche de
+`/account` et de `/trades` quand une signature l'attend. Pour qu'elle approuve seule après 2 s de lecture :
+`ssh vps-ovh sudo systemctl start netout-porteur`, puis `stop` à la fin. Une seule personne à la fois : la Flex émulée
+est partagée.
+
+- **L'analyste (2:45) demande le CLI `claude` connecté sur le serveur** : `ssh -t vps-ovh claude`, puis `/login`, une
+  fois. Sans lui, la réponse dit qu'il n'est pas connecté.
+- **Moonwell ne lit 2 693 que sur un fork neuf** : chaque passage y dépose un peu et le fait baisser d'un ou deux points.
+  Avant de tourner : « Start over » sur `/demo`, puis repartir d'un fork neuf (la commande est dans `DEPLOY.md`).
+- **En local**, `PORTEUR=1 scripts/site.sh` lance le banc, le front et ce porteur ; la machine doit être à elle (pas
+  d'autres conteneurs Docker, pas d'entraînement).
+
 Le tour du bot coffres prend 20 à 40 s : prévoir 60 s à l'image, ou couper au montage.

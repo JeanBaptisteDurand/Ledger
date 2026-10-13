@@ -94,7 +94,7 @@ du haut porte « The product », « Demo » et « Sign in » ; connecté, elle a
 
 [Le site, route par route](#le-site-route-par-route) · [`DEPLOY.md`](DEPLOY.md) · [In English, on one page](#in-english-on-one-page) · [Le problème](#le-problème) · [Le mécanisme](#le-mécanisme) ·
 [Le banc, dans le navigateur](#le-banc-dans-le-navigateur) · [L'agent, et pourquoi il se fait piéger](#lagent-et-pourquoi-il-se-fait-piéger) ·
-[La seconde instance](#la-seconde-instance--dix-coffres-erc-4626-réels-même-mandat-même-refus) · [L'escalade](#lescalade--hors-bornes-ne-veut-pas-dire-non) ·
+[La seconde instance](#la-seconde-instance--dix-coffres-erc-4626-réels-même-mandat-même-refus) · [L'escalade](#lescalade---hors-bornes-ne-veut-pas-dire-non-) ·
 [Plusieurs agents](#plusieurs-agents) · [Le MCP](#le-mcp--lecture-seule-pour-analyser-après-coup) · [L'analyste](#lanalyste--le-vrai-agent) ·
 [Les briques Ledger](#les-briques-ledger-du-brief-ligne-à-ligne) · [En SaaS](#en-saas--la-ledger-reste-chez-le-client) · [Les mots](#les-mots-une-fois-pour-toutes) ·
 [Ce qui tourne](#ce-qui-tourne) · [Prérequis](#prérequis) · [Ce que ça n'attrape pas](#ce-que-ça-nattrape-pas--dit-avant-quon-nous-le-demande) ·
@@ -107,6 +107,12 @@ du haut porte « The product », « Demo » et « Sign in » ; connecté, elle a
 ## In English, on one page
 
 **The sentence.** An agent cannot enter a position it cannot net out. (Working title: Porte de sortie, the exit door.)
+
+**Live.** <https://netout.tech> serves the whole site with the bench behind it: a Base fork pinned at block
+50 614 000, an emulated Ledger Flex, the account server. *Sign in with the emulated Flex* takes one click; you sign on
+its screen with the mouse (a click taps, a drag to the left turns the page, a long press signs). There is one emulated
+Flex for every visitor, so one holder and one signature at a time; a real Ledger over USB opens its own account. How it
+is served, and what was tested from outside: [`DEPLOY.md`](DEPLOY.md).
 
 **The measure.** The exit is measured by **TARE**, our ETHOnline 2026 instrument (finalist, Uniswap Foundation prize,
 “Best Uniswap Stack Contribution”): on a fork pinned at block 50 614 000 it swaps the hook's bytecode for 89 inert bytes,
@@ -156,7 +162,8 @@ every waiting request.
 **What it does not catch.** A switch flipped after the purchase is watched, not prevented; the price of the token;
 anything on a live network (the demo runs on a fork — `MAINNET.md` says what changes).
 
-**Run it.** `./scripts/demo.sh` for the command line; `python3 web/server.py` then `front/` for the site. Prerequisites below.
+**Run it.** `scripts/site.sh` for the site on your machine (the bench, the emulated Flex, the front); `./scripts/demo.sh`
+for the command line. Prerequisites below.
 
 ## Le problème
 

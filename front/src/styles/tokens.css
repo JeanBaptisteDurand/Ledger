@@ -1509,6 +1509,17 @@ footer { position: relative; }
     .acts { flex-wrap: wrap; }
   .acts li { flex: 1 1 45%; }
 }
+/* The stage on a phone (2026-10-13): the tools wrap under the acts, the map and the side column stack, and the map
+   scrolls sideways inside its own frame, as the home's map does below 900 px. The page itself never scrolls sideways.
+   Nothing changes from 768 px up. */
+@media (max-width: 767px) {
+  .live-stage__rail { flex-wrap: wrap; }
+  .live-stage__tools { flex: 1 1 100%; flex-wrap: wrap; }
+  .live-stage__body--map { grid-template-columns: minmax(0, 1fr); }
+  .live-stage__map { overflow-x: auto; justify-content: flex-start; }
+  .live-stage__map svg { min-width: 900px; }
+  .acts__label { white-space: normal; }
+}
 
 /*
  * ── The live map, revealed as the journey goes (2026-10-12, the author) ──

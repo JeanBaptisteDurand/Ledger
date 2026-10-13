@@ -1034,6 +1034,9 @@ motion-budget (measured, `design-shots/audit.md`): 2 continuous animations in th
 
 ### Product pages (added with the bench integration, 4 October; Florent's home, scene and sound of 26–29 September brought in on 10 October)
 
+*As of 4 October. The routes have changed since: `/`, `/demo`, `/connexion`, `/trades`, `/account` (see “Five routes”,
+12 October); `/app`, `/compte`, `/appareil` and `/schema` are gone.*
+
 The hero, its scene, its player and its timings are untouched. What was added sits under `src/app/` and
 `src/styles/app.css`, and takes every value from the frontmatter.
 
