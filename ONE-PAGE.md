@@ -31,16 +31,26 @@ read in clear.
 - **The Ledger.** Signer Kit Ethereum 1.18.1 on DMK 1.9.1, in the holder's browser, over WebHID for a real Flex or through
   Speculos. The device signs five things and never a purchase: the sign-in (SIWE), the deposit, the mandate, each
   exception and the withdrawal. Our ERC-7730 descriptors are signed with the test key of the Ethereum app 1.22.4 we
-  rebuilt, so the Flex shows every field, including the exit cost.
+  rebuilt, so the Flex shows every field, including the exit cost. On the operator's side, the Ledger Key Ring
+  (`wallet-cli ring`, initialised on 13 October with a real Flex over USB on the operator's Mac) seals the master
+  secret every account's MCP key is derived from; the live server has no Ledger plugged in, so there it is a plain file.
 - **The agents.** Execution bots without a language model buy through a session key that can only use the vault. An
   analyst, a language model on ten read-only MCP tools (one of them is Ledger's `wallet-cli earn yields`), explains each
-  decision and names the tool behind every number. It cannot sign, send or stop anything.
+  decision and names the tool behind every number. It cannot sign, send or stop anything. The same ten tools are
+  served over HTTP (`POST /api/mcp`), so a holder can plug their own agent into their account, read-only, with the
+  MCP key shown on /account.
 - **The site.** A live map of the system lit by the bench, a door for the Ledger, pages for trades and for the account.
 
 ## Run it
 
 Online: open https://netout.tech, click **Sign in with the emulated Flex**, and follow the card above the Flex. A real
-Ledger works from Chrome, Edge or Brave, with the Ethereum app built with the test key.
+Ledger works from Chrome, Edge or Brave, with the Ethereum app built with the test key. To plug your own agent into
+your account, copy the MCP key from **/account**, which also gives this command and the JSON (locally, the URL is
+http://127.0.0.1:5173/api/mcp):
+
+```bash
+claude mcp add --transport http netout https://netout.tech/api/mcp --header "Authorization: Bearer <key>"
+```
 
 Locally, with Docker, Foundry, Python 3.12+, Node 20+ and a Base RPC URL:
 

@@ -34,7 +34,7 @@ const KEY = {
   title: ['Your Claude ', 'reads your vault.', ''] as HotTitle,
   takeaway: 'Derived from a master secret and your address · written nowhere · read only',
   lead: 'This key is derived from a master secret and your address; it is stored nowhere. Pasted into your own Claude, it opens your data read only: your bots, your decisions, your positions. Nothing else.',
-  source: 'web/accounts.py: HMAC-SHA256(master, address). scripts/ring-seal.sh: the master secret sealed in the Ledger Key Ring.',
+  source: 'web/accounts.py: HMAC-SHA256(master, address). web/server.py: the MCP served at /api/mcp, opened by this key. scripts/ring-seal.sh: the master secret sealed in the Ledger Key Ring.',
 }
 const HISTORY = {
   title: ['What ', 'you did.', ''] as HotTitle,
@@ -174,7 +174,7 @@ function Keys({ s }: { s: BenchState }) {
   const [account, setAccount] = useState<Account | null>(null)
   const [reveal, setReveal] = useState(false)
   const [showConfig, setShowConfig] = useState(false)
-  const [copied, setCopied] = useState<'key' | 'config' | null>(null)
+  const [copied, setCopied] = useState<'key' | 'command' | 'json' | null>(null)
   const [confirming, setConfirming] = useState(false)
   const address = s.address
 
@@ -189,12 +189,16 @@ function Keys({ s }: { s: BenchState }) {
     return () => window.clearInterval(t)
   }, [address, load])
 
-  const config = account ? JSON.stringify(account.mcp_config, null, 2) : ''
-  /** One click: fetch the key in clear (it is derived on the server, never stored), copy it, done. */
-  const copyText = async (what: 'key' | 'config') => {
+  /** The MCP is served by this site (POST /api/mcp, the key as a bearer): it works from any machine, nothing to install. */
+  const url = `${window.location.origin}/api/mcp`
+  const command = (key: string) => `claude mcp add --transport http netout ${url} --header "Authorization: Bearer ${key}"`
+  const json = (key: string) => JSON.stringify({ mcpServers: { netout: { type: 'http', url, headers: { Authorization: `Bearer ${key}` } } } }, null, 2)
+  /** One click: fetch the key in clear (it is derived on the server, never stored), copy it or what carries it, done. */
+  const copyText = async (what: 'key' | 'command' | 'json') => {
     try {
       const a = await getAccount(true)
-      await navigator.clipboard.writeText(what === 'key' ? a.mcp_key : JSON.stringify(a.mcp_config, null, 2))
+      if (!a.mcp_key) { say(a.msg ?? 'Cannot copy: no account here.'); return }
+      await navigator.clipboard.writeText(what === 'key' ? a.mcp_key : what === 'command' ? command(a.mcp_key) : json(a.mcp_key))
       setCopied(what)
       window.setTimeout(() => setCopied(null), 1600)
     } catch {
@@ -238,13 +242,18 @@ function Keys({ s }: { s: BenchState }) {
             <button type="button" className="btn-ghost btn-ghost--small t-button-cap" onClick={() => setReveal((v) => !v)}>{reveal ? 'Hide' : 'Reveal'}</button>
             <button type="button" className="btn-ghost btn-ghost--quiet btn-ghost--small t-button-cap" onClick={() => setShowConfig((v) => !v)}>{showConfig ? 'Close the configuration' : 'Claude configuration'}</button>
             <button type="button" className="btn-ghost btn-ghost--quiet btn-ghost--small t-button-cap" onClick={() => copyText('key')}>{copied === 'key' ? 'Key copied' : 'Copy the key'}</button>
-            <button type="button" className="btn-ghost btn-ghost--quiet btn-ghost--small t-button-cap" onClick={() => copyText('config')}>{copied === 'config' ? 'Configuration copied' : 'Copy the configuration'}</button>
           </div>
           {showConfig ? (
             <div className="mt-6">
-              <Kicker>To paste into Claude’s MCP configuration</Kicker>
-              <pre className="t-mono-data m-0 overflow-auto whitespace-pre-wrap break-all is-info">{config || '…'}</pre>
-              <p className="t-caption m-0 mt-4 text-page-text-faint">This configuration launches the MCP on the bench’s machine: it reads your files there. Elsewhere it would have to be served over HTTP. On this site, your analyst already has it.</p>
+              <Kicker>The command · Claude Code</Kicker>
+              <pre className="t-mono-data m-0 overflow-auto whitespace-pre-wrap break-all is-info">{account ? command(account.mcp_key) : '…'}</pre>
+              <div className="mt-4"><button type="button" className="btn-ghost btn-ghost--small t-button-cap" onClick={() => copyText('command')}>{copied === 'command' ? 'Command copied' : 'Copy the command'}</button></div>
+              <div className="mt-6">
+                <Kicker>The JSON · any MCP client</Kicker>
+                <pre className="t-mono-data m-0 overflow-auto whitespace-pre-wrap break-all is-info">{account ? json(account.mcp_key) : '…'}</pre>
+                <div className="mt-4"><button type="button" className="btn-ghost btn-ghost--quiet btn-ghost--small t-button-cap" onClick={() => copyText('json')}>{copied === 'json' ? 'JSON copied' : 'Copy the JSON'}</button></div>
+              </div>
+              <p className="t-caption m-0 mt-5 text-page-text-faint">Paste the command in a terminal for Claude Code, or the JSON in any MCP client that speaks HTTP. Your agent gets the analyst’s ten read-only tools, on this account only: it can read, never sign, send or stop. Nothing to install: this site serves the MCP.</p>
             </div>
           ) : (
             <p className="t-body-md m-0 mt-6 max-w-[60ch] text-pretty text-page-text-mute">Ten tools, all read only: <span className="t-mono-data is-info">bots · operations · decision · positions · mandate · compare_entry_exit · universe_facts · hook_analysis · vault_openness · ledger_earn_yields</span>. None signs, sends or stops a bot.</p>

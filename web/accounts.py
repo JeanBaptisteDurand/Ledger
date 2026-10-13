@@ -52,6 +52,19 @@ def user_key(address: str) -> str:
     return base64.urlsafe_b64encode(mac).decode().rstrip("=")[:32]
 
 
+def address_for_key(key: str | None) -> str | None:
+    """Le compte dont c'est la clé MCP (comparaison à temps constant), ou None : le MCP servi en HTTP s'ouvre ainsi."""
+    if not key or not ACCOUNTS_DIR.exists():
+        return None
+    for d in ACCOUNTS_DIR.iterdir():
+        if d.is_dir() and is_address(d.name) and hmac.compare_digest(user_key(d.name), key):
+            try:
+                return json.loads((d / "profile.json").read_text()).get("address") or d.name
+            except (OSError, ValueError):
+                return d.name
+    return None
+
+
 def paths(address: str) -> dict[str, Path]:
     d = ACCOUNTS_DIR / address.lower()
     return {"dir": d, "profile": d / "profile.json", "mandate": d / "mandate.json", "journal": d / "journal.jsonl",

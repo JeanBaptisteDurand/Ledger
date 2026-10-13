@@ -198,7 +198,7 @@ if (!/^[A-Za-z0-9_-]{20,}$/.test(key)) fail('la clé MCP révélée n’a pas la
 await btn('Copy the key').click(); await sleep(400)
 if (!(await has('Key copied')) && !(await has('Cannot copy'))) note('« Copy the key » ne dit ni copié ni impossible')
 await btn('Claude configuration').click(); await sleep(300)
-if (!(await has('porte-de-sortie'))) fail('la configuration Claude ne s’affiche pas')
+if (!(await has('claude mcp add'))) fail('la configuration Claude ne s’affiche pas')
 const events = await page.locator('#history table.data-table tbody tr').count()
 if (events < 5) fail('l’historique du compte est vide ou trop court : ' + events)
 await btn('Reset', true).click(); await sleep(300)

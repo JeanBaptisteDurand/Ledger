@@ -1165,9 +1165,43 @@ class H(BaseHTTPRequestHandler):
         accounts.save_sessions(SESSIONS)
         return f"pds_session={token}; Path=/; HttpOnly; SameSite=Lax"
 
+    def _mcp(self, body):
+        """Le MCP en lecture seule servi en HTTP (MCP Streamable HTTP, réponses JSON) : la clé du compte, en
+        `Authorization: Bearer`, ouvre les données de CE compte. Le même pds_mcp.py que l'analyste, lancé avec
+        l'environnement du compte : un agent branché d'ailleurs a les dix outils, et rien pour signer."""
+        m = re.match(r"Bearer\s+(\S+)", self.headers.get("Authorization", "") or "")
+        addr = accounts.address_for_key(m.group(1)) if m else None
+        if not addr:
+            return self._send(403, {"jsonrpc": "2.0", "id": None, "error": {
+                "code": -32001, "message": "unknown key: send Authorization: Bearer <your MCP key, on the account page>"}})
+        msgs = [x for x in (body if isinstance(body, list) else [body]) if isinstance(x, dict)]
+        calls = [x for x in msgs if "id" in x and x.get("method")]
+        if not calls:  # des notifications seules (notifications/initialized) : rien à rendre
+            self.send_response(202)
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+            return None
+        p = accounts.paths(addr)
+        env = {**os.environ, "PDS_ACCOUNT": addr, "PDS_MCP_KEY": accounts.user_key(addr),
+               "PDS_JOURNAL": str(p["journal"]), "PDS_MANDATE": str(p["mandate"]), "PDS_BOTS": str(p["dir"] / "bots.json"),
+               "ANVIL_URL": os.environ.get("ANVIL_URL", "http://127.0.0.1:8545")}
+        try:
+            r = subprocess.run([sys.executable, str(ROOT / "mcp" / "pds_mcp.py")], env=env, capture_output=True, text=True,
+                               input="".join(json.dumps(c) + "\n" for c in calls), timeout=120)
+            out = [json.loads(line) for line in r.stdout.splitlines() if line.strip()]
+        except (subprocess.TimeoutExpired, ValueError) as e:
+            return self._send(200, {"jsonrpc": "2.0", "id": calls[0].get("id"), "error": {"code": -32603, "message": repr(e)}})
+        for c, o in zip(calls, out):   # la version du protocole : celle que le client demande, s'il en demande une connue
+            asked = (c.get("params") or {}).get("protocolVersion")
+            if c.get("method") == "initialize" and asked in ("2025-03-26", "2025-06-18", "2025-11-25") and "result" in o:
+                o["result"]["protocolVersion"] = asked
+        return self._send(200, out if isinstance(body, list) else (out[0] if out else {}))
+
     def do_GET(self):
         self._bind()
         path = urlparse(self.path).path
+        if path == "/api/mcp":
+            return self._send(405, {"error": "the MCP answers POST: JSON-RPC, MCP Streamable HTTP"})
         if path == "/schema.html":
             return self._send(200, (Path(__file__).parent / "schema.html").read_bytes(), "text/html; charset=utf-8")
         if path == "/api/account":
@@ -1268,6 +1302,8 @@ class H(BaseHTTPRequestHandler):
         path = urlparse(self.path).path
         n = int(self.headers.get("Content-Length", 0))
         body = json.loads(self.rfile.read(n) or b"{}")
+        if path == "/api/mcp":
+            return self._mcp(body)
         if path == "/api/login_device":
             # le chemin du banc : l'appareil branché (ou émulé) dit qui est le compte
             if not G["speculos"]:

@@ -72,7 +72,7 @@ Base a **27 % de la position de son plus gros déposant bloquée**, et cinq coff
 | **Signer Kit + DMK** (1.18.1 / 1.9.1) | dans le navigateur du porteur (WebHID pour une vraie Flex, Speculos en banc) : la connexion Sign-In with Ethereum, le dépôt, le mandat, chaque dérogation, le retrait. Jamais un achat. |
 | **Clear signing** (ERC-7730) | nos descripteurs du mandat, de la dérogation et du retrait, compilés et signés avec la clé de test de l'app Ethereum 1.22.4 : la Flex affiche les champs, le kit rapporte `isBlindSign=false`. Vérifié sur la Flex émulée et sur une vraie Flex, en ligne ([photos](captures/ledger-reelle/)). |
 | **Agent Stack** (wallet-cli 2.1.0) | l'analyste, un vrai agent : un modèle de langage (Claude par son CLI, ou gpt-4o-mini par l'API d'OpenAI sur le site en ligne) sur un MCP en lecture seule de dix outils, dont `earn yields` de Ledger ; il cite l'outil sous chaque nombre et ne peut rien signer. |
-| **Ring CLI** (Ledger Key Ring Protocol) | le secret maître dont dérive la clé MCP de chaque compte (`HMAC-SHA256(maître, adresse)`, jamais stockée) ; [`scripts/ring-seal.sh`](scripts/ring-seal.sh) le scelle sous la graine de l'opérateur. Câblé, pas encore initialisé : `ring init` demande une fois une Flex en USB. |
+| **Ring CLI** (Ledger Key Ring Protocol) | le secret maître dont dérive la clé MCP de chaque compte (`HMAC-SHA256(maître, adresse)`, jamais stockée) ; [`scripts/ring-seal.sh`](scripts/ring-seal.sh) le scelle sous la graine de l'opérateur. Initialisé le 13 octobre avec une vraie Flex en USB, en local sur le Mac de l'opérateur : le MCP y déchiffre ce secret au démarrage. Le serveur de netout.tech n'a pas de Ledger branchée : là, le Ring n'est pas initialisé et le secret maître est un fichier en clair. |
 
 [Ligne à ligne](#les-briques-ledger-du-brief-ligne-à-ligne), avec les versions et les fichiers.
 
@@ -172,12 +172,15 @@ tool behind every number; it cannot sign, send or stop anything.
 for the bench), with our own EIP-712 descriptors — compiled with the test key of a 1.22.4 build of the official app,
 because the clear-signing registry answers 403 without a partner token. Agent Stack: the analyst, its MCP, Ledger's
 `wallet-cli` as one of its tools, our skills in Ledger's format. Ring CLI: the master secret from which every
-account's MCP key is derived can be sealed under the operator's seed (`scripts/ring-seal.sh`); it is wired, not yet
-initialised, since `ring init` needs a Flex over USB once.
+account's MCP key is derived is sealed under the operator's seed (`scripts/ring-seal.sh`): the Key Ring was
+initialised on 13 October with a real Flex over USB, locally on the operator's Mac, where the MCP decrypts that secret
+at startup. The server behind netout.tech has no Ledger plugged in: there the Ring is not initialised and the secret
+is a plain file.
 
 **As a service.** The Ledger stays with the client: SIWE in the browser, a vault in their name, the mandate signed in
 the page, one session key per bench that can only call that vault, a webhook when something overflows. Accounts are
-addresses proven by the device; the MCP key is derived, never stored.
+addresses proven by the device; the MCP key is derived, never stored, and plugs the holder's own agent into their
+account over HTTP (`POST /api/mcp`): the analyst's ten read-only tools, that account only, nothing to install.
 
 **Five upstream findings** (`FEEDBACK.md`): clear signing closed without a partner token, silently; a one-line
 chainId bug in the official Python client (every chain ≥ 256); the Signer Kit detects blind signing, reports it to
@@ -411,6 +414,19 @@ python3 mcp/pds_mcp.py --selftest       # les six outils, à vide
     "env": { "PDS_MCP_KEY": "<la clé>" } } } }
 ```
 
+Cette configuration lance le MCP en stdio, sur la machine du banc : elle sert à qui fait tourner le banc chez lui.
+Sans rien installer, le site sert le même MCP en HTTP : `POST /api/mcp` (transport Streamable HTTP de MCP, réponses
+JSON), ouvert par `Authorization: Bearer <la clé MCP du compte>`, celle que montre la page
+[`/account`](https://netout.tech/account), dérivée du secret maître et jamais stockée. Les dix outils de l'analyste,
+sur ce compte seulement : aucun ne signe, n'envoie ni n'arrête rien.
+
+```bash
+claude mcp add --transport http netout https://netout.tech/api/mcp --header "Authorization: Bearer <la clé>"
+```
+
+En local, même chemin : `http://127.0.0.1:5173/api/mcp`. La page `/account` donne cette commande
+et le JSON (`"type": "http"`, l'URL, l'en-tête `Authorization`), chacun avec son bouton de copie.
+
 | outil | ce qu'il rend |
 |---|---|
 | `operations` | les opérations tentées, l'issue et son motif |
@@ -453,7 +469,8 @@ la cotation avec le hook a reverté. […] La vérité terrain note toutefois `i
 ```
 
 Trois garanties, par construction : il ne peut **rien faire** (le MCP ne signe pas, n'envoie pas, ne lance
-rien) ; il n'a **que nos outils** ; la clé qui ouvre le MCP peut être **scellée dans le Ledger Key Ring**.
+rien) ; il n'a **que nos outils** ; la clé qui ouvre le MCP est **scellée dans le Ledger Key Ring**, en local sur le
+Mac de l'opérateur (pas sur le serveur en ligne, qui n'a pas de Ledger branchée).
 C'est la brique « Agent Stack » du brief faite pour de vrai : leur `wallet-cli` lu (`ledger_earn_yields`),
 leur format de skills adopté ([`SKILL.md`](SKILL.md)), et un agent qui raisonne sur des données mesurées.
 Dans le banc : carte « 4 · demande à l'analyste » — **une conversation** (l'historique lui est redonné à chaque
@@ -512,7 +529,7 @@ mention dans un README.
 | **a Signer** | `@ledgerhq/device-signer-kit-ethereum` **1.18.1** sur le DMK **1.9.1**, transport Speculos 1.2.1 ou USB (node-hid 1.0.1) — [`ledger/dmk/sign_typed_data.cjs`](ledger/dmk/sign_typed_data.cjs). Le kit reçoit nos filtres d'un **context module à nous**, qui sert des descripteurs compilés et signés localement ([`ledger/compile_descriptor.py`](ledger/compile_descriptor.py), clé de test `cal.pem`). Aucun serveur de Ledger. | L'écran : `Contract · Exit mandate`, `Network · Base`, `Budget · 0.2 WETH`, `Max round-trip loss (bps) · 150`, `Expires · …`, `Hold to sign`. Le rapport du kit : `isBlindSign=false · eip7730 · 0 erreur`. La signature vérifiée par `ecrecover` dans le coffre (`LedgerScene.t.sol`, vert). |
 | **Clear signing** | nos descripteurs ERC-7730 du mandat, de la dérogation et du retrait, compilés et signés avec la clé de test de l'app Ethereum **1.22.4** ([`ledger/compile_descriptor.py`](ledger/compile_descriptor.py), [`ledger/build/build-flex.sh`](ledger/build/build-flex.sh)) ; servis au Signer Kit par notre context module | la Flex affiche les champs, pas un blob : `isBlindSign=false · eip7730` dans le rapport du kit, sur la Flex émulée et sur une vraie Flex (2 oct.) ; sans eux, le registre répond 403 et le kit retombe à l'aveugle sans un mot (FEEDBACK § 1) |
 | **Agent Stack** | `@ledgerhq/wallet-cli` **2.1.0** en lecture ([`ledger/walletcli.py`](ledger/walletcli.py)) ; l'outil MCP `ledger_earn_yields` ; [`SKILL.md`](SKILL.md) et [`AGENTS.md`](AGENTS.md) au format de leurs skills. Le modèle qui propose est le Claude Agent SDK (`claude -p`). | `wallet-cli earn yields` rend fournisseur, jeton, rendement, lien de dépôt — et **aucun champ sur la sortie** (délai, `maxWithdraw`, coût). Le trou qu'on comble est écrit dans leur propre CLI. |
-| **Ring CLI** | `wallet-cli ring` (Ledger Key Ring Protocol) scelle la clé du MCP : [`scripts/ring-seal.sh`](scripts/ring-seal.sh) ; le MCP la déchiffre au démarrage et dit d'où elle vient (`--key-status`). | La clé de lecture de l'agent adossée à la graine du porteur, révocable depuis l'appareil. **Honnêtement** : `ring init` exige un Flex en USB, une fois — pas Speculos ; on l'a câblé et testé jusqu'au message « not initialized », pas au-delà. |
+| **Ring CLI** | `wallet-cli ring` (Ledger Key Ring Protocol) scelle la clé du MCP : [`scripts/ring-seal.sh`](scripts/ring-seal.sh) ; le MCP la déchiffre au démarrage et dit d'où elle vient (`--key-status`). Le Ring a été initialisé le 13 octobre avec une vraie Flex en USB, en local sur le Mac de l'opérateur : `wallet-cli ring init --unsecure-no-password`, sans mot de passe parce que le MCP déchiffre sa clé au démarrage, sans personne au clavier ; la clé privée du membre va dans le trousseau du système. Le `.mcp-key` en clair reste à côté, en repli : le MCP préfère le Ring, et `ring-seal.sh --wipe` efface la copie en clair. | La clé de lecture de l'agent adossée à la graine du porteur, révocable depuis l'appareil. `ring-seal.sh` a scellé `mcp/.mcp-key` en `mcp/.mcp-key.ring` (AES-256-GCM, clé du Ring `porte-de-sortie-mcp`), l'a redéchiffré et l'a retrouvé identique à l'octet près ; `--key-status` répond « Ledger Key Ring (.mcp-key.ring decrypted by wallet-cli ring decrypt) ». Après l'init, `ring encrypt` et `ring decrypt` se passent de l'appareil, pas du réseau : le trustchain LKRP se restaure depuis les serveurs de Ledger. **Honnêtement** : `ring init` exige un Flex en USB, une fois — pas Speculos ; et le serveur de netout.tech n'a pas de Ledger branchée : le Ring n'y est pas initialisé, le secret maître y est un fichier en clair. |
 
 Deux chemins vers l'appareil, une même signature : le Signer Kit (défaut) ou le client officiel
 d'app-ethereum en APDU direct ([`ledger/signers.py`](ledger/signers.py), bouton dans le banc). Le second
@@ -548,7 +565,10 @@ Quelqu'un chez lui, sa Ledger, notre site. Rien à installer, aucun secret à no
    `events.jsonl` (chaque geste : connexion, session, stratégie, mandat signé, tours, dérogations signées,
    surveillance, questions à l'analyste). Sa clé MCP est **dérivée** — `HMAC-SHA256(maître, adresse)`, jamais
    écrite — et n'ouvre que *ses* fichiers (`PDS_ACCOUNT`, `PDS_JOURNAL`, `PDS_MANDATE`) ; le secret maître dont
-   elle dérive est celui que le Ring scelle. Il la lit dans **mon compte**, avec la configuration à coller.
+   elle dérive est celui que le Ring scelle sur le Mac de l'opérateur (sur le serveur en ligne, sans Ledger branchée,
+   c'est un fichier en clair). Il la lit sur la page **/account**, avec la commande `claude mcp add` et le JSON à
+   copier : son propre agent se branche en HTTP sur `POST /api/mcp` (`Authorization: Bearer <sa clé>`), sans rien
+   installer, et y trouve les dix outils de l'analyste, sur son compte seulement — rien pour signer.
    Une session par compte, plusieurs comptes par serveur ; la reconnexion (SIWE, ou l'appareil du banc)
    retrouve le coffre, le mandat, les positions — et ses bots : ceux qui tournaient reprennent.
 7. **Il a des bots, pas un agent.** Il en ajoute autant qu'il veut, chacun nommé, dans un univers, à un rythme ;
@@ -628,7 +648,7 @@ agent/
 FEEDBACK.md                   le retour d'expérience développeur, pour Ledger Dev Rel
   journal.jsonl               une ligne par décision, avec toutes les données d'analyse
 mcp/
-  pds_mcp.py                  MCP lecture seule, dix outils (dont `bots`) ; clé maître (Key Ring si scellée, sinon fichier), clé par compte dérivée
+  pds_mcp.py                  MCP lecture seule, dix outils (dont `bots`) ; clé maître (Key Ring si scellée, sinon fichier), clé par compte dérivée ; servi aussi en HTTP par le banc (`POST /api/mcp`)
 web/
   server.py · index.html      le banc, un état par compte : connexion (SIWE ou appareil), mon compte, chat, mandat, mes bots (ordonnanceur, un tour à la fois), escalade nommée, analyste du compte, 3 chemins de signature
   accounts.py                 les comptes : dossier par adresse, clé MCP dérivée (HMAC), profil, événements, sessions
