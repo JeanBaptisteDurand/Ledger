@@ -10,7 +10,7 @@ export function Footer({ product = false }: { product?: boolean }) {
       <p className="t-caption m-0 max-w-[72ch] text-pretty">
         {product
           ? 'These pages read the bench live: a Base fork at block 50 614 000, the emulated Flex or your Ledger. Net·Out, Ledger OP3N 2026.'
-          : 'Every figure on this page was measured on a Base fork at block 50 614 000, on the 25 September 2026 run. The product pages read the bench live. Net·Out, Ledger OP3N 2026.'}{' '}
+          : 'Every figure on this page was measured on a Base fork at block 50 614 000. The product pages read the bench live. Net·Out, Ledger OP3N 2026.'}{' '}
         The code and every file the pages cite: <a href={REPO} target="_blank" rel="noreferrer" className={LINK}>github.com/JeanBaptisteDurand/Ledger</a>.
         The measure: <a href={TARE} target="_blank" rel="noreferrer" className={LINK}>TARE</a>, our ETHOnline 2026 instrument.
       </p>
