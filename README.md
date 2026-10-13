@@ -2,6 +2,8 @@
 
 **An agent cannot enter a position it cannot net out.**
 
+Built by **Jean-Baptiste Durand** and **Florent Belotti** · 42Blockchain, École 42 Paris · for the **Ledger N3XT** hackathon, October 2026.
+
 ### Live demo — **<https://netout.tech>**
 
 **The video:** <https://youtu.be/8AGHwGirckI>
@@ -45,7 +47,7 @@ Flex, is on the map. The seven photos, described one by one: [`captures/ledger-r
 | **The evidence** | [What is proven](#what-is-proven) · [What you will see](#what-you-will-see) · [The site, route by route](#the-site-route-by-route) · [What it does not catch](#what-it-does-not-catch) |
 | **Using it** | [Plug your own agent in](#plug-your-own-agent-in) · [Run it](#run-it) · [`DEPLOY.md`](DEPLOY.md) · [`MAINNET.md`](MAINNET.md) |
 | **For Ledger** | [Upstream findings](#upstream-findings) · [`FEEDBACK.md`](FEEDBACK.md) · [`upstream/`](upstream/) · [`SKILL.md`](SKILL.md) · [`AGENTS.md`](AGENTS.md) |
-| **The rest** | [The video](https://youtu.be/8AGHwGirckI) · [Team](#team) · [AI attribution](#ai-attribution) · [License](#license) · [`ONE-PAGE.md`](ONE-PAGE.md) · [Full documentation, in French](#documentation-complète-en-français) |
+| **The rest** | [The video](https://youtu.be/8AGHwGirckI) · [Team](#team) · [License](#license) · [`ONE-PAGE.md`](ONE-PAGE.md) · [Full documentation, in French](#documentation-complète-en-français) |
 
 ## The problem
 
@@ -210,16 +212,14 @@ scripts/site.sh                                 # the fork, the emulated Flex, t
 
 **Jean-Baptiste Durand** and **Florent Belotti**, École 42 Paris (42Blockchain). The contract, the bench, the agents,
 the MCP, the descriptors and the upstream feedback are Jean-Baptiste's. The scene, the home page, the demo and the
-site's design are Florent's. Built for the **Ledger N3XT** hackathon, 6 to 13 October 2026.
+site's design are Florent's. The measurement engine is [TARE](https://github.com/JeanBaptisteDurand/ETH_Online_2026),
+our ETHOnline 2026 project: finalist, Uniswap Foundation prize. Built for the **Ledger N3XT** hackathon, 6 to 13 October 2026.
 
-## AI attribution
+## Tooling
 
-Claude Code was a working tool during the hackathon, under the team's direction: the idea, the mechanism, the choices
-and the design are ours. In the product, two agents use a language model, the analyst and the strategist: OpenAI's
-`gpt-4o-mini` on the live site, Claude through its CLI locally. What does not come from a model is the measurements:
-every exit cost comes from the Base fork at block 50,614,000, measured in the transaction by the contract or by TARE's
-counterfactual, and the Foundry tests replay the refusals. The photos of the real Ledger are frames from a video of the
-device.
+Designed and built by the two of us, with Claude Code as a coding assistant. In the product, the analyst and
+the strategist run on a language model (`gpt-4o-mini` live, Claude locally); every exit cost comes from the Base fork
+and the contract, never from a model.
 
 ## License
 
@@ -930,15 +930,11 @@ d'ETHOnline 2026 : finaliste, prix Uniswap Foundation « Best Uniswap Stack Cont
 
 Fait pour le hackathon **Ledger N3XT** (6-13 octobre 2026). La vidéo : <https://youtu.be/8AGHwGirckI> ; son script est dans [`VIDEO.md`](VIDEO.md).
 
-## Attribution IA
+## Outils
 
-Claude Code a servi d'outil de travail pendant le hackathon, sous la direction de l'équipe : l'idée, le mécanisme, les
-choix et le design sont les nôtres. Dans le produit, deux agents utilisent un modèle de langage, l'analyste et le
-stratège : `gpt-4o-mini` d'OpenAI sur le site en ligne, Claude par son CLI en local.
-
-Ce qui ne sort pas d'un modèle, ce sont les mesures : chaque coût de sortie vient du fork de Base au bloc 50 614 000,
-mesuré dans la transaction par le contrat ou par le contrefactuel de TARE, et les tests Foundry rejouent les refus.
-Les photos de la vraie Ledger sont des images d'une vidéo de l'appareil.
+Conçu et construit par nous deux, avec Claude Code comme assistant de code. Dans le produit, l'analyste et le
+stratège tournent sur un modèle de langage (`gpt-4o-mini` en ligne, Claude en local) ; chaque coût de sortie vient du
+fork de Base et du contrat, jamais d'un modèle.
 
 ## Licence
 
