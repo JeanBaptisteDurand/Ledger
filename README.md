@@ -116,7 +116,7 @@ du haut porte « The product », « Demo » et « Sign in » ; connecté, elle a
 [Plusieurs agents](#plusieurs-agents) · [Le MCP](#le-mcp--lecture-seule-pour-analyser-après-coup) · [L'analyste](#lanalyste--le-vrai-agent) ·
 [Les briques Ledger](#les-briques-ledger-du-brief-ligne-à-ligne) · [En SaaS](#en-saas--la-ledger-reste-chez-le-client) · [Les mots](#les-mots-une-fois-pour-toutes) ·
 [Ce qui tourne](#ce-qui-tourne) · [Prérequis](#prérequis) · [Ce que ça n'attrape pas](#ce-que-ça-nattrape-pas--dit-avant-quon-nous-le-demande) ·
-[Cinq trouvailles amont](#cinq-trouvailles-amont-en-construisant-ceci) · [`FEEDBACK.md`](FEEDBACK.md) · [`upstream/`](upstream/) · [`VIDEO.md`](VIDEO.md)
+[Cinq trouvailles amont](#cinq-trouvailles-amont-en-construisant-ceci) · [`FEEDBACK.md`](FEEDBACK.md) · [`upstream/`](upstream/) · [`VIDEO.md`](VIDEO.md) · [Licence](#licence)
 
 *« Porte de sortie » est le nom de travail : les documents, le banc et les identifiants techniques l'emploient encore.*
 
@@ -865,3 +865,11 @@ local, avec Claude par son CLI.
 Ce qui ne sort pas d'un modèle, ce sont les mesures : chaque coût de sortie vient du fork de Base au bloc 50 614 000,
 mesuré dans la transaction par le contrat ou par le contrefactuel de TARE, et les tests Foundry rejouent les refus.
 Les photos de la vraie Ledger sont des images d'une vidéo de l'appareil.
+
+## Licence
+
+Le code et les textes de ce dépôt sont sous licence **Apache-2.0** ([`LICENSE`](LICENSE)), comme TARE. Ne sont pas
+couverts, et gardent leurs propres conditions : les modèles 3D des appareils (la Ledger Stax de rtql8d et la Ledger
+Nano X de HQ3DMOD, sur Sketchfab, voir [`front/public/references.txt`](front/public/references.txt)), le décodeur Draco
+de Google, le reflet d'objectif de `lensflare-threejs-vanilla`, et les deux sons du héros : la musique de Strauss est
+dans le domaine public, pas forcément son enregistrement, et le vent est donné sans droits par sa source.
