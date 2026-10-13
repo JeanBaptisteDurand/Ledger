@@ -604,6 +604,71 @@ def a_sign_mandate():
     threading.Thread(target=worker, daemon=True).start()
     return True, "the device is waiting: read the fields, then press “Hold to sign”"
 
+# ------------------------------------------------------------------ la Flex émulée, partagée : un écran abandonné
+#
+# Une seule Flex émulée sert tous les visiteurs. Une signature abandonnée en pleine revue (un visiteur parti avant
+# « Hold to sign ») la laisserait attendre pour toujours, et toute autre connexion échouerait. Un écran de revue qui n'a
+# pas changé, sans un doigt ni une APDU passés par le banc, pendant STALE_SCREEN_S secondes, est refusé sur l'appareil,
+# comme un porteur le ferait. La vraie Ledger d'un visiteur n'est jamais touchée : seul l'émulateur l'est.
+STALE_SCREEN_S = int(os.environ.get("PDS_STALE_SCREEN_S", "180"))
+DEVICE_SEEN = {"screen": "", "since": time.time(), "touched": time.time()}
+
+
+def device_touched() -> None:
+    DEVICE_SEEN["touched"] = time.time()
+
+
+def _screen_events() -> list[dict]:
+    try:
+        return requests.get(f"{SPECULOS}/events?currentscreenonly=true", timeout=2).json().get("events", [])
+    except Exception:  # noqa: BLE001
+        return []
+
+
+def device_waiting(events: list[dict] | None = None) -> str | None:
+    """The screen's text when the emulated Flex waits for a holder (a review, a signature, a prompt), else None."""
+    ev = _screen_events() if events is None else events
+    txt = " | ".join(e.get("text", "") for e in ev if e.get("text"))
+    low = txt.lower()
+    waiting = ("hold to sign" in low or "swipe to review" in low or "yes, reject" in low or "maybe later" in low
+               or ("reject" in low and " of " in low))
+    return txt if waiting else None
+
+
+def _tap(e: dict) -> None:
+    x, y = int(e["x"] + e.get("w", 40) / 2), int(e["y"] + e.get("h", 20) / 2)
+    for action in ("press", "release"):
+        requests.post(f"{SPECULOS}/finger", json={"action": action, "x": x, "y": y}, timeout=3)
+        time.sleep(0.2)
+
+
+def stale_screen_watchdog() -> None:
+    while True:
+        time.sleep(5)
+        ev = _screen_events()
+        txt = " | ".join(e.get("text", "") for e in ev if e.get("text"))
+        now = time.time()
+        if txt != DEVICE_SEEN["screen"]:
+            DEVICE_SEEN.update(screen=txt, since=now)
+            continue
+        if not device_waiting(ev) or now - DEVICE_SEEN["since"] < STALE_SCREEN_S or now - DEVICE_SEEN["touched"] < STALE_SCREEN_S:
+            continue
+        print(f"[watchdog] the emulated Flex waited {int(now - DEVICE_SEEN['since'])} s on « {txt[:90]} » with no one "
+              "touching it: rejected on the device", file=sys.stderr, flush=True)
+        for _ in range(6):   # « Maybe later » if a prompt waits, then Reject, then « Yes, reject »
+            ev = _screen_events()
+            pick = lambda word: next((e for e in ev if (e.get("text") or "").strip().lower() == word), None)  # noqa: E731
+            hit = pick("yes, reject") or pick("reject") or pick("maybe later")
+            if not hit:
+                break
+            try:
+                _tap(hit)
+            except Exception:  # noqa: BLE001
+                break
+            time.sleep(1.0)
+        DEVICE_SEEN.update(screen="", since=time.time(), touched=time.time())
+
+
 # ------------------------------------------------------------------ les bots : des agents nommes, dans le meme mandat
 #
 # Un bot = un agent d'execution (sans LLM) que le porteur nomme, choisit (pools v4 ou coffres ERC-4626), rythme
@@ -1210,6 +1275,11 @@ class H(BaseHTTPRequestHandler):
                 if rc != 0:
                     return self._send(200, {"ok": False, "msg": "Speculos: " + out[-200:]})
                 G["speculos"] = True
+            busy = device_waiting()
+            if busy:
+                return self._send(200, {"ok": False, "msg": f"The emulated Flex is busy: a signature waits on its screen ({busy[:60]}). "
+                                        f"Finish or reject it on the Flex; an abandoned screen is rejected after "
+                                        f"{f'{STALE_SCREEN_S // 60} minutes' if STALE_SCREEN_S >= 120 else f'{STALE_SCREEN_S} s'}."})
             import sign_mandate as sm
             sm.URL = SPECULOS
             try:
@@ -1227,6 +1297,7 @@ class H(BaseHTTPRequestHandler):
                 accounts.save_sessions(SESSIONS)
             return self._send(200, {"ok": True}, cookie="pds_session=; Path=/; Max-Age=0")
         if path.startswith("/speculos/"):
+            device_touched()
             t0 = time.time()
             try:
                 r = requests.post(SPECULOS + self.path[len("/speculos"):], json=body, timeout=600)
@@ -1302,6 +1373,7 @@ class H(BaseHTTPRequestHandler):
                     S["signing"] = None
             return self._send(200, {"ok": True})
         if path == "/api/finger":
+            device_touched()
             try:
                 requests.post(f"{SPECULOS}/finger", json=body, timeout=5)
                 return self._send(200, {"ok": True})
@@ -1395,4 +1467,5 @@ class H(BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     print(f"\n  NET-OUT — http://127.0.0.1:{PORT}\n")
+    threading.Thread(target=stale_screen_watchdog, daemon=True).start()
     ThreadingHTTPServer(("127.0.0.1", PORT), H).serve_forever()

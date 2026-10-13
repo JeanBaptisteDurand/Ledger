@@ -122,7 +122,9 @@ La prochaine ouverture de session relance le fork au bloc 50 614 000.
 ## Ce qui n'est pas fait
 
 - **Une Flex par visiteur.** Il n'y en a qu'une, émulée : tous ceux qui la choisissent partagent le même porteur, donc
-  le même compte, et elle signe une chose à la fois. Une vraie Ledger ouvre son propre compte.
+  le même compte, et elle signe une chose à la fois. Une vraie Ledger ouvre son propre compte. Une signature abandonnée
+  en pleine revue ne la bloque plus : un écran resté trois minutes sans un geste ni une commande est refusé sur
+  l'appareil par le banc (`PDS_STALE_SCREEN_S`), et la connexion en un clic dit, en attendant, que la Flex est occupée.
 - **La vraie Ledger en ligne** n'a pas été rejouée sur ce domaine. Elle demande Chrome, Edge ou Brave (WebHID) et l'app
   Ethereum compilée avec la clé de test. Le dépôt qu'elle signe est une vraie transaction Base, que le banc ne publie
   que sur le fork : elle resterait valable sur le réseau principal au même nonce. Tester avec une adresse sans ETH sur Base.

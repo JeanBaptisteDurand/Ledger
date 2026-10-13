@@ -12,7 +12,8 @@ les bots, les demandes hors bornes, le volet TARE, le retrait. [Route par route]
 c'est servi : [`DEPLOY.md`](DEPLOY.md).
 
 Ce que ce domaine ne donne pas : une Flex par visiteur. Il n'y en a qu'une, émulée et partagée : tous ceux qui la
-choisissent sont le même porteur, et elle signe une chose à la fois. Une vraie Ledger en USB (Chrome, Edge ou Brave)
+choisissent sont le même porteur, et elle signe une chose à la fois ; un écran abandonné en pleine revue est refusé
+par le banc au bout de trois minutes. Une vraie Ledger en USB (Chrome, Edge ou Brave)
 ouvre son propre compte, si elle porte l'app Ethereum compilée avec la clé de test ([Prérequis](#prérequis)) ; ce
 chemin n'a pas encore été rejoué en ligne.
 
