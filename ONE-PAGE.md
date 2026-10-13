@@ -43,8 +43,8 @@ read in clear.
 
 ## Run it
 
-Online: open https://netout.tech, click **Sign in with the emulated Flex**, and follow the card above the Flex. A real
-Ledger works from Chrome, Edge or Brave, with the Ethereum app built with the test key. To plug your own agent into
+Online: open https://netout.tech and plug in your real Ledger (Chrome, Edge or Brave), or click **Sign in with the
+emulated Flex** to try it without a device, and follow the card above the Flex. To plug your own agent into
 your account, copy the MCP key from **/account**, which also gives this command and the JSON (locally, the URL is
 http://127.0.0.1:5173/api/mcp):
 
